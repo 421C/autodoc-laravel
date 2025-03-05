@@ -1,0 +1,50 @@
+{
+    "name": "421c/autodoc-laravel",
+    "description": "Automatic API documentation generation tool for Laravel projects",
+    "license": "MIT",
+    "require": {
+        "421c/autodoc-php": "^1.0",
+        "illuminate/database": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0",
+        "illuminate/routing": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0",
+        "illuminate/support": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpunit/phpunit": "^11.4",
+        "symfony/var-dumper": "^7.1",
+        "orchestra/testbench": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "AutoDoc\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AutoDoc\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "stan": [
+            "./vendor/bin/phpstan analyse --memory-limit=2G"
+        ],
+        "cs-check": [
+            "./vendor/bin/php-cs-fixer fix -vvv --dry-run --show-progress=dots"
+        ],
+        "cs-fix": [
+            "./vendor/bin/php-cs-fixer fix -vvv --show-progress=dots"
+        ],
+        "test": [
+            "Composer\\Config::disableProcessTimeout",
+            "./vendor/bin/phpunit tests"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AutoDoc\\Laravel\\Providers\\AutoDocServiceProvider"
+            ]
+        }
+    }
+}
