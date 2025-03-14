@@ -137,7 +137,7 @@ return [
      * Enable or disable OpenApi schema caching.
      * If this is disabled, schema will be generated on each request.
      */
-    'use_cache' => false,
+    'use_cache' => env('APP_ENV') === 'production',
 
     /**
      * Memory limit for OpenApi schema generation.
@@ -153,7 +153,7 @@ return [
         /**
          * Enable or disable debug mode.
          */
-        'enabled' => false,
+        'enabled' => env('APP_ENV') !== 'production',
 
         /**
          * Ignore errors about non-existant methods on classes that have a
