@@ -89,7 +89,7 @@ class Controller
                     'schema' => [
                         'type' => 'object',
                         'properties' => [
-                            'child_records' => [
+                            'child.records' => [
                                 'additionalProperties' => [
                                     'type' => 'object',
                                     'properties' => [
@@ -114,6 +114,8 @@ class Controller
                                 'type' => 'object',
                             ],
                             'records' => [
+                                'type' => 'array',
+                                'description' => 'Records description',
                                 'items' => [
                                     'properties' => [
                                         'created_at' => [
@@ -136,11 +138,10 @@ class Controller
                                     ],
                                     'type' => 'object',
                                 ],
-                                'type' => 'array',
                             ],
                         ],
                         'required' => [
-                            'child_records',
+                            'child.records',
                         ],
                     ],
                 ],
@@ -178,7 +179,10 @@ class Controller
     public function route2(): mixed
     {
         request()->validate([
-            'records' => 'required|array',
+            /**
+             * Records description
+             */
+            'records' => 'array',
 
             /**
              * This parameter reads type from `@var` tag.
@@ -202,7 +206,7 @@ class Controller
              *     symbol: Symbol,
              * }>
              */
-            'child_records' => 'required',
+            'child\.records' => 'required',
         ]);
 
         $potentialReturnType = [];
@@ -417,6 +421,9 @@ class Controller
                                 ],
                             ],
                         ],
+                        'required' => [
+                            'items',
+                        ],
                     ],
                 ],
             ],
@@ -441,8 +448,8 @@ class Controller
     ])]
     public function route5(CustomRequest $request): mixed
     {
-        // @phpstan-ignore offsetAccess.nonOffsetAccessible, property.nonObject
-        return response()->json($request->items[0]->id ?? null);
+        // @phpstan-ignore offsetAccess.nonOffsetAccessible, offsetAccess.nonOffsetAccessible
+        return response()->json($request->items[0]['id'] ?? null);
     }
 
 

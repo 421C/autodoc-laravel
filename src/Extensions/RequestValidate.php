@@ -3,12 +3,12 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\Scope;
+use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
@@ -58,7 +58,7 @@ class RequestValidate extends MethodCallExtension
     }
 
 
-    private function parseValidateMethodCallArguments(MethodCall $methodCall, Scope $scope): ?Type
+    private function parseValidateMethodCallArguments(MethodCall $methodCall, Scope $scope): ?ArrayType
     {
         $validationArrayNode = $methodCall->getArgs()[0]->value;
         $validationArray = $scope->resolveType($validationArrayNode);
@@ -67,8 +67,8 @@ class RequestValidate extends MethodCallExtension
             return null;
         }
 
-        $validatedStructure = Arr::undot($validationArray->shape);
+        $requestDataObjectType = $this->parseValidationRules($validationArray->shape);
 
-        return $this->parseValidatedStructure($validatedStructure);
+        return new ArrayType(shape: $requestDataObjectType->properties);
     }
 }

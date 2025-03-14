@@ -7,7 +7,6 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\ClassExtension;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Arr;
 
 /**
  * Handles parsing `Illuminate\Foundation\Http\FormRequest` subclasses.
@@ -38,9 +37,7 @@ class CustomFormRequest extends ClassExtension
             return null;
         }
 
-        $validatedStructure = Arr::undot($validationArray->shape);
-
-        $requestType = $this->parseValidatedStructure($validatedStructure);
+        $requestType = $this->parseValidationRules($validationArray->shape);
 
         self::$cache[$phpClass->className] = $requestType;
 

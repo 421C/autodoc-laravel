@@ -46,7 +46,18 @@ trait ComparesSchemaArrays
         }
 
         if (array_values($array) !== $array) {
+            $preferredOrder = ['type', 'description'];
+            $sorted = [];
+
+            foreach ($preferredOrder as $key) {
+                if (array_key_exists($key, $array)) {
+                    $sorted[$key] = $array[$key];
+                    unset($array[$key]);
+                }
+            }
+
             ksort($array);
+            $array = array_merge($sorted, $array);
         }
     }
 

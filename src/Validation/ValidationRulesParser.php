@@ -24,30 +24,86 @@ use PhpParser\Node;
 trait ValidationRulesParser
 {
     /**
-     * @param array<mixed> $validatedStructure
+     * @param array<string, Type> $validationRules
      */
-    protected function parseValidatedStructure(array $validatedStructure): Type
+    protected function parseValidationRules(array $validationRules): ObjectType
     {
-        $resultType = new ObjectType;
+        $structured = [];
 
-        foreach ($validatedStructure as $key => $value) {
-            if ($key === '*') {
-                return new ArrayType($this->getParameterType($value));
-            }
+        foreach ($validationRules as $key => $value) {
+            $segments = preg_split('/(?<!\\\\)\./', $key);
+            $segments = array_map(fn ($s) => str_replace('\\.', '.', $s), $segments ?: []);
 
-            $resultType->properties[$key] = $this->getParameterType($value);
+            $parsedValue = $this->parseTypeContainingValidationRules($value);
+            $this->buildTypeStructure($structured, $segments, $parsedValue);
         }
 
-        return $resultType;
+        return new ObjectType($structured);
     }
 
-
-    protected function getParameterType(mixed $value): Type
+    /**
+     * @param array<string, Type> $structure
+     * @param array<int, string> $segments
+     */
+    protected function buildTypeStructure(array &$structure, array $segments, Type $type): void
     {
-        if (is_array($value)) {
-            return $this->parseValidatedStructure($value);
+        if (empty($segments)) {
+            return;
         }
 
+        $segment = array_shift($segments);
+
+        if (empty($segments)) {
+            $structure[$segment] = $type;
+
+            return;
+        }
+
+        if ($segment === '*') {
+            throw new \LogicException('Wildcard (*) cannot be the first segment in a path');
+        }
+
+        if ($segments[0] === '*') {
+            if (! isset($structure[$segment])) {
+                $structure[$segment] = new ArrayType(itemType: new ArrayType(shape: []));
+
+            } else if (! ($structure[$segment] instanceof ArrayType)) {
+                $structure[$segment] = new ArrayType(itemType: new ArrayType(shape: []));
+
+            } else if ($structure[$segment]->itemType === null) {
+                $structure[$segment]->itemType = new ArrayType(shape: []);
+
+            } else if (!($structure[$segment]->itemType instanceof ArrayType)) {
+                $structure[$segment]->itemType = new ArrayType(shape: []);
+
+            } else if (! $structure[$segment]->itemType->shape) {
+                $structure[$segment]->itemType = new ArrayType(shape: []);
+            }
+
+            $itemShape = &$structure[$segment]->itemType->shape;
+
+            array_shift($segments);
+
+            $this->buildTypeStructure($itemShape, $segments, $type);
+
+        } else {
+            if (! isset($structure[$segment])) {
+                $structure[$segment] = new ArrayType(shape: []);
+
+            } else if (!($structure[$segment] instanceof ArrayType)) {
+                $structure[$segment] = new ArrayType(shape: []);
+
+            } else if (! $structure[$segment]->shape) {
+                $structure[$segment] = new ArrayType(shape: []);
+            }
+
+            /** @phpstan-ignore argument.type */
+            $this->buildTypeStructure($structure[$segment]->shape, $segments, $type);
+        }
+    }
+
+    protected function parseTypeContainingValidationRules(?Type $value): Type
+    {
         $paramType = new UnknownType;
 
         if ($value instanceof Type) {
@@ -56,7 +112,7 @@ trait ValidationRulesParser
              * Otherwise extract laravel validation rules to determine parameter type.
              */
             if ($value instanceof UnresolvedPhpDocType) {
-                $paramTypeFromValidationRules = $this->getParameterType($value->fallbackType);
+                $paramTypeFromValidationRules = $this->parseTypeContainingValidationRules($value->fallbackType);
 
                 $value->required = $paramTypeFromValidationRules->required;
 
