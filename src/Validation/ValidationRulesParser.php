@@ -342,6 +342,19 @@ trait ValidationRulesParser
             }
         }
 
+        if ($type instanceof ArrayType) {
+            foreach ($rules as $rule) {
+                if (is_string($rule)) {
+                    if (str_starts_with($rule, 'min:')) {
+                        $type->minItems = (int) explode(':', $rule)[1];
+
+                    } else if (str_starts_with($rule, 'max:')) {
+                        $type->maxItems = (int) explode(':', $rule)[1];
+                    }
+                }
+            }
+        }
+
         if (in_array('nullable', $rules)) {
             $type = new UnionType([$type, new NullType]);
         }
