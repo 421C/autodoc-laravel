@@ -46,7 +46,7 @@ trait ComparesSchemaArrays
         }
 
         if (array_values($array) !== $array) {
-            $preferredOrder = ['type', 'description'];
+            $preferredOrder = ['type', 'summary', 'description'];
             $sorted = [];
 
             foreach ($preferredOrder as $key) {

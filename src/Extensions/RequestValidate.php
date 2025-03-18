@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
+use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Extensions\MethodCallExtension;
@@ -69,6 +70,10 @@ class RequestValidate extends MethodCallExtension
 
         $requestDataObjectType = $this->parseValidationRules($validationArray->shape);
 
-        return new ArrayType(shape: $requestDataObjectType->properties);
+        if ($requestDataObjectType instanceof ObjectType) {
+            return new ArrayType(shape: $requestDataObjectType->properties);
+        }
+
+        return $requestDataObjectType;
     }
 }

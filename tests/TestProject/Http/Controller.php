@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
@@ -8,9 +8,10 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\User;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserCollection;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
-use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
@@ -186,21 +187,21 @@ class Controller
 
             /**
              * This parameter reads type from `@var` tag.
-             * 
+             *
              * @var Symbol
              */
             'records.*.symbol' => 'sometimes',
 
             /**
              * Description of the `created_at` parameter.
-             * 
+             *
              * @example '2024-10-20'
              */
             'records.*.created_at' => 'date',
 
             /**
              * This parameter reads type from `@var` tag.
-             * 
+             *
              * @var array<string, array{
              *     date: string,
              *     symbol: Symbol,
@@ -238,7 +239,11 @@ class Controller
                                     'string',
                                     'null',
                                 ],
+                                'description' => 'Required if `use_client_id` equals `true`.',
                                 'format' => 'uuid',
+                            ],
+                            'use_client_id' => [
+                                'type' => 'boolean',
                             ],
                             'symbols' => [
                                 'type' => 'array',
@@ -280,11 +285,12 @@ class Controller
     public function route3(Request $request): void
     {
         $validationRules = [
-            'client_id' => 'required',
-            'symbols' => [new ArrayRule()],
+            'use_client_id' => 'boolean',
+            'client_id' => 'integer',
+            'symbols' => [new ArrayRule],
         ];
 
-        $validationRules['client_id'] = 'nullable|uuid';
+        $validationRules['client_id'] = 'required_if_accepted:use_client_id' . '|nullable|uuid';
 
         $validationRules['status'][] = new Enum(StateEnum::class);
 
@@ -320,8 +326,8 @@ class Controller
                                 'enum' => [
                                     0,
                                     -0.1,
-                                ]
-                            ]
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -354,7 +360,7 @@ class Controller
                                         115,
                                         -0.1,
                                     ],
-                                ]
+                                ],
                             ],
                         ],
                     ],
@@ -620,7 +626,7 @@ class Controller
                                 'count' => [
                                     'description' => 'Number of users returned.',
                                     'type' => 'integer',
-                                ]
+                                ],
                             ],
                         ],
                     ],
@@ -741,10 +747,105 @@ class Controller
     public function route10(): mixed
     {
         $collection = new UserCollection([new User]);
-        
+
         return [
             'collection' => $collection,
             'count' => $collection->count(),
         ];
+    }
+
+
+    /**
+     * Route 11
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 11',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'how many' => [
+                                    'type' => 'number',
+                                ],
+                                'token' => [
+                                    'type' => 'string',
+                                    'minLength' => 12,
+                                ],
+                                'token_confirmation' => [
+                                    'type' => 'string',
+                                    'description' => 'Must match `token`.',
+                                ],
+                                'what' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [],
+    ])]
+    public function route11(): void
+    {
+        request()->validate([
+            '*.what' => 'array|boolean',
+            '*.how many' => 'string|numeric',
+            '*.token' => 'confirmed|min:12',
+        ]);
+    }
+
+
+    /**
+     * Route 12
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 12',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'token' => [
+                                'type' => 'string',
+                                'format' => 'password',
+                            ],
+                            'token_confirmation' => [
+                                'type' => 'string',
+                                'description' => 'Must match `token`.',
+                                'format' => 'password',
+                            ],
+                        ],
+                        'required' => [
+                            'token',
+                            'token_confirmation',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [],
+    ])]
+    public function route12(): void
+    {
+        request()->validate([
+            'token' => ['required', Password::defaults(), 'confirmed'],
+        ]);
     }
 }

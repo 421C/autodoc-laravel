@@ -15,9 +15,12 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedPhpDocType;
+use AutoDoc\DataTypes\VoidType;
 use Illuminate\Validation\Rules\ArrayRule;
+use Illuminate\Validation\Rules\Email;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
+use Illuminate\Validation\Rules\Password;
 use PhpParser\Node;
 
 
@@ -26,16 +29,47 @@ trait ValidationRulesParser
     /**
      * @param array<string, Type> $validationRules
      */
-    protected function parseValidationRules(array $validationRules): ObjectType
+    protected function parseValidationRules(array $validationRules): ObjectType|ArrayType
     {
         $structured = [];
+        $hasWildcardRoot = false;
 
         foreach ($validationRules as $key => $value) {
             $segments = preg_split('/(?<!\\\\)\./', $key);
             $segments = array_map(fn ($s) => str_replace('\\.', '.', $s), $segments ?: []);
 
-            $parsedValue = $this->parseTypeContainingValidationRules($value);
-            $this->buildTypeStructure($structured, $segments, $parsedValue);
+            if (isset($segments[0]) && $segments[0] === '*') {
+                $hasWildcardRoot = true;
+            }
+
+            $validationType = $this->parseTypeContainingValidationRules($value);
+
+            if ($validationType instanceof ConfirmedType) {
+                $this->buildTypeStructure($structured, $segments, $validationType->type);
+
+                /** @var int */
+                $lastSegmentIndex = array_key_last($segments);
+                $typeClass = get_class($validationType->type);
+
+                $confirmationType = new $typeClass;
+                $confirmationType->description = 'Must match `' . $segments[$lastSegmentIndex] . '`.';
+                $confirmationType->required = $validationType->type->required;
+
+                if ($confirmationType instanceof StringType) {
+                    $confirmationType->format = $validationType->type->format ?? null;
+                }
+
+                $segments[$lastSegmentIndex] = $validationType->confirmationKey ?? ($segments[$lastSegmentIndex] . '_confirmation');
+
+                $this->buildTypeStructure($structured, $segments, $confirmationType);
+
+            } else {
+                $this->buildTypeStructure($structured, $segments, $validationType);
+            }
+        }
+
+        if ($hasWildcardRoot) {
+            return new ArrayType(itemType: $structured['*']);
         }
 
         return new ObjectType($structured);
@@ -57,10 +91,6 @@ trait ValidationRulesParser
             $structure[$segment] = $type;
 
             return;
-        }
-
-        if ($segment === '*') {
-            throw new \LogicException('Wildcard (*) cannot be the first segment in a path');
         }
 
         if ($segments[0] === '*') {
@@ -112,9 +142,9 @@ trait ValidationRulesParser
              * Otherwise extract laravel validation rules to determine parameter type.
              */
             if ($value instanceof UnresolvedPhpDocType) {
-                $paramTypeFromValidationRules = $this->parseTypeContainingValidationRules($value->fallbackType);
+                $typeFromLaravelValidation = $this->parseTypeContainingValidationRules($value->fallbackType);
 
-                $value->required = $paramTypeFromValidationRules->required;
+                $value->required = $typeFromLaravelValidation->required;
 
                 return $value;
             }
@@ -141,6 +171,14 @@ trait ValidationRulesParser
 
                 foreach ($typesInArray as $typeInArray) {
                     $resolvedType = $typeInArray->unwrapType();
+
+                    if ($resolvedType instanceof UnionType) {
+                        $types = array_filter($resolvedType->types, fn ($type) => ! ($type instanceof VoidType));
+
+                        if (count($types) === 1) {
+                            $resolvedType = reset($types)->unwrapType();
+                        }
+                    }
 
                     if ($resolvedType instanceof StringType) {
                         if (is_string($resolvedType->value)) {
@@ -183,6 +221,8 @@ trait ValidationRulesParser
             if ($rule instanceof Rule) {
                 $typeOrNull = match ($rule->className) {
                     ArrayRule::class => new ArrayType,
+                    Email::class => new StringType(format: 'email'),
+                    Password::class => new StringType(format: 'password'),
                     default => null,
                 };
 
@@ -192,12 +232,11 @@ trait ValidationRulesParser
                 }
 
             } else {
-                $rule = explode(':', $rule, 2)[0];
+                [$rule, $params] = explode(':', $rule, 2) + [1 => null];
 
                 $typeOrNull = match ($rule) {
                     'array'     => new ArrayType,
                     'boolean'   => new BoolType,
-                    'confirmed',
                     'current_password' => new StringType(format: 'password'),
                     'date'      => new StringType(format: 'date'),
                     'email'     => new StringType(format: 'email'),
@@ -208,7 +247,6 @@ trait ValidationRulesParser
                     'object'    => new ObjectType,
                     'uuid'      => new StringType(format: 'uuid'),
                     'url'       => new StringType(format: 'uri'),
-                    'string'    => new StringType,
                     default     => null,
                 };
 
@@ -296,16 +334,14 @@ trait ValidationRulesParser
                         }
                     }
 
-                } else {
-                    if (str_starts_with($rule, 'in:')) {
-                        $enumValues = explode(',', substr($rule, strlen('in:')));
+                } else if (str_starts_with($rule, 'in:')) {
+                    $enumValues = explode(',', substr($rule, strlen('in:')));
 
-                        if ($type instanceof IntegerType) {
-                            $type->setEnumValues(array_map(intval(...), $enumValues));
+                    if ($type instanceof IntegerType) {
+                        $type->setEnumValues(array_map(intval(...), $enumValues));
 
-                        } else {
-                            $type = new StringType($enumValues);
-                        }
+                    } else {
+                        $type = new StringType($enumValues);
                     }
                 }
             }
@@ -329,27 +365,60 @@ trait ValidationRulesParser
             }
         }
 
-        if ($type instanceof IntegerType) {
-            foreach ($rules as $rule) {
-                if (is_string($rule)) {
-                    if (str_starts_with($rule, 'min:')) {
-                        $type->minimum = (int) explode(':', $rule)[1];
+        foreach ($rules as $rule) {
+            if (is_string($rule)) {
+                if (str_starts_with($rule, 'required_array_keys:')) {
+                    $keys = explode(',', explode(':', $rule, 2)[1]);
 
-                    } else if (str_starts_with($rule, 'max:')) {
-                        $type->maximum = (int) explode(':', $rule)[1];
+                    if (! ($type instanceof ArrayType)) {
+                        $type = new ArrayType;
+                    }
+
+                    foreach ($keys as $key) {
+                        if (! isset($type->shape[$key])) {
+                            $type->shape[$key] = new UnknownType;
+                        }
+
+                        $type->shape[$key]->required = true;
                     }
                 }
             }
         }
 
-        if ($type instanceof ArrayType) {
-            foreach ($rules as $rule) {
-                if (is_string($rule)) {
-                    if (str_starts_with($rule, 'min:')) {
-                        $type->minItems = (int) explode(':', $rule)[1];
+        foreach ($rules as $rule) {
+            if (is_string($rule)) {
+                if (str_starts_with($rule, 'min:')) {
+                    $param = (int) explode(':', $rule, 2)[1];
 
-                    } else if (str_starts_with($rule, 'max:')) {
-                        $type->maxItems = (int) explode(':', $rule)[1];
+                    if ($type instanceof IntegerType) {
+                        $type->minimum = $param;
+
+                    } else if ($type instanceof ArrayType) {
+                        $type->minItems = $param;
+
+                    } else {
+                        if (! ($type instanceof StringType)) {
+                            $type = new StringType;
+                        }
+
+                        $type->minLength = $param;
+                    }
+
+                } else if (str_starts_with($rule, 'max:')) {
+                    $param = (int) explode(':', $rule, 2)[1];
+
+                    if ($type instanceof IntegerType) {
+                        $type->maximum = $param;
+
+                    } else if ($type instanceof ArrayType) {
+                        $type->maxItems = $param;
+
+                    } else {
+                        if (! ($type instanceof StringType)) {
+                            $type = new StringType;
+                        }
+
+                        $type->maxLength = $param;
                     }
                 }
             }
@@ -361,6 +430,66 @@ trait ValidationRulesParser
 
         if (in_array('required', $rules)) {
             $type->required = true;
+        }
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            if (str_starts_with($rule, 'required_if:')
+                || str_starts_with($rule, 'required_unless:')
+                || str_starts_with($rule, 'required_if_accepted:')
+                || str_starts_with($rule, 'required_if_declined:')
+            ) {
+                [$ruleKey, $field] = explode(':', $rule, 2);
+
+                if (! $field) {
+                    continue;
+                }
+
+                $description = null;
+
+                if ($ruleKey === 'required_if_accepted') {
+                    $value = 'true';
+
+                } else if ($ruleKey === 'required_if_declined') {
+                    $value = 'false';
+
+                } else {
+                    [$field, $value] = explode(',', $field, 2) + [1 => null];
+                }
+
+                if ($value !== null) {
+                    $keyword = $ruleKey === 'required_unless' ? 'unless' : 'if';
+
+                    if ($value === '') {
+                        $description = "Required $keyword `$field` is empty.";
+
+                    } else if (in_array($value, ['true', 'false', 'null'])) {
+                        $description = "Required $keyword `$field` equals `$value`.";
+
+                    } else {
+                        $description = "Required $keyword `$field` equals `'$value'`.";
+                    }
+                }
+
+                if ($description) {
+                    $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
+                }
+            }
+        }
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            if ($rule === 'confirmed' || str_starts_with($rule, 'confirmed:')) {
+                $confirmationKey = explode(':', $rule, 2)[1] ?? null;
+
+                $type = new ConfirmedType($confirmationKey, $type);
+            }
         }
 
         return $type;

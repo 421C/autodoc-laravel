@@ -15,6 +15,8 @@ Route::get('/test/7', [Controller::class, 'route7']);
 Route::get('/test/8', [Controller::class, 'route8']);
 Route::get('/test/9', [Controller::class, 'route9']);
 Route::get('/test/10', [Controller::class, 'route10']);
+Route::get('/test/11', [Controller::class, 'route11']);
+Route::get('/test/12', [Controller::class, 'route12']);
 
 Route::get('/test/invoke', InvokableController::class);
 
