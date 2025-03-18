@@ -16,11 +16,10 @@ return [
      * Each workspace can contain multiple routes and will be exported as a separate OpenApi schema.
      */
     'workspaces' => [
-        [
+        'your-api-name' => [
             'routes' => [
-                '/api/',
+                '/',
             ],
-            'export_filename' => 'api.json',
         ],
     ],
 
@@ -73,7 +72,7 @@ return [
      * Directory where OpenApi schema files will be exported.
      * File names are defined in `export_filename` parameter of each workspace.
      */
-    'openapi_export_dir' => storage_path(),
+    'openapi_export_dir' => storage_path('openapi'),
 
     /**
      * Enum handling settings.
@@ -151,9 +150,9 @@ return [
 
     'debug' => [
         /**
-         * Enable or disable debug mode.
+         * Enable or disable error reporting.
          */
-        'enabled' => env('APP_ENV') !== 'production',
+        'enabled' => false, // filter_var(env('APP_DEBUG'), FILTER_VALIDATE_BOOL),
 
         /**
          * Ignore errors about non-existant methods on classes that have a
