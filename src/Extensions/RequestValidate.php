@@ -24,10 +24,30 @@ class RequestValidate extends MethodCallExtension
 
     public function getRequestType(MethodCall $methodCall, Scope $scope): ?Type
     {
+        if ($this->isRequestValidateMethod($methodCall, $scope)) {
+            return $this->parseValidateMethodCallArguments($methodCall, $scope);
+        }
+
+        return null;
+    }
+
+
+    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    {
+        if ($this->isRequestValidateMethod($methodCall, $scope)) {
+            return $this->parseValidateMethodCallArguments($methodCall, $scope);
+        }
+
+        return null;
+    }
+
+
+    private function isRequestValidateMethod(MethodCall $methodCall, Scope $scope): bool
+    {
         if (! ($methodCall->name instanceof Node\Identifier)
             || $methodCall->name->name !== 'validate'
         ) {
-            return null;
+            return false;
         }
 
         if ($methodCall->var instanceof Variable) {
@@ -39,11 +59,11 @@ class RequestValidate extends MethodCallExtension
                 $className = $scope->getResolvedClassName($unresolvedVarType->node);
 
                 if (! $className) {
-                    return null;
+                    return false;
                 }
 
                 if (is_a($className, Request::class, true)) {
-                    return $this->parseValidateMethodCallArguments($methodCall, $scope);
+                    return true;
                 }
             }
         }
@@ -52,10 +72,10 @@ class RequestValidate extends MethodCallExtension
             && $methodCall->var->name instanceof Node\Name
             && $methodCall->var->name->name === 'request'
         ) {
-            return $this->parseValidateMethodCallArguments($methodCall, $scope);
+            return true;
         }
 
-        return null;
+        return false;
     }
 
 

@@ -52,8 +52,16 @@ trait ValidationRulesParser
                 $typeClass = get_class($validationType->type);
 
                 $confirmationType = new $typeClass;
-                $confirmationType->description = 'Must match `' . $segments[$lastSegmentIndex] . '`.';
                 $confirmationType->required = $validationType->type->required;
+
+                if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
+                    /** @var ?string */
+                    $format = config('autodoc.laravel.format_generated_descriptions');
+
+                    $description = 'Must match "' . $segments[$lastSegmentIndex] . '".';
+
+                    $confirmationType->description = $format ? sprintf($format, $description) : $description;
+                }
 
                 if ($confirmationType instanceof StringType) {
                     $confirmationType->format = $validationType->type->format ?? null;
@@ -432,50 +440,111 @@ trait ValidationRulesParser
             $type->required = true;
         }
 
-        foreach ($rules as $rule) {
-            if (! is_string($rule)) {
-                continue;
-            }
-
-            if (str_starts_with($rule, 'required_if:')
-                || str_starts_with($rule, 'required_unless:')
-                || str_starts_with($rule, 'required_if_accepted:')
-                || str_starts_with($rule, 'required_if_declined:')
-            ) {
-                [$ruleKey, $field] = explode(':', $rule, 2);
-
-                if (! $field) {
+        if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
+            foreach ($rules as $rule) {
+                if (! is_string($rule)) {
                     continue;
                 }
 
-                $description = null;
+                if (str_starts_with($rule, 'required_if:')
+                    || str_starts_with($rule, 'required_unless:')
+                    || str_starts_with($rule, 'required_if_accepted:')
+                    || str_starts_with($rule, 'required_if_declined:')
+                    || str_starts_with($rule, 'required_without:')
+                ) {
+                    [$ruleKey, $field] = explode(':', $rule, 2);
 
-                if ($ruleKey === 'required_if_accepted') {
-                    $value = 'true';
+                    if (! $field) {
+                        continue;
+                    }
 
-                } else if ($ruleKey === 'required_if_declined') {
-                    $value = 'false';
+                    $description = null;
 
-                } else {
-                    [$field, $value] = explode(',', $field, 2) + [1 => null];
-                }
+                    if ($ruleKey === 'required_if_accepted') {
+                        $value = 'true';
 
-                if ($value !== null) {
-                    $keyword = $ruleKey === 'required_unless' ? 'unless' : 'if';
-
-                    if ($value === '') {
-                        $description = "Required $keyword `$field` is empty.";
-
-                    } else if (in_array($value, ['true', 'false', 'null'])) {
-                        $description = "Required $keyword `$field` equals `$value`.";
+                    } else if ($ruleKey === 'required_if_declined') {
+                        $value = 'false';
 
                     } else {
-                        $description = "Required $keyword `$field` equals `'$value'`.";
+                        [$field, $value] = explode(',', $field, 2) + [1 => null];
+                    }
+
+                    if ($value !== null) {
+                        $keyword = $ruleKey === 'required_unless' ? 'unless' : 'if';
+
+                        if ($value === '') {
+                            $description = "Required $keyword \"$field\" is empty.";
+
+                        } else if (in_array($value, ['true', 'false', 'null'])) {
+                            $description = "Required $keyword \"$field\" is $value.";
+
+                        } else {
+                            $description = "Required $keyword \"$field\" is \"$value\".";
+                        }
+                    }
+
+                    if ($description) {
+                        /** @var ?string */
+                        $format = config('autodoc.laravel.format_generated_descriptions');
+
+                        $description = $format ? sprintf($format, $description) : $description;
+                        $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
                     }
                 }
 
-                if ($description) {
-                    $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
+                if (str_starts_with($rule, 'required_with:')
+                    || str_starts_with($rule, 'required_without:')
+                    || str_starts_with($rule, 'required_with_all:')
+                    || str_starts_with($rule, 'required_without_all:')
+                ) {
+                    $keys = explode(':', $rule);
+                    $ruleKey = array_shift($keys);
+
+                    if ($keys) {
+                        $description = null;
+
+                        if (count($keys) === 1) {
+                            $key = '"' . $keys[0] . '"';
+
+                            if ($ruleKey === 'required_with') {
+                                $description = "Required if $key is not empty.";
+
+                            } else if ($ruleKey === 'required_with_all') {
+                                $description = "Required if $key is not empty.";
+
+                            } else if ($ruleKey === 'required_without') {
+                                $description = "Required if $key is empty.";
+
+                            } else if ($ruleKey === 'required_without_all') {
+                                $description = "Required if $key is empty.";
+                            }
+
+                        } else {
+                            $keys = '"' . implode('", "', $keys) . '"';
+
+                            if ($ruleKey === 'required_with') {
+                                $description = "Required if any of the following fields are filled: $keys";
+
+                            } else if ($ruleKey === 'required_with_all') {
+                                $description = "Required if none of the following fields are empty: $keys";
+
+                            } else if ($ruleKey === 'required_without') {
+                                $description = "Required if any of the following fields are empty: $keys";
+
+                            } else if ($ruleKey === 'required_without_all') {
+                                $description = "Required if all of the following fields are empty: $keys";
+                            }
+                        }
+
+                        if ($description) {
+                            /** @var ?string */
+                            $format = config('autodoc.laravel.format_generated_descriptions');
+
+                            $description = $format ? sprintf($format, $description) : $description;
+                            $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
+                        }
+                    }
                 }
             }
         }

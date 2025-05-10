@@ -9,12 +9,13 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\UserCollection;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * @phpstan-type Symbol 'a'|'b'|'c'
@@ -239,7 +240,7 @@ class Controller
                                     'string',
                                     'null',
                                 ],
-                                'description' => 'Required if `use_client_id` equals `true`.',
+                                'description' => 'Required if "use_client_id" is true.',
                                 'format' => 'uuid',
                             ],
                             'use_client_id' => [
@@ -780,7 +781,7 @@ class Controller
                                 ],
                                 'token_confirmation' => [
                                     'type' => 'string',
-                                    'description' => 'Must match `token`.',
+                                    'description' => 'Must match "token".',
                                 ],
                                 'what' => [
                                     'type' => 'array',
@@ -827,7 +828,7 @@ class Controller
                             ],
                             'token_confirmation' => [
                                 'type' => 'string',
-                                'description' => 'Must match `token`.',
+                                'description' => 'Must match "token".',
                                 'format' => 'password',
                             ],
                         ],
@@ -846,6 +847,75 @@ class Controller
     {
         request()->validate([
             'token' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+    }
+
+
+    /**
+     * Route 13
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 13',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'website' => [
+                                'type' => 'string',
+                                'format' => 'uri',
+                            ],
+                            'ip' => [
+                                'type' => 'string',
+                                'format' => 'ipv6',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'data' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'ip' => [
+                                            'type' => 'string',
+                                            'format' => 'ipv6',
+                                        ],
+                                        'website' => [
+                                            'type' => 'string',
+                                            'format' => 'uri',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function route13(): JsonResponse
+    {
+        $validated = request()->validate([
+            'website' => 'url',
+            'ip' => 'ipv6',
+        ]);
+
+        return response()->json([
+            'data' => $validated,
         ]);
     }
 }

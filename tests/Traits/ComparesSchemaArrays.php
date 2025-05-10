@@ -44,20 +44,24 @@ trait ComparesSchemaArrays
                 $this->sortArrayRecursively($value);
             }
         }
+        unset($value);
 
         if (array_values($array) !== $array) {
             $preferredOrder = ['type', 'summary', 'description'];
-            $sorted = [];
+            uksort($array, function ($a, $b) use ($preferredOrder) {
+                $aPos = array_search($a, $preferredOrder, true);
+                $bPos = array_search($b, $preferredOrder, true);
 
-            foreach ($preferredOrder as $key) {
-                if (array_key_exists($key, $array)) {
-                    $sorted[$key] = $array[$key];
-                    unset($array[$key]);
+                if ($aPos !== false && $bPos !== false) {
+                    return $aPos <=> $bPos;
+                } elseif ($aPos !== false) {
+                    return -1;
+                } elseif ($bPos !== false) {
+                    return 1;
                 }
-            }
 
-            ksort($array);
-            $array = array_merge($sorted, $array);
+                return is_string($a) && is_string($b) ? strcmp($a, $b) : 0;
+            });
         }
     }
 

@@ -24,9 +24,9 @@ return [
     ],
 
     /**
-     * Documentation page UI settings.
+     * Configuration options for autodoc Laravel integration.
      */
-    'ui' => [
+    'laravel' => [
         /**
          * Documentation page URL.
          */
@@ -39,6 +39,21 @@ return [
             'web',
         ],
 
+        /**
+         * Allow some validation rules to automatically generated parameter descriptions.
+         */
+        'generate_descriptions_from_validation_rules' => true,
+
+        /**
+         * Format automatically generated descriptions. Specify a string in `sprintf` format or null.
+         */
+        'format_generated_descriptions' => '<p style="color: var(--color-text-muted); font-size: 11px;">%s</p>',
+    ],
+
+    /**
+     * Documentation page UI settings.
+     */
+    'ui' => [
         /**
          * Documentation page theme - light / dark.
          */
@@ -70,7 +85,6 @@ return [
 
     /**
      * Directory where OpenApi schema files will be exported.
-     * File names are defined in `export_filename` parameter of each workspace.
      */
     'openapi_export_dir' => storage_path('openapi'),
 
@@ -130,6 +144,7 @@ return [
         AutoDoc\Laravel\Extensions\ResourceCollectionJson::class,
         AutoDoc\Laravel\Extensions\ResourceJson::class,
         AutoDoc\Laravel\Extensions\ResourceStaticCall::class,
+        AutoDoc\Laravel\Extensions\RedirectResponse::class,
     ],
 
     /**
@@ -146,7 +161,7 @@ return [
     /**
      * Maximum depth of nested types.
      */
-    'max_depth' => 20,
+    'max_depth' => 7,
 
     'debug' => [
         /**

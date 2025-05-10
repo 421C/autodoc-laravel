@@ -5,10 +5,10 @@ use Illuminate\Support\Facades\Route;
 
 
 /** @var string */
-$url = config('autodoc.ui.url');
+$url = config('autodoc.laravel.url');
 
 /** @var string[] */
-$middleware = config('autodoc.ui.middleware', []);
+$middleware = config('autodoc.laravel.middleware', []);
 
 
 Route::prefix($url)

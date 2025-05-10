@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace AutoDoc\Laravel\Tests\TestProject;
 
@@ -17,6 +17,7 @@ class TestRouteProvider extends ServiceProvider
         config()->set('autodoc.debug.enabled', true);
         config()->set('autodoc.debug.ignore_dynamic_method_errors', false);
         config()->set('autodoc.openapi_export_dir', storage_path());
+        config()->set('autodoc.laravel.format_generated_descriptions', null);
 
         $this->loadRoutesFrom(__DIR__ . '/routes.php');
     }
