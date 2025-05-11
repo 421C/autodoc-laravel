@@ -918,4 +918,64 @@ class Controller
             'data' => $validated,
         ]);
     }
+
+
+    /**
+     * Route 14
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 14',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'numbers' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'integer',
+                            ],
+                        ],
+                    ],
+                ],
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function route14(): JsonResponse
+    {
+        $validated = request()->validate([
+            'numbers' => [
+                'array',
+                Rule::requiredIf(true),
+            ],
+            'numbers.*' => [
+                'integer',
+                Rule::when(true, ['gt:0']),
+                Rule::when(true, ['gte:0']),
+            ],
+        ]);
+
+        return response()->json($validated['numbers']);
+    }
 }

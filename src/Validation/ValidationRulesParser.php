@@ -122,6 +122,12 @@ trait ValidationRulesParser
 
             array_shift($segments);
 
+            if (empty($segments)) {
+                $structure[$segment]->itemType = $type;
+
+                return;
+            }
+
             $this->buildTypeStructure($itemShape, $segments, $type);
 
         } else {
