@@ -30,8 +30,8 @@ class EloquentModel extends ClassExtension
             return null;
         }
 
-        if (isset(EloquentModel::$cache[$phpClass->className])) {
-            return EloquentModel::$cache[$phpClass->className];
+        if (isset(EloquentModel::$returnTypeCache[$phpClass->className])) {
+            return EloquentModel::$returnTypeCache[$phpClass->className];
         }
 
         $modelType = $this->getTypeFromToArrayMethod($phpClass);
@@ -40,9 +40,21 @@ class EloquentModel extends ClassExtension
             $modelType = $this->getModelObjectType($phpClass);
         }
 
-        EloquentModel::$cache[$phpClass->className] = $modelType;
+        EloquentModel::$returnTypeCache[$phpClass->className] = $modelType;
 
         return $modelType;
+    }
+
+
+    public function getPropertyType(PhpClass $phpClass, string $propertyName): ?Type
+    {
+        if (! is_subclass_of($phpClass->className, Model::class)) {
+            return null;
+        }
+
+        $objectType = $this->getModelObjectType($phpClass);
+
+        return $objectType->properties[$propertyName] ?? null;
     }
 
 
@@ -76,6 +88,10 @@ class EloquentModel extends ClassExtension
      */
     protected function getModelObjectType(PhpClass $phpClass): ObjectType
     {
+        if (isset(EloquentModel::$objectTypeCache[$phpClass->className])) {
+            return EloquentModel::$objectTypeCache[$phpClass->className];
+        }
+
         $objectType = new ObjectType(className: $phpClass->className);
 
         try {
@@ -87,6 +103,8 @@ class EloquentModel extends ClassExtension
             if ($phpClass->scope->isDebugModeEnabled()) {
                 throw new AutoDocException('Error reading database model properties for ' . $phpClass->className . ': ', $exception);
             }
+
+            EloquentModel::$objectTypeCache[$phpClass->className] = $objectType;
 
             return $objectType;
         }
@@ -121,12 +139,12 @@ class EloquentModel extends ClassExtension
 
                 $propertyType = match ($cast) {
                     'array' => new ArrayType,
-                    'boolean' => new BoolType,
+                    'bool', 'boolean' => new BoolType,
                     'collection' => new ArrayType,
-                    'date' => new StringType,
-                    'datetime' => new StringType,
-                    'immutable_date' => new StringType,
-                    'immutable_datetime' => new StringType,
+                    'date' => new StringType(format: 'date'),
+                    'datetime' => new StringType(format: 'date-time'),
+                    'immutable_date' => new StringType(format: 'date'),
+                    'immutable_datetime' => new StringType(format: 'date-time'),
                     'double' => new FloatType,
                     'encrypted' => new StringType,
                     'encrypted:array' => new ArrayType,
@@ -134,7 +152,7 @@ class EloquentModel extends ClassExtension
                     'encrypted:object' => new ObjectType,
                     'float' => new FloatType,
                     'hashed' => new StringType,
-                    'integer' => new IntegerType,
+                    'int', 'integer' => new IntegerType,
                     'object' => new ObjectType,
                     'real' => new FloatType,
                     'string' => new StringType,
@@ -181,6 +199,8 @@ class EloquentModel extends ClassExtension
 
         $objectType->properties = $phpClass->handlePhpDocPropertyTags($objectType->properties);
 
+        EloquentModel::$objectTypeCache[$phpClass->className] = $objectType;
+
         return $objectType;
     }
 
@@ -190,7 +210,9 @@ class EloquentModel extends ClassExtension
         return match ($typeName) {
             'bit', 'int', 'bigint', 'smallint', 'tinyint', 'integer' => new IntegerType,
             'float', 'double', 'decimal' => new FloatType,
-            'string', 'varchar', 'nvarchar', 'text', 'nchar', 'datetime', 'date', 'uniqueidentifier' => new StringType,
+            'string', 'varchar', 'nvarchar', 'text', 'nchar', 'uniqueidentifier' => new StringType,
+            'datetime' => new StringType(format: 'date-time'),
+            'date' => new StringType(format: 'date'),
             'bool', 'boolean' => new BoolType,
             default => new UnknownType,
         };
@@ -200,5 +222,10 @@ class EloquentModel extends ClassExtension
     /**
      * @var array<class-string, Type>
      */
-    private static array $cache = [];
+    private static array $returnTypeCache = [];
+
+    /**
+     * @var array<class-string, ObjectType>
+     */
+    private static array $objectTypeCache = [];
 }

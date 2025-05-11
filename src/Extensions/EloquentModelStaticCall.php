@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\Scope;
+use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallExtension;
@@ -17,19 +18,52 @@ class EloquentModelStaticCall extends StaticCallExtension
 {
     public function getReturnType(StaticCall $methodCall, Scope $scope): ?Type
     {
-        $methods = [
-            'insert' => fn () => new BoolType,
-            // 'find' => fn () => ,
-        ];
-
-        if ($methodCall->name instanceof Node\Identifier
-            && isset($methods[$methodCall->name->name])
-            && $methodCall->class instanceof Node\Name
-            && $scope->getResolvedClassName($methodCall->class) === Model::class
-        ) {
-            return $methods[$methodCall->name->name]();
+        if (! ($methodCall->name instanceof Node\Identifier)) {
+            return null;
         }
 
-        return null;
+        if (! ($methodCall->class instanceof Node\Name)) {
+            return null;
+        }
+
+        $supportedMethods = [
+            'insert',
+            'find',
+            'first',
+            'firstOrFail',
+            'findOrFail',
+            'firstOrNew',
+            'firstOrCreate',
+            'updateOrCreate',
+            'create',
+            'all',
+            'get',
+        ];
+
+        $methodName = $methodCall->name->name;
+
+        if (! in_array($methodName, $supportedMethods)) {
+            return null;
+        }
+
+        $className = $scope->getResolvedClassName($methodCall->class);
+
+        if (! $className) {
+            return null;
+        }
+
+        if (! is_subclass_of($className, Model::class)) {
+            return null;
+        }
+
+        if ($methodName === 'insert') {
+            return new BoolType;
+        }
+
+        if ($methodName === 'all' || $methodName === 'get') {
+            return new ArrayType(itemType: $scope->getPhpClassInDeeperScope($className)->resolveType());
+        }
+
+        return $scope->getPhpClassInDeeperScope($className)->resolveType();
     }
 }
