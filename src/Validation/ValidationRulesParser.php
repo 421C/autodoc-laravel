@@ -77,10 +77,13 @@ trait ValidationRulesParser
         }
 
         if ($hasWildcardRoot) {
-            return new ArrayType(itemType: $structured['*']);
+            $resultType = new ArrayType(itemType: $structured['*']);
+
+        } else {
+            $resultType = new ObjectType($structured);
         }
 
-        return new ObjectType($structured);
+        return $this->checkRequiredContainerTypes($resultType);
     }
 
     /**
@@ -564,6 +567,41 @@ trait ValidationRulesParser
                 $confirmationKey = explode(':', $rule, 2)[1] ?? null;
 
                 $type = new ConfirmedType($confirmationKey, $type);
+            }
+        }
+
+        return $type;
+    }
+
+    /**
+     * @template T of Type
+     * @param T $type
+     * @return T
+     */
+    protected function checkRequiredContainerTypes(Type $type): Type
+    {
+        if ($type->required) {
+            return $type;
+        }
+
+        if ($type instanceof ArrayType) {
+            if ($type->shape) {
+                foreach ($type->shape as $key => $propType) {
+                    $type->shape[$key] = $this->checkRequiredContainerTypes($propType);
+
+                    if ($propType->required) {
+                        $type->required = true;
+                    }
+                }
+            }
+
+        } else if ($type instanceof ObjectType) {
+            foreach ($type->properties as $key => $propType) {
+                $type->properties[$key] = $this->checkRequiredContainerTypes($propType);
+
+                if ($propType->required) {
+                    $type->required = true;
+                }
             }
         }
 

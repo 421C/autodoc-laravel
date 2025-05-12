@@ -865,14 +865,25 @@ class Controller
                     'schema' => [
                         'type' => 'object',
                         'properties' => [
-                            'website' => [
-                                'type' => 'string',
-                                'format' => 'uri',
-                            ],
                             'ip' => [
                                 'type' => 'string',
                                 'format' => 'ipv6',
                             ],
+                            'website' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'url' => [
+                                        'type' => 'string',
+                                        'format' => 'uri',
+                                    ],
+                                ],
+                                'required' => [
+                                    'url',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'website',
                         ],
                     ],
                 ],
@@ -894,9 +905,20 @@ class Controller
                                             'format' => 'ipv6',
                                         ],
                                         'website' => [
-                                            'type' => 'string',
-                                            'format' => 'uri',
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'url' => [
+                                                    'type' => 'string',
+                                                    'format' => 'uri',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'url',
+                                            ],
                                         ],
+                                    ],
+                                    'required' => [
+                                        'website',
                                     ],
                                 ],
                             ],
@@ -910,7 +932,7 @@ class Controller
     public function route13(): JsonResponse
     {
         $validated = request()->validate([
-            'website' => 'url',
+            'website.url' => 'url|required',
             'ip' => 'ipv6',
         ]);
 
