@@ -274,6 +274,10 @@ trait ValidationRulesParser
             }
         }
 
+        if ($type instanceof UnknownType && in_array('string', $rules)) {
+            $type = new StringType;
+        }
+
         if ($type instanceof IntegerType || $type instanceof StringType || $type instanceof UnknownType) {
             foreach ($rules as $rule) {
                 if ($rule instanceof Rule) {
@@ -344,6 +348,8 @@ trait ValidationRulesParser
                                         $type = new StringType($enumValues);
                                     }
 
+                                    $type->isEnum = true;
+
                                 } else {
                                     $type = new UnknownType;
                                 }
@@ -358,7 +364,11 @@ trait ValidationRulesParser
                         $type->setEnumValues(array_map(intval(...), $enumValues));
 
                     } else {
-                        $type = new StringType($enumValues);
+                        if (! ($type instanceof StringType)) {
+                            $type = new StringType;
+                        }
+
+                        $type->setEnumValues($enumValues);
                     }
                 }
             }
@@ -370,10 +380,10 @@ trait ValidationRulesParser
                     $arg = $rule->args[0] ?? null;
 
                     if ($arg && $arg->node instanceof Node\Arg) {
-                        $enumClassType = $arg->scope->resolveType($arg->node->value);
+                        $enumClassNameType = $arg->scope->resolveType($arg->node->value);
 
-                        if ($enumClassType instanceof StringType && is_string($enumClassType->value) && enum_exists($enumClassType->value)) {
-                            $enumClass = $arg->scope->getPhpClassInDeeperScope($enumClassType->value);
+                        if ($enumClassNameType instanceof StringType && is_string($enumClassNameType->value) && enum_exists($enumClassNameType->value)) {
+                            $enumClass = $arg->scope->getPhpClassInDeeperScope($enumClassNameType->value);
 
                             $type = (new PhpEnum($enumClass))->resolveType();
                         }
@@ -400,6 +410,21 @@ trait ValidationRulesParser
                     }
                 }
             }
+        }
+
+        if ($type instanceof IntegerType) {
+            $type->allowTrueAsInteger = ! in_array('numeric', $rules);
+            $type->isString = in_array('string', $rules);
+            $type->isStrictInteger = in_array('integer', $rules);
+        }
+
+        if ($type instanceof NumberType) {
+            if (in_array('integer', $rules)) {
+                $type = new IntegerType;
+                $type->isStrictInteger = true;
+            }
+
+            $type->isString = in_array('string', $rules);
         }
 
         foreach ($rules as $rule) {

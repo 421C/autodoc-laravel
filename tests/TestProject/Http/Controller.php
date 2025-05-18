@@ -773,7 +773,8 @@ class Controller
                             'type' => 'object',
                             'properties' => [
                                 'how many' => [
-                                    'type' => 'number',
+                                    'type' => 'string',
+                                    'format' => 'numeric',
                                 ],
                                 'token' => [
                                     'type' => 'string',
@@ -999,5 +1000,88 @@ class Controller
         ]);
 
         return response()->json($validated['numbers']);
+    }
+
+
+    /**
+     * Route 15
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 15',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'int' => [
+                                'type' => 'integer',
+                            ],
+                            'int_string' => [
+                                'type' => 'string',
+                                'format' => 'integer',
+                            ],
+                            'numeric' => [
+                                'type' => 'number',
+                            ],
+                            'numeric_integer' => [
+                                'type' => 'integer',
+                            ],
+                            'numeric_string' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'numeric',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'int_string' => [
+                                    'type' => 'string',
+                                    'format' => 'integer',
+                                ],
+                                'numeric_string' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'numeric',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function route15(): JsonResponse
+    {
+        $validated = request()->validate([
+            'numeric' => 'numeric',
+            'numeric_string' => 'string|numeric|nullable',
+            'int' => 'integer',
+            'int_string' => 'integer|string',
+            'numeric_integer' => 'numeric|integer',
+        ]);
+
+        return response()->json([
+            'numeric_string' => $validated['numeric_string'],
+            'int_string' => $validated['int_string'],
+        ]);
     }
 }

@@ -2,8 +2,8 @@
 
 namespace AutoDoc\Laravel\Validation;
 
+use AutoDoc\Config;
 use AutoDoc\DataTypes\Type;
-use AutoDoc\DataTypes\UnknownType;
 
 
 class ConfirmedType extends Type
@@ -14,8 +14,8 @@ class ConfirmedType extends Type
     ) {}
 
 
-    public function toSchema(): array
+    public function toSchema(?Config $config = null): array
     {
-        return $this->type->toSchema();
+        return $this->type->toSchema($config);
     }
 }
