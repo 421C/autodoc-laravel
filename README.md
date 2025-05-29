@@ -4,7 +4,7 @@ This is a Laravel integration of [PHP autodoc](https://github.com/421C/autodoc-p
 
 PHP autodoc automatically generates OpenAPI 3.1.0 documentation for your PHP projects by analyzing your codebase. This ensures your API docs are always up-to-date and easy to maintain.
 
-This package provides support for Laravel routes, request validation, database models, API resources and more.
+This package provides seamless integration with routes, request validation, database models, API resources, and more.
 
 **Visit [phpautodoc.com](https://phpautodoc.com) to see full documentation.**
 
