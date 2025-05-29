@@ -109,16 +109,16 @@ trait ValidationRulesParser
                 $structure[$segment] = new ArrayType(itemType: new ArrayType(shape: []));
 
             } else if (! ($structure[$segment] instanceof ArrayType)) {
-                $structure[$segment] = new ArrayType(itemType: new ArrayType(shape: []));
+                $structure[$segment] = (new ArrayType(itemType: new ArrayType(shape: [])))->setRequired($structure[$segment]->required);
 
             } else if ($structure[$segment]->itemType === null) {
                 $structure[$segment]->itemType = new ArrayType(shape: []);
 
             } else if (!($structure[$segment]->itemType instanceof ArrayType)) {
-                $structure[$segment]->itemType = new ArrayType(shape: []);
+                $structure[$segment]->itemType = (new ArrayType(shape: []))->setRequired($structure[$segment]->itemType->required);
 
             } else if (! $structure[$segment]->itemType->shape) {
-                $structure[$segment]->itemType = new ArrayType(shape: []);
+                $structure[$segment]->itemType = (new ArrayType(shape: []))->setRequired($structure[$segment]->itemType->required);
             }
 
             $itemShape = &$structure[$segment]->itemType->shape;
@@ -138,10 +138,10 @@ trait ValidationRulesParser
                 $structure[$segment] = new ArrayType(shape: []);
 
             } else if (!($structure[$segment] instanceof ArrayType)) {
-                $structure[$segment] = new ArrayType(shape: []);
+                $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
 
             } else if (! $structure[$segment]->shape) {
-                $structure[$segment] = new ArrayType(shape: []);
+                $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
             }
 
             /** @phpstan-ignore argument.type */

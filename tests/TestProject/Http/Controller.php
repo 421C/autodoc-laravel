@@ -1084,4 +1084,128 @@ class Controller
             'int_string' => $validated['int_string'],
         ]);
     }
+
+
+    /**
+     * Route 16
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 16',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'data' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'codes' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                ],
+                                'required' => [
+                                    'codes',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'data',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [],
+    ])]
+    public function route16(): void
+    {
+        request()->validate([
+            'data.codes' => 'required',
+            'data.codes.*' => 'string',
+        ]);
+    }
+
+
+    /**
+     * Route 17
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 17',
+        'description' => '',
+        'parameters' => [],
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'user' => [
+                                'allOf' => [
+                                    [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'email' => [
+                                                'type' => 'string',
+                                            ],
+                                            'created_at' => [
+                                                'type' => 'string',
+                                                'format' => 'date-time',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                        ],
+                                    ],
+                                    [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'status' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'status',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'user',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [],
+    ])]
+    public function route17(): void
+    {
+        request()->validate([
+            /**
+             * @var User&object{status: string}
+             */
+            'user' => 'present',
+        ]);
+    }
 }
