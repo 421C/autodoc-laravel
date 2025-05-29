@@ -470,7 +470,7 @@ trait ValidationRulesParser
             $type = new UnionType([$type, new NullType]);
         }
 
-        if (in_array('required', $rules)) {
+        if (in_array('required', $rules) || in_array('present', $rules)) {
             $type->required = true;
         }
 
