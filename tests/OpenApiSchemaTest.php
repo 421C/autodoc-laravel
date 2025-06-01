@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace AutoDoc\Laravel\Tests;
 
-use AutoDoc\Config;
+use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Laravel\Providers\AutoDocServiceProvider;
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\TestRouteProvider;
@@ -14,8 +14,6 @@ use ReflectionClass;
 use ReflectionFunction;
 
 /**
- * @phpstan-import-type ConfigArray from Config
- *
  * @phpstan-type Schema array{
  *     paths: array<string, array<string, array<string, mixed>>>,
  * }
@@ -30,7 +28,7 @@ class OpenApiSchemaTest extends \Orchestra\Testbench\TestCase
      * @param  \Illuminate\Foundation\Application  $app
      * @return array<int, class-string<\Illuminate\Support\ServiceProvider>>
      */
-    protected function getPackageProviders($app) 
+    protected function getPackageProviders($app)
     {
         return [
             AutoDocServiceProvider::class,
@@ -42,10 +40,7 @@ class OpenApiSchemaTest extends \Orchestra\Testbench\TestCase
     #[Test]
     public function checkOpenApiJsonSchema(): void
     {
-        /** @var ConfigArray */
-        $configArray = config('autodoc');
-
-        $config = new Config($configArray);
+        $config = (new ConfigLoader)->load();
 
         $workspace = Workspace::getDefault($config);
 

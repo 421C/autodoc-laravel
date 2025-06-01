@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Console\Commands;
 
 use AutoDoc\Commands\ExportOpenApiSchema as ExportCommand;
 use AutoDoc\Config;
+use AutoDoc\Laravel\ConfigLoader;
 use Illuminate\Console\Command;
 
 /**
@@ -17,10 +18,7 @@ class ExportOpenApiSchema extends Command
 
     public function handle(): int
     {
-        /** @var ConfigArray */
-        $configArray = config('autodoc');
-
-        $config = new Config($configArray);
+        $config = (new ConfigLoader)->load();
 
         /** @var ?string */
         $workspaceKey = $this->argument('workspace');

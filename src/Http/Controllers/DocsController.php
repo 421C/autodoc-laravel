@@ -2,15 +2,13 @@
 
 namespace AutoDoc\Laravel\Http\Controllers;
 
-use AutoDoc\Config;
 use AutoDoc\DocViewer;
+use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Workspace;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 
-/**
- * @phpstan-import-type ConfigArray from Config
- */
+
 class DocsController extends Controller
 {
     public function getView(): void
@@ -48,10 +46,7 @@ class DocsController extends Controller
         /** @var ?string */
         $accessToken = request('token');
 
-        /** @var ConfigArray */
-        $configArray = config('autodoc');
-
-        $config = new Config($configArray);
+        $config = (new ConfigLoader)->load();
 
         if ($accessToken) {
             $workspace = Workspace::findUsingToken($accessToken, $config);

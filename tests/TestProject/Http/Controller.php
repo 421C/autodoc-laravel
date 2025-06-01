@@ -23,9 +23,6 @@ use Illuminate\Validation\Rules\Password;
 class Controller
 {
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [
@@ -68,7 +65,6 @@ class Controller
             'description' => '',
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route1(Request $request): void
     {
@@ -82,9 +78,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [
@@ -226,9 +219,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [
@@ -281,7 +271,6 @@ class Controller
             'description' => '',
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route3(Request $request): void
     {
@@ -304,9 +293,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [
@@ -401,9 +387,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [
@@ -461,10 +444,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -515,10 +494,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -577,10 +552,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -643,10 +614,6 @@ class Controller
 
 
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -697,8 +664,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 10',
         'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -762,7 +727,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 11',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -797,7 +761,6 @@ class Controller
             ],
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route11(): void
     {
@@ -815,7 +778,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 12',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -842,7 +804,6 @@ class Controller
             ],
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route12(): void
     {
@@ -858,7 +819,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 13',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -949,7 +909,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 14',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -1009,7 +968,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 15',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -1092,7 +1050,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 16',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -1123,7 +1080,6 @@ class Controller
             ],
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route16(): void
     {
@@ -1140,7 +1096,6 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 17',
         'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -1197,7 +1152,6 @@ class Controller
             ],
             'required' => false,
         ],
-        'responses' => [],
     ])]
     public function route17(): void
     {

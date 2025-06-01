@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
@@ -9,9 +9,6 @@ use Illuminate\Http\Request;
 class InvokableController
 {
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
-        'parameters' => [],
         'requestBody' => [
             'content' => [
                 'application/json' => [

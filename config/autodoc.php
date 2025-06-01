@@ -28,7 +28,7 @@ return [
      */
     'laravel' => [
         /**
-         * Documentation page URL.
+         * Documentation page URL. Set to null to disable documentation routes.
          */
         'url' => '/api-docs',
 
@@ -48,6 +48,11 @@ return [
          * Format automatically generated descriptions. Specify a string in `sprintf` format or null.
          */
         'format_generated_descriptions' => '<p style="color: var(--color-text-muted); font-size: 11px;">%s</p>',
+
+        /**
+         * When enabled, will load all autodoc-laravel built-in extensions.
+         */
+        'autoload_builtin_extensions' => true,
     ],
 
     /**
@@ -138,19 +143,11 @@ return [
 
     /**
      * List of extensions that will be loaded.
+     *
+     * If `laravel.autoload_builtin_extensions` is enabled, all autodoc-laravel built-in
+     * extensions will be loaded automatically so you don't have to specify them here.
      */
-    'extensions' => [
-        AutoDoc\Laravel\Extensions\RequestValidate::class,
-        AutoDoc\Laravel\Extensions\ResponseJson::class,
-        AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
-        AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
-        AutoDoc\Laravel\Extensions\EloquentModel::class,
-        AutoDoc\Laravel\Extensions\CustomFormRequest::class,
-        AutoDoc\Laravel\Extensions\ResourceCollectionJson::class,
-        AutoDoc\Laravel\Extensions\ResourceJson::class,
-        AutoDoc\Laravel\Extensions\ResourceStaticCall::class,
-        AutoDoc\Laravel\Extensions\RedirectResponse::class,
-    ],
+    'extensions' => [],
 
     /**
      * Enable or disable OpenApi schema caching.
