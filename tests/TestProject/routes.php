@@ -1,8 +1,10 @@
 <?php declare(strict_types=1);
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
+use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\Controller;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
+use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/test/1', [Controller::class, 'route1']);
@@ -22,18 +24,19 @@ Route::get('/test/14', [Controller::class, 'route14']);
 Route::get('/test/15', [Controller::class, 'route15']);
 Route::get('/test/16', [Controller::class, 'route16']);
 Route::get('/test/17', [Controller::class, 'route17']);
+Route::get('/test/18/{rocket}', [Controller::class, 'route18']);
+Route::get('/test/19/{state}', [Controller::class, 'route19']);
+Route::get('/test/20/{rocketId}', [Controller::class, 'route20']);
 
 Route::get('/test/invoke', InvokableController::class);
 
-Route::get('/test/callable1', (
+Route::get('/test/closure1', (
     /**
      * @return object{test: int}
      */
     #[ExpectedOperationSchema([
         'summary' => '',
         'description' => '',
-        'parameters' => [],
-        'requestBody' => null,
         'responses' => [
             200 => [
                 'content' => [
@@ -60,3 +63,65 @@ Route::get('/test/callable1', (
         ]);
     }
 ));
+
+Route::get('/test/closure2/{category}/search/{rocket:launch_date?}', (
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'category',
+                'required' => true,
+                'schema' => [
+                    'type' => 'string',
+                    'description' => '[RocketCategory](#/schemas/RocketCategory)',
+                    'enum' => [
+                        'big',
+                        'small',
+                    ],
+                ],
+            ],
+            [
+                'in' => 'path',
+                'name' => 'rocket',
+                'required' => false,
+                'schema' => [
+                    'type' => 'string',
+                    'format' => 'date',
+                ],
+            ],
+        ],
+    ])] function (RocketCategory $category, Rocket $rocket = null) {}
+));
+
+Route::get('/test/closure3/{uuid}/{name}/{version}', (
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'uuid',
+                'required' => true,
+                'schema' => [
+                    'type' => 'string',
+                    'format' => 'uuid',
+                ],
+            ],
+            [
+                'in' => 'path',
+                'name' => 'name',
+                'required' => true,
+                'schema' => [
+                    'type' => 'string',
+                    'pattern' => '^[a-zA-Z0-9]+$',
+                ],
+            ],
+            [
+                'in' => 'path',
+                'name' => 'version',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+    ])] function (string $uuid, string $name, int $version) {}
+))->whereUuid('uuid')->whereAlphaNumeric('name');

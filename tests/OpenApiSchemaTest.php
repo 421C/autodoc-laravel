@@ -9,6 +9,7 @@ use AutoDoc\Laravel\Tests\TestProject\TestRouteProvider;
 use AutoDoc\Laravel\Tests\Traits\ComparesSchemaArrays;
 use AutoDoc\Workspace;
 use Closure;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 use ReflectionFunction;
@@ -20,7 +21,7 @@ use ReflectionFunction;
  */
 class OpenApiSchemaTest extends \Orchestra\Testbench\TestCase
 {
-    use ComparesSchemaArrays;
+    use RefreshDatabase, ComparesSchemaArrays;
 
     /**
      * Get package providers.
@@ -36,6 +37,10 @@ class OpenApiSchemaTest extends \Orchestra\Testbench\TestCase
         ];
     }
 
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(__DIR__ . '/TestProject/migrations');
+    }
 
     #[Test]
     public function checkOpenApiJsonSchema(): void

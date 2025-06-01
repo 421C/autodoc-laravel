@@ -8,6 +8,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\User;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserCollection;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
+use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1162,4 +1163,97 @@ class Controller
             'user' => 'present',
         ]);
     }
+
+
+    /**
+     * Route 18
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 18',
+        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'rocket',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route18(Rocket $rocket): mixed
+    {
+        return $rocket;
+    }
+
+
+    /**
+     * Route 19
+     *
+     * Implicit enum binding
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 19',
+        'description' => 'Implicit enum binding',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'state',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => '[StateEnum](#/schemas/StateEnum)',
+                    'enum' => [
+                        1,
+                        2,
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route19(StateEnum $state): void {}
+
+
+    /**
+     * Route 20
+     *
+     * @param int $rocketId Description of the identifier.
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 20',
+        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'rocketId',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => 'Description of the identifier.',
+                ],
+            ],
+        ],
+    ])]
+    public function route20(Request $request, int $rocketId): void {}
 }
