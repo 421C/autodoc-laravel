@@ -54,7 +54,7 @@ class EloquentModel extends ClassExtension
 
         $objectType = $this->getModelObjectType($phpClass);
 
-        return $objectType->properties[$propertyName] ?? null;
+        return $objectType->properties[$propertyName] ?? $objectType->hiddenProperties[$propertyName] ?? null;
     }
 
 
@@ -126,13 +126,8 @@ class EloquentModel extends ClassExtension
              */
             $propertyName = $column['name'];
 
-            if (count($visibleProps) > 0 && ! isset($visibleProps[$propertyName])) {
-                continue;
-            }
-
-            if (count($hiddenProps) > 0 && isset($hiddenProps[$propertyName])) {
-                continue;
-            }
+            $propertyIsHidden = (count($visibleProps) > 0 && ! isset($visibleProps[$propertyName]))
+                || (count($hiddenProps) > 0 && isset($hiddenProps[$propertyName]));
 
             if (isset($modelCasts[$propertyName])) {
                 $cast = $modelCasts[$propertyName];
@@ -187,7 +182,12 @@ class EloquentModel extends ClassExtension
                 $propertyType = new UnionType([$propertyType, new NullType]);
             }
 
-            $objectType->properties[$propertyName] = $propertyType;
+            if ($propertyIsHidden) {
+                $objectType->hiddenProperties[$propertyName] = $propertyType;
+
+            } else {
+                $objectType->properties[$propertyName] = $propertyType;
+            }
         }
 
         foreach ($model->getAppends() as $appendedAttributeName) {
