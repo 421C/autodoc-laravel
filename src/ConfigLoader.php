@@ -18,7 +18,10 @@ class ConfigLoader
 
         if (config('autodoc.laravel.autoload_builtin_extensions') ?? true) {
             $configArray['extensions'] = array_unique([
+                \AutoDoc\Laravel\Extensions\EloquentModelTypeScriptExport::class,
+
                 ...$configArray['extensions'],
+
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
@@ -29,6 +32,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\ResourceJson::class,
                 \AutoDoc\Laravel\Extensions\ResourceStaticCall::class,
                 \AutoDoc\Laravel\Extensions\RedirectResponse::class,
+                \AutoDoc\Laravel\Extensions\LengthAwarePaginatorJson::class,
                 \AutoDoc\Laravel\Extensions\RouteParamResolver::class,
             ]);
         }

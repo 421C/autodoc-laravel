@@ -177,4 +177,16 @@ return [
          */
         'ignore_dynamic_method_errors' => true,
     ],
+
+    /**
+     * Read `@autodoc` tags in typescript code and export typescript schemas.
+     */
+    'typescript' => [
+        'working_directory' => resource_path(),
+        'file_extensions' => ['ts', 'tsx', 'vue'],
+        'indent' => '    ',
+        'string_quote' => "'",
+        'add_semicolons' => false,
+        'show_values_for_scalar_types' => true,
+    ],
 ];

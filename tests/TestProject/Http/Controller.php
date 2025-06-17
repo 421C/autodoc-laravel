@@ -8,6 +8,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\User;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserCollection;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
+use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
@@ -350,6 +351,10 @@ class Controller
                                     ],
                                 ],
                             ],
+                            'required' => [
+                                'status',
+                                'n',
+                            ],
                         ],
                     ],
                 ],
@@ -452,18 +457,25 @@ class Controller
                         'schema' => [
                             'type' => 'object',
                             'properties' => [
-                                'created_at' => [
-                                    'format' => 'date-time',
-                                    'type' => 'string',
-                                ],
-                                'email' => [
-                                    'type' => 'string',
-                                ],
                                 'id' => [
                                     'type' => 'integer',
                                 ],
                                 'name' => [
                                     'type' => 'string',
+                                ],
+                                'email' => [
+                                    'type' => 'string',
+                                ],
+                                'created_at' => [
+                                    'format' => 'date-time',
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'format' => 'date-time',
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
                                 ],
                                 'status' => [
                                     'description' => '[StateEnum](#/schemas/StateEnum)',
@@ -473,13 +485,14 @@ class Controller
                                     ],
                                     'type' => 'integer',
                                 ],
-                                'updated_at' => [
-                                    'format' => 'date-time',
-                                    'type' => [
-                                        'string',
-                                        'null',
-                                    ],
-                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'email',
+                                'created_at',
+                                'updated_at',
+                                'status',
                             ],
                         ],
                     ],
@@ -535,6 +548,14 @@ class Controller
                                                     'null',
                                                 ],
                                             ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'email',
+                                            'created_at',
+                                            'updated_at',
+                                            'status',
                                         ],
                                     ],
                                 ],
@@ -594,12 +615,24 @@ class Controller
                                                 ],
                                             ],
                                         ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'email',
+                                            'created_at',
+                                            'updated_at',
+                                            'status',
+                                        ],
                                     ],
                                 ],
                                 'count' => [
                                     'description' => 'Number of users returned.',
                                     'type' => 'integer',
                                 ],
+                            ],
+                            'required' => [
+                                'users',
+                                'count',
                             ],
                         ],
                     ],
@@ -644,6 +677,13 @@ class Controller
                                             'null',
                                         ],
                                     ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'email',
+                                    'created_at',
+                                    'updated_at',
                                 ],
                             ],
                         ],
@@ -698,11 +738,22 @@ class Controller
                                                 ],
                                             ],
                                         ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'email',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
                                     ],
                                 ],
                                 'count' => [
                                     'type' => 'integer',
                                 ],
+                            ],
+                            'required' => [
+                                'collection',
+                                'count',
                             ],
                         ],
                     ],
@@ -884,6 +935,9 @@ class Controller
                                     ],
                                 ],
                             ],
+                            'required' => [
+                                'data',
+                            ],
                         ],
                     ],
                 ],
@@ -1021,6 +1075,10 @@ class Controller
                                     'format' => 'numeric',
                                 ],
                             ],
+                            'required' => [
+                                'numeric_string',
+                                'int_string',
+                            ],
                         ],
                     ],
                 ],
@@ -1105,43 +1163,39 @@ class Controller
                         'type' => 'object',
                         'properties' => [
                             'user' => [
-                                'allOf' => [
-                                    [
-                                        'type' => 'object',
-                                        'properties' => [
-                                            'id' => [
-                                                'type' => 'integer',
-                                            ],
-                                            'name' => [
-                                                'type' => 'string',
-                                            ],
-                                            'email' => [
-                                                'type' => 'string',
-                                            ],
-                                            'created_at' => [
-                                                'type' => 'string',
-                                                'format' => 'date-time',
-                                            ],
-                                            'updated_at' => [
-                                                'type' => [
-                                                    'string',
-                                                    'null',
-                                                ],
-                                                'format' => 'date-time',
-                                            ],
-                                        ],
+                                'type' => 'object',
+                                'properties' => [
+                                    'id' => [
+                                        'type' => 'integer',
                                     ],
-                                    [
-                                        'type' => 'object',
-                                        'properties' => [
-                                            'status' => [
-                                                'type' => 'string',
-                                            ],
-                                        ],
-                                        'required' => [
-                                            'status',
-                                        ],
+                                    'name' => [
+                                        'type' => 'string',
                                     ],
+                                    'email' => [
+                                        'type' => 'string',
+                                    ],
+                                    'created_at' => [
+                                        'type' => 'string',
+                                        'format' => 'date-time',
+                                    ],
+                                    'updated_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'status' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'email',
+                                    'created_at',
+                                    'updated_at',
+                                    'status',
                                 ],
                             ],
                         ],
@@ -1195,6 +1249,10 @@ class Controller
                                 'name' => [
                                     'type' => 'string',
                                 ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
                             ],
                         ],
                     ],
@@ -1256,4 +1314,202 @@ class Controller
         ],
     ])]
     public function route20(Request $request, int $rocketId): void {}
+
+
+    /**
+     * Route 21
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 21',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'last_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'last_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'links' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'active' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'url' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'total' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'first_page_url',
+                                'from',
+                                'last_page',
+                                'last_page_url',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                                'total',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route21(): JsonResponse
+    {
+        $rockets = Rocket::paginate(100);
+
+        return response()->json($rockets);
+    }
+
+
+    /**
+     * Route 22
+     *
+     * @request-header planet-id {description: 'Planet ID'}
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 22',
+        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'header',
+                'name' => 'planet-id',
+                'description' => 'Planet ID',
+                'schema' => [
+                    'type' => 'string',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route22(): mixed
+    {
+        $planet = new Planet;
+
+        $planet->id = 1;
+
+        return $planet;
+    }
 }

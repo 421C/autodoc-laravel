@@ -27,6 +27,8 @@ Route::get('/test/17', [Controller::class, 'route17']);
 Route::get('/test/18/{rocket}', [Controller::class, 'route18']);
 Route::get('/test/19/{state}', [Controller::class, 'route19']);
 Route::get('/test/20/{rocketId}', [Controller::class, 'route20']);
+Route::get('/test/21', [Controller::class, 'route21']);
+Route::get('/test/22', [Controller::class, 'route22']);
 
 Route::get('/test/invoke', InvokableController::class);
 
@@ -83,7 +85,6 @@ Route::get('/test/closure2/{category}/search/{rocket:launch_date?}', (
             [
                 'in' => 'path',
                 'name' => 'rocket',
-                'required' => false,
                 'schema' => [
                     'type' => 'string',
                     'format' => 'date',

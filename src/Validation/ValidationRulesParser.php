@@ -155,7 +155,7 @@ trait ValidationRulesParser
 
         if ($value instanceof Type) {
             /**
-             * If parameter type specified with `@var` use it.
+             * If parameter type specified with `@var` - use it.
              * Otherwise extract laravel validation rules to determine parameter type.
              */
             if ($value instanceof UnresolvedPhpDocType) {
@@ -200,6 +200,9 @@ trait ValidationRulesParser
                     if ($resolvedType instanceof StringType) {
                         if (is_string($resolvedType->value)) {
                             $rules[] = $resolvedType->value;
+
+                        } else if (is_array($resolvedType->value)) {
+                            $rules = array_merge($rules, $resolvedType->value);
                         }
 
                     } else if ($resolvedType instanceof ObjectType) {
@@ -301,26 +304,35 @@ trait ValidationRulesParser
                                 $isStringType = false;
                                 $isIntType = false;
                                 $isFloatType = false;
+                                $isNumberType = false;
                                 $enumValues = [];
 
                                 foreach ($allowedValueTypes as $allowedType) {
                                     $allowedType = $allowedType->unwrapType();
 
-                                    if ($allowedType instanceof StringType && is_string($allowedType->value)) {
+                                    if ($allowedType instanceof StringType) {
                                         $isStringType = true;
 
-                                    } else if ($allowedType instanceof IntegerType && is_int($allowedType->value)) {
+                                    } else if ($allowedType instanceof IntegerType) {
                                         $isIntType = true;
 
-                                    } else if ($allowedType instanceof FloatType && is_float($allowedType->value)) {
+                                    } else if ($allowedType instanceof FloatType) {
                                         $isFloatType = true;
+
+                                    } else if ($allowedType instanceof NumberType) {
+                                        $isNumberType = true;
 
                                     } else {
                                         $enumValues = [];
                                         break;
                                     }
 
-                                    $enumValues[] = $allowedType->value;
+                                    if (is_array($allowedType->value)) {
+                                        $enumValues = array_map(fn ($value) => $value, $allowedType->value);
+
+                                    } else {
+                                        $enumValues[] = $allowedType->value;
+                                    }
                                 }
 
                                 if ($enumValues) {
@@ -331,7 +343,7 @@ trait ValidationRulesParser
                                         /** @var array<string> $enumValues */
                                         $type = new StringType($enumValues);
 
-                                    } else if ($isIntType && $isFloatType) {
+                                    } else if ($isNumberType || ($isIntType && $isFloatType)) {
                                         /** @var array<int|float> $enumValues */
                                         $type = new NumberType($enumValues);
 

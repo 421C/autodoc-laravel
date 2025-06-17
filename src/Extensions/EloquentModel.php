@@ -70,7 +70,7 @@ class EloquentModel extends ClassExtension
         $modelToArrayMethodDeclaringClass = $modelToArrayMethod->getReflection()?->class;
 
         if ($modelToArrayMethodDeclaringClass && $modelToArrayMethodDeclaringClass !== Model::class) {
-            $modelArrayRepresentation = $modelToArrayMethod->getReturnType()->unwrapType();
+            $modelArrayRepresentation = $modelToArrayMethod->getReturnType()->unwrapType($phpClass->scope->config);
 
             if ($modelArrayRepresentation instanceof ArrayType) {
                 if (isset($modelArrayRepresentation->shape) || isset($modelArrayRepresentation->itemType)) {

@@ -7,7 +7,9 @@ use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallExtension;
+use AutoDoc\Laravel\QueryBuilder\Paginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 
@@ -38,6 +40,7 @@ class EloquentModelStaticCall extends StaticCallExtension
             'create',
             'all',
             'get',
+            'paginate',
         ];
 
         $methodName = $methodCall->name->name;
@@ -62,6 +65,13 @@ class EloquentModelStaticCall extends StaticCallExtension
 
         if ($methodName === 'all' || $methodName === 'get') {
             return new ArrayType(itemType: $scope->getPhpClassInDeeperScope($className)->resolveType());
+        }
+
+        if ($methodName === 'paginate') {
+            return (new Paginator(
+                paginatorPhpClass: $scope->getPhpClassInDeeperScope(LengthAwarePaginator::class),
+                entryClass: $className,
+            ))->resolveType();
         }
 
         return $scope->getPhpClassInDeeperScope($className)->resolveType();

@@ -2,14 +2,9 @@
 
 namespace AutoDoc\Laravel\Console\Commands;
 
-use AutoDoc\Commands\ExportOpenApiSchema as ExportCommand;
-use AutoDoc\Config;
 use AutoDoc\Laravel\ConfigLoader;
 use Illuminate\Console\Command;
 
-/**
- * @phpstan-import-type ConfigArray from Config
- */
 class ExportOpenApiSchema extends Command
 {
     protected $signature = 'autodoc:export {workspace?}';
@@ -23,7 +18,7 @@ class ExportOpenApiSchema extends Command
         /** @var ?string */
         $workspaceKey = $this->argument('workspace');
 
-        (new ExportCommand)($config, $workspaceKey);
+        (new \AutoDoc\Commands\ExportOpenApiSchema)($config, $workspaceKey);
 
         return Command::SUCCESS;
     }
