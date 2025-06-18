@@ -18,7 +18,11 @@ class UpdateTypeScriptStructures extends Command
         /** @var ?string */
         $workingDirectory = $this->argument('working_directory');
 
-        (new \AutoDoc\Commands\UpdateTypeScriptStructures($config))->run($workingDirectory);
+        $updatedFiles = (new \AutoDoc\Commands\UpdateTypeScriptStructures($config))->run($workingDirectory);
+
+        foreach ($updatedFiles as $file) {
+            $this->line('Updated ' . $file['filePath'] . ' (' . $file['processedTags'] . ' tags)');
+        }
 
         return Command::SUCCESS;
     }

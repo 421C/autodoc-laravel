@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "efa7e82cab780ccc7d1f1ffc4c5075fe",
+    "content-hash": "08b1b463cbe2b878f75ae7ff109e98c2",
     "packages": [
         {
             "name": "421c/autodoc-php",
-            "version": "v1.7.0",
+            "version": "v1.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/421C/autodoc-php.git",
-                "reference": "b9ca122e4e5f31fb6323aa97a080ad31415b6485"
+                "reference": "a76176f2814f9980343f8c4a53610d5a63a0e144"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/421C/autodoc-php/zipball/b9ca122e4e5f31fb6323aa97a080ad31415b6485",
-                "reference": "b9ca122e4e5f31fb6323aa97a080ad31415b6485",
+                "url": "https://api.github.com/repos/421C/autodoc-php/zipball/a76176f2814f9980343f8c4a53610d5a63a0e144",
+                "reference": "a76176f2814f9980343f8c4a53610d5a63a0e144",
                 "shasum": ""
             },
             "require": {
@@ -51,9 +51,9 @@
             "description": "Automatic API documentation generation tool for PHP projects",
             "support": {
                 "issues": "https://github.com/421C/autodoc-php/issues",
-                "source": "https://github.com/421C/autodoc-php/tree/v1.7.0"
+                "source": "https://github.com/421C/autodoc-php/tree/v1.7.1"
             },
-            "time": "2025-06-17T17:20:12+00:00"
+            "time": "2025-06-18T08:17:28+00:00"
         },
         {
             "name": "brick/math",
