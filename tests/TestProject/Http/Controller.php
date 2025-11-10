@@ -10,6 +10,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
+use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1498,6 +1499,14 @@ class Controller
                                     'format' => 'date-time',
                                 ],
                             ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                            ],
                         ],
                     ],
                 ],
@@ -1594,4 +1603,1396 @@ class Controller
         return $validated['nested']['enum'];
     }
 
+
+    /**
+     * Route 24
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 24',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'id' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route24(): mixed
+    {
+        // Return type read from model's `toArray` method.
+        return Rocket::select('id', 'launch_date')
+            ->where('id', '!=', 1)
+            ->where('launch_date', '>=', '2026-01-01')
+            ->get();
+    }
+
+
+    /**
+     * Route 25
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 25',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                    'visited' => [
+                                        'type' => 'boolean',
+                                    ],
+                                ],
+                                'required' => [
+                                    'name',
+                                    'diameter',
+                                    'visited',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route25(): mixed
+    {
+        return Planet::select('name', 'diameter', 'visited')
+            ->where('diameter', '>=', 1000)
+            ->get();
+    }
+
+
+    /**
+     * Route 26
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 26',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'id' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'diameter',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route26(): mixed
+    {
+        $nameColumn = 'name';
+
+        return Planet::query()
+            ->select(['id', $nameColumn])
+            ->limit(1)
+            ->addSelect('diameter')
+            ->get();
+    }
+
+
+    /**
+     * Route 27
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 27',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'planet_id' => [
+                                        'type' => 'integer',
+                                    ],
+                                ],
+                                'required' => [
+                                    'planet_id',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route27(): mixed
+    {
+        $query = Planet::select(...['planets.id as planet_id']);
+
+        return $query->get();
+    }
+
+
+    /**
+     * Route 28
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 28',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'date-time',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route28(): mixed
+    {
+        return Planet::where('updated_at', '>=', '2026-01-01')->pluck('updated_at');
+    }
+
+
+    /**
+     * Route 29
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 29',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'planet_name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
+                                'required' => [
+                                    'planet_name',
+                                    'diameter',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route29(): mixed
+    {
+        return Planet::all(['name as planet_name', 'diameter']);
+    }
+
+
+    /**
+     * Route 30
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 30',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'number',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route30(): mixed
+    {
+        /** @phpstan-ignore property.notFound */
+        return Planet::get()->map(fn ($planet) => $planet->diameter * 100);
+    }
+
+
+    /**
+     * Route 31
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 31',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'boolean',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route31(): mixed
+    {
+        /** @phpstan-ignore argument.templateType */
+        return Planet::all()->map(function ($planet) {
+            /** @phpstan-ignore property.notFound */
+            $isVisited = $planet->visited;
+
+            return $isVisited;
+        });
+    }
+
+
+    /**
+     * Route 32
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 32',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'format' => 'date-time',
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route32(): mixed
+    {
+        return Rocket::query()
+            ->where('launch_date', '>=', '2026-01-01')
+            ->pluck('updated_at')
+            ->filter(fn ($updateDate) => $updateDate !== '2026-01-01')
+            ->map(fn ($updateDate) => [$updateDate])
+            ->toArray();
+    }
+
+
+    /**
+     * Route 33
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 33',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'mutated_id' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'string',
+                                                'const' => '',
+                                            ],
+                                            [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                    'name' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                    ],
+                                    'description' => [
+                                        'type' => 'string',
+                                    ],
+                                    'coordinates' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'reference' => [
+                                                'type' => 'string',
+                                                'const' => 'Galactic Center',
+                                            ],
+                                            'x' => [
+                                                'type' => 'number',
+                                                'const' => 123000,
+                                                'format' => 'float',
+                                            ],
+                                            'y' => [
+                                                'type' => 'number',
+                                                'const' => -456000,
+                                                'format' => 'float',
+                                            ],
+                                            'z' => [
+                                                'type' => 'number',
+                                                'const' => 789000,
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'x',
+                                            'y',
+                                            'z',
+                                            'reference',
+                                        ],
+                                    ],
+                                    'size' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required' => [
+                                    'mutated_id',
+                                    'name',
+                                    'description',
+                                    'size',
+                                    'coordinates',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route33(): mixed
+    {
+        /** @phpstan-ignore method.unresolvableReturnType */
+        return SpaceStation::query()
+            ->get()
+            /** @phpstan-ignore argument.unresolvableType */
+            ->map(fn ($station) => [
+                'mutated_id' => $station->id,
+                'name' => $station->name,
+                /** @phpstan-ignore property.notFound */
+                'description' => $station->description,
+                /** @phpstan-ignore property.notFound */
+                'size' => $station->size,
+                'coordinates' => $station->coordinates,
+            ]);
+    }
+
+
+    /**
+     * Route 34
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 34',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'first' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'description' => [
+                                            'type' => 'string',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'anyOf' => [
+                                                [
+                                                    'type' => 'string',
+                                                    'const' => '',
+                                                ],
+                                                [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                        ],
+                                        'name' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'size' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'description',
+                                        'size',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'firstOrFail' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'description' => [
+                                            'type' => 'string',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'anyOf' => [
+                                                [
+                                                    'type' => 'string',
+                                                    'const' => '',
+                                                ],
+                                                [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                        ],
+                                        'name' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'size' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'description',
+                                        'size',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'first',
+                                'firstOrFail',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route34(): mixed
+    {
+        return [
+            'first' => SpaceStation::query()->first(),
+            'firstOrFail' => SpaceStation::query()->firstOrFail(),
+        ];
+    }
+
+
+    /**
+     * Route 35
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 35',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'first' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'description' => [
+                                            'type' => 'string',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'anyOf' => [
+                                                [
+                                                    'type' => 'string',
+                                                    'const' => '',
+                                                ],
+                                                [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                        ],
+                                        'name' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'size' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'description',
+                                        'size',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'firstOrFail' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'description' => [
+                                            'type' => 'string',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'anyOf' => [
+                                                [
+                                                    'type' => 'string',
+                                                    'const' => '',
+                                                ],
+                                                [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                        ],
+                                        'name' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'size' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'description',
+                                        'size',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'first',
+                                'firstOrFail',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route35(): mixed
+    {
+        return [
+            'first' => SpaceStation::first(),
+            'firstOrFail' => SpaceStation::firstOrFail(),
+        ];
+    }
+
+
+    /**
+     * Route 36
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 36',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'anyOf' => [
+                                                    [
+                                                        'type' => 'string',
+                                                        'const' => '',
+                                                    ],
+                                                    [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                            ],
+                                            'size' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'size',
+                                        ],
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'last_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'last_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'links' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'active' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'url' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'total' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'first_page_url',
+                                'from',
+                                'last_page',
+                                'last_page_url',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                                'total',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route36(): mixed
+    {
+        return SpaceStation::select('id', 'size')->paginate(50);
+    }
+
+
+    /**
+     * Route 37
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 37',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'first' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                            'enum' => [
+                                                1,
+                                                2,
+                                            ],
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                            'enum' => [
+                                                'jānis',
+                                                'bānis',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'lastWithDefaultFalse' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'id' => [
+                                                    'type' => 'integer',
+                                                    'enum' => [
+                                                        1,
+                                                        2,
+                                                    ],
+                                                ],
+                                                'name' => [
+                                                    'type' => 'string',
+                                                    'enum' => [
+                                                        'jānis',
+                                                        'bānis',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                ],
+                                'pluckId' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'enum' => [
+                                            1,
+                                            2,
+                                        ],
+                                    ],
+                                ],
+                                'mapId' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'enum' => [
+                                            1,
+                                            2,
+                                        ],
+                                    ],
+                                ],
+                                'mapWithKeys' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'jānis' => [
+                                                    'type' => 'integer',
+                                                    'enum' => [
+                                                        1,
+                                                        2,
+                                                    ],
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'jānis',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'bānis' => [
+                                                    'type' => 'integer',
+                                                    'enum' => [
+                                                        1,
+                                                        2,
+                                                    ],
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'bānis',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'first',
+                                'lastWithDefaultFalse',
+                                'pluckId',
+                                'mapId',
+                                'mapWithKeys',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route37(): mixed
+    {
+        $array = [
+            [
+                'id' => 1,
+                'name' => 'jānis',
+            ],
+            [
+                'id' => 2,
+                'name' => 'bānis',
+            ],
+        ];
+
+        return [
+            'first' => collect($array)->first(),
+            'lastWithDefaultFalse' => collect($array)->last(null, false),
+            'pluckId' => collect($array)->pluck('id'),
+            'mapId' => collect($array)->map(fn ($item) => $item['id']),
+            'mapWithKeys' => collect($array)->mapWithKeys(fn ($item) => [$item['name'] => $item['id']]),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'anyOf' => [
+                                    [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                                'integer',
+                                            ],
+                                        ],
+                                    ],
+                                    [
+                                        'type' => 'integer',
+                                        'minimum' => 0,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route38(): mixed
+    {
+        $count = SpaceStation::count();
+
+        if ($count > 1000) {
+            $column = 'id';
+
+        } else {
+            $column = 'created_at';
+        }
+
+        return [SpaceStation::pluck($column), $count];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'name' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'size' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'required' => [
+                                'name',
+                                'size',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route39(): ?SpaceStation
+    {
+        return SpaceStation::select('name', 'size')->first();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'entry' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'date' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'name' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'date',
+                                        ],
+                                    ],
+                                ],
+                                'required' => [
+                                    'entry',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route40(): mixed
+    {
+        /** @phpstan-ignore method.unresolvableReturnType */
+        return SpaceStation::where('created_at', '>', now()->subYear())
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(fn ($station) => $station->name !== null)
+            /** @phpstan-ignore argument.unresolvableType */
+            ->map(fn ($station) => [
+                'entry' => [
+                    'name' => $station->name,
+                    /** @phpstan-ignore property.notFound */
+                    'date' => $station->created_at,
+                ],
+            ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'additionalProperties' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route41(): mixed
+    {
+        return SpaceStation::query()
+            ->get()
+            ->pluck('name', 'created_at');
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'required' => [
+                                'name',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route42(): mixed
+    {
+        return Planet::all(['name'])->get(1);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'integer',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route43(): mixed
+    {
+        $id = SpaceStation::insertGetId([
+            'name' => 'x',
+            'size' => 'big',
+        ]);
+
+        $result = [];
+
+        $result[] = $id;
+        $result[] = SpaceStation::query()->count();
+
+        return $result;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'id' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'string',
+                                                'const' => '',
+                                            ],
+                                            [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                    'name' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route44(): mixed
+    {
+        return SpaceStation::query()
+            ->select('space_stations.id', 'space_stations.name')
+            ->get()
+            ->sortBy('created_at')
+            ->values()
+            ->toArray();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'description' => [
+                                        'type' => 'string',
+                                    ],
+                                    'created_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'id' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'string',
+                                                'const' => '',
+                                            ],
+                                            [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                    'name' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                    ],
+                                    'priority' => [
+                                        'type' => [
+                                            'string',
+                                            'integer',
+                                            'boolean',
+                                        ],
+                                    ],
+                                    'size' => [
+                                        'type' => 'string',
+                                    ],
+                                    'updated_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                ],
+                                'required' => [
+                                    'priority',
+                                    'id',
+                                    'name',
+                                    'description',
+                                    'size',
+                                    'created_at',
+                                    'updated_at',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route45(): mixed
+    {
+        return SpaceStation::where([])
+            ->get()
+            ->map(fn ($station) => [
+                /** @phpstan-ignore property.notFound */
+                'priority' => array_search($station->size, ['big', 'small']),
+                ...$station->toArray(),
+            ]);
+    }
 }

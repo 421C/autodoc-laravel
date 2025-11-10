@@ -25,6 +25,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,
+                \AutoDoc\Laravel\Extensions\CollectCall::class,
                 \AutoDoc\Laravel\Extensions\CustomFormRequest::class,
                 \AutoDoc\Laravel\Extensions\ResourceCollectionJson::class,
                 \AutoDoc\Laravel\Extensions\ResourceJson::class,
@@ -32,6 +33,10 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\RedirectResponse::class,
                 \AutoDoc\Laravel\Extensions\LengthAwarePaginatorJson::class,
                 \AutoDoc\Laravel\Extensions\RouteParamResolver::class,
+                \AutoDoc\Laravel\Extensions\QueryBuilderMethodCall::class,
+                \AutoDoc\Laravel\Extensions\EloquentModelMethodCall::class,
+                \AutoDoc\Laravel\Extensions\CollectionMethodCall::class,
+                \AutoDoc\Laravel\Extensions\EloquentBuilderMethodCall::class,
             ]);
         }
 

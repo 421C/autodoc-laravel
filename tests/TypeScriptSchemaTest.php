@@ -67,10 +67,28 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
             ',
             expected: '
             /** @autodoc AutoDoc\Laravel\Tests\TestProject\Models\Rocket */
-            export interface Rocket {
+            interface Rocket {
                 id: number
                 name: string
             }
+            ',
+        );
+    }
+
+
+    #[Test]
+    public function queryResultResponse(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: '
+            /** @autodoc GET /test/29 */
+            ',
+            expected: '
+            /** @autodoc GET /test/29 */
+            type 29Response = Array<{
+                planet_name: string
+                diameter: number
+            }>
             ',
         );
     }

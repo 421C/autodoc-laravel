@@ -19,6 +19,7 @@ class Paginator
 
         /** @var ?class-string */
         private ?string $entryClass,
+        private ?Type $entryType = null,
     ) {}
 
     public function resolveType(): Type
@@ -27,14 +28,19 @@ class Paginator
             ->resolveType(useExtensions: false)
             ->unwrapType($this->paginatorPhpClass->scope->config);
 
-        if ($paginatorType instanceof ArrayType && $paginatorType->shape) {
-            $entryType = $this->entryClass
-                ? $this->paginatorPhpClass->scope->getPhpClassInDeeperScope($this->entryClass)->resolveType()
-                : new ObjectType;
+        if ($paginatorType instanceof ObjectType
+            && $paginatorType->typeToDisplay instanceof ArrayType
+            && $paginatorType->typeToDisplay->shape
+        ) {
+            if (! $this->entryType) {
+                $this->entryType = $this->entryClass
+                    ? $this->paginatorPhpClass->scope->getPhpClassInDeeperScope($this->entryClass)->resolveType()
+                    : new ObjectType;
+            }
 
-            $paginatorType->shape['data'] = new ArrayType(itemType: $entryType);
+            $paginatorType->typeToDisplay->shape['data'] = new ArrayType(itemType: $this->entryType);
 
-            $paginatorType->shape['links'] = new ArrayType(
+            $paginatorType->typeToDisplay->shape['links'] = new ArrayType(
                 itemType: new ArrayType(
                     shape: [
                         'url' => new UnionType([new StringType, new NullType]),

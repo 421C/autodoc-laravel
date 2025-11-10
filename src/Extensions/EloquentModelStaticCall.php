@@ -5,11 +5,12 @@ namespace AutoDoc\Laravel\Extensions;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
+use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallExtension;
-use AutoDoc\Laravel\QueryBuilder\Paginator;
+use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 
@@ -29,7 +30,13 @@ class EloquentModelStaticCall extends StaticCallExtension
         }
 
         $supportedMethods = [
+            'count',
             'insert',
+            'insertOrIgnore',
+            'insertOrThrow',
+            'insertUsing',
+            'insertGetId',
+            'insertUsingGetId',
             'find',
             'first',
             'firstOrFail',
@@ -41,6 +48,7 @@ class EloquentModelStaticCall extends StaticCallExtension
             'all',
             'get',
             'paginate',
+            'pluck',
         ];
 
         $methodName = $methodCall->name->name;
@@ -63,17 +71,21 @@ class EloquentModelStaticCall extends StaticCallExtension
             return new BoolType;
         }
 
-        if ($methodName === 'all' || $methodName === 'get') {
-            return new ArrayType(itemType: $scope->getPhpClassInDeeperScope($className)->resolveType());
+        if ($methodName === 'count') {
+            return new IntegerType(minimum: 0);
         }
 
-        if ($methodName === 'paginate') {
-            return (new Paginator(
-                paginatorPhpClass: $scope->getPhpClassInDeeperScope(LengthAwarePaginator::class),
-                entryClass: $className,
-            ))->resolveType();
+        if ($methodName === 'all') {
+            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $methodCall) {
+                return (new QueryNavigator($scope))->getRowType($methodCall);
+            });
+
+            return new ArrayType(
+                itemType: $rowType,
+                className: Collection::class,
+            );
         }
 
-        return $scope->getPhpClassInDeeperScope($className)->resolveType();
+        return (new QueryNavigator($scope))->getResultType($methodCall, $methodName);
     }
 }

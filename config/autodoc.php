@@ -53,6 +53,11 @@ return [
          * When enabled, will load all autodoc-laravel built-in extensions.
          */
         'autoload_builtin_extensions' => true,
+
+        /**
+         * When disabled, autodoc-laravel will ignore unknown/dynamic methods while parsing Laravel Query Builder.
+         */
+        'abandon_query_builder_parsing_on_unknown_methods' => false,
     ],
 
     /**
@@ -133,6 +138,17 @@ return [
          * description for the whole enum containing all its cases and their descriptions.
          */
         'generate_description_from_cases' => true,
+    ],
+
+    'classes' => [
+        /**
+         * Ignore description from class PHPDoc comment.
+         */
+        'remove_description' => false,
+    ],
+
+    'arrays' => [
+        'remove_scalar_type_values_when_merging_with_unknown_types' => true,
     ],
 
     /**
