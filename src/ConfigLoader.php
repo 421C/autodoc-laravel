@@ -9,7 +9,7 @@ use AutoDoc\Config;
  */
 class ConfigLoader
 {
-    public function load(mixed $configDataOrPath = null): Config
+    public function load(): Config
     {
         /**
          * @var ConfigArray
@@ -18,8 +18,6 @@ class ConfigLoader
 
         if (config('autodoc.laravel.autoload_builtin_extensions') ?? true) {
             $configArray['extensions'] = array_unique([
-                \AutoDoc\Laravel\Extensions\EloquentModelTypeScriptExport::class,
-
                 ...$configArray['extensions'],
 
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
