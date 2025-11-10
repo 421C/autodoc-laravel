@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\PhpClass;
+use AutoDoc\Analyzer\PhpFunctionArgument;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\FloatType;
@@ -16,7 +17,11 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedClassType;
 use AutoDoc\Exceptions\AutoDocException;
 use AutoDoc\Extensions\ClassExtension;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use ReflectionNamedType;
 use Throwable;
 
 /**
@@ -30,17 +35,17 @@ class EloquentModel extends ClassExtension
             return null;
         }
 
-        if (isset(EloquentModel::$returnTypeCache[$phpClass->className])) {
-            return EloquentModel::$returnTypeCache[$phpClass->className];
+        /** @var PhpClass<Model> $phpClass */
+
+        if (isset(EloquentModel::$cache[$phpClass->className])) {
+            return EloquentModel::$cache[$phpClass->className];
         }
 
-        $modelType = $this->getTypeFromToArrayMethod($phpClass);
+        $modelType = $this->getModelObjectType($phpClass);
 
-        if (! $modelType) {
-            $modelType = $this->getModelObjectType($phpClass);
-        }
+        $modelType->typeToDisplay = $this->getTypeFromToArrayMethod($phpClass);
 
-        EloquentModel::$returnTypeCache[$phpClass->className] = $modelType;
+        EloquentModel::$cache[$phpClass->className] = $modelType;
 
         return $modelType;
     }
@@ -52,18 +57,55 @@ class EloquentModel extends ClassExtension
             return null;
         }
 
-        $objectType = $this->getModelObjectType($phpClass);
+        /** @var PhpClass<Model> $phpClass */
 
-        return $objectType->properties[$propertyName] ?? $objectType->hiddenProperties[$propertyName] ?? null;
+        $objectType = $this->getReturnType($phpClass);
+
+        if (! ($objectType instanceof ObjectType)) {
+            return null;
+        }
+
+        $propertyType = $objectType->properties[$propertyName] ?? $objectType->hiddenProperties[$propertyName] ?? new UnknownType;
+
+        return $this->getModelAttributeType($phpClass, $propertyName, $propertyType);
+    }
+
+
+    /**
+     * @param PhpClass<Model> $phpClass
+     */
+    private function getModelAttributeType(PhpClass $phpClass, string $propertyName, Type $propertyType): Type
+    {
+        $accessorName = Str::camel($propertyName);
+
+        $getMutatorName = 'get' . ucfirst($accessorName) . 'Attribute';
+
+        if ($phpClass->getReflection()->hasMethod($getMutatorName)) {
+            $args = [new PhpFunctionArgument($propertyType, $phpClass->scope)];
+
+            return $phpClass->getMethod($getMutatorName, $args)->getReturnType();
+        }
+
+        if ($phpClass->getReflection()->hasMethod($accessorName)) {
+            $attributeMutatorMethod = $phpClass->getReflection()->getMethod($accessorName);
+
+            $methodReturnType = $attributeMutatorMethod->getReturnType();
+
+            if ($methodReturnType instanceof ReflectionNamedType && $methodReturnType->getName() === Attribute::class) {
+                return new UnknownType;
+            }
+        }
+
+        return $propertyType;
     }
 
 
     /**
      * Check if model has a toArray() method with an understandable return type.
      *
-     * @param PhpClass<object> $phpClass
+     * @param PhpClass<Model> $phpClass
      */
-    protected function getTypeFromToArrayMethod(PhpClass $phpClass): ?ArrayType
+    private function getTypeFromToArrayMethod(PhpClass $phpClass): ?ArrayType
     {
         $modelToArrayMethod = $phpClass->getMethod('toArray');
 
@@ -84,14 +126,10 @@ class EloquentModel extends ClassExtension
 
 
     /**
-     * @param PhpClass<object> $phpClass
+     * @param PhpClass<Model> $phpClass
      */
-    protected function getModelObjectType(PhpClass $phpClass): ObjectType
+    private function getModelObjectType(PhpClass $phpClass): ObjectType
     {
-        if (isset(EloquentModel::$objectTypeCache[$phpClass->className])) {
-            return EloquentModel::$objectTypeCache[$phpClass->className];
-        }
-
         $objectType = new ObjectType(className: $phpClass->className);
 
         try {
@@ -103,8 +141,6 @@ class EloquentModel extends ClassExtension
             if ($phpClass->scope->isDebugModeEnabled()) {
                 throw new AutoDocException('Error reading database model properties for ' . $phpClass->className . ': ', $exception);
             }
-
-            EloquentModel::$objectTypeCache[$phpClass->className] = $objectType;
 
             return $objectType;
         }
@@ -120,59 +156,17 @@ class EloquentModel extends ClassExtension
             $model->getCasts(),
         );
 
+        $isAttributeHidden = fn (string $attributeName) => (count($visibleProps) > 0 && ! isset($visibleProps[$attributeName]))
+            || (count($hiddenProps) > 0 && isset($hiddenProps[$attributeName]));
+
         foreach ($columns as $column) {
             /**
              * @var string
              */
             $propertyName = $column['name'];
 
-            $propertyIsHidden = (count($visibleProps) > 0 && ! isset($visibleProps[$propertyName]))
-                || (count($hiddenProps) > 0 && isset($hiddenProps[$propertyName]));
-
             if (isset($modelCasts[$propertyName])) {
-                $cast = $modelCasts[$propertyName];
-
-                $propertyType = match ($cast) {
-                    'array' => new ArrayType,
-                    'bool', 'boolean' => new BoolType,
-                    'collection' => new ArrayType,
-                    'date' => new StringType(format: 'date'),
-                    'datetime' => new StringType(format: 'date-time'),
-                    'immutable_date' => new StringType(format: 'date'),
-                    'immutable_datetime' => new StringType(format: 'date-time'),
-                    'double' => new FloatType,
-                    'encrypted' => new StringType,
-                    'encrypted:array' => new ArrayType,
-                    'encrypted:collection' => new ArrayType,
-                    'encrypted:object' => new ObjectType,
-                    'float' => new FloatType,
-                    'hashed' => new StringType,
-                    'int', 'integer' => new IntegerType,
-                    'object' => new ObjectType,
-                    'real' => new FloatType,
-                    'string' => new StringType,
-                    'timestamp' => new IntegerType,
-                    'Illuminate\Database\Eloquent\Casts\AsArrayObject' => new ObjectType,
-                    'Illuminate\Database\Eloquent\Casts\AsCollection' => new ArrayType,
-                    'Illuminate\Database\Eloquent\Casts\AsEncryptedArrayObject' => new ObjectType,
-                    'Illuminate\Database\Eloquent\Casts\AsEncryptedCollection' => new ArrayType,
-                    'Illuminate\Database\Eloquent\Casts\AsEnumArrayObject' => new ObjectType,
-                    'Illuminate\Database\Eloquent\Casts\AsEnumCollection' => new ArrayType,
-                    'Illuminate\Database\Eloquent\Casts\AsStringable' => new StringType,
-                    default => new UnknownType,
-                };
-
-                if ($propertyType instanceof UnknownType && class_exists($cast)) {
-                    if (enum_exists($cast) || is_a($cast, 'Illuminate\Contracts\Database\Eloquent\Castable', true)) {
-                        $propertyType = new UnresolvedClassType(className: $cast, scope: $phpClass->scope);
-
-                    } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes', true)) {
-                        $propertyType = $this->getTypeFromColumnTypeName($column['type_name']);
-
-                    } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsAttributes', true)) {
-                        $propertyType = $phpClass->scope->getPhpClassInDeeperScope($cast)->getMethod('get')->getReturnType();
-                    }
-                }
+                $propertyType = $this->getTypeFromCast($modelCasts[$propertyName], $phpClass, $column['type_name']);
 
             } else {
                 $propertyType = $this->getTypeFromColumnTypeName($column['type_name']);
@@ -182,26 +176,84 @@ class EloquentModel extends ClassExtension
                 $propertyType = new UnionType([$propertyType, new NullType]);
             }
 
-            if ($propertyIsHidden) {
+            $propertyType = $this->getModelAttributeType($phpClass, $propertyName, $propertyType);
+
+            if ($isAttributeHidden($propertyName)) {
                 $objectType->hiddenProperties[$propertyName] = $propertyType;
 
             } else {
-                $objectType->properties[$propertyName] = $propertyType;
+                $objectType->properties[$propertyName] = $propertyType->setRequired(true);
             }
         }
 
         foreach ($model->getAppends() as $appendedAttributeName) {
-            /**
-             * @var string $appendedAttributeName
-             */
-            $objectType->properties[$appendedAttributeName] ??= new UnknownType;
+            if (is_string($appendedAttributeName)) {
+                $attributeType = $objectType->properties[$appendedAttributeName] ?? $objectType->hiddenProperties[$appendedAttributeName] ?? new UnknownType;
+                $attributeType = $this->getModelAttributeType($phpClass, $appendedAttributeName, $attributeType);
+
+                if ($isAttributeHidden($appendedAttributeName)) {
+                    $objectType->hiddenProperties[$appendedAttributeName] = $attributeType;
+
+                } else {
+                    $objectType->properties[$appendedAttributeName] = $attributeType->setRequired(true);
+                }
+            }
         }
 
         $objectType->properties = $phpClass->handlePhpDocPropertyTags($objectType->properties);
 
-        EloquentModel::$objectTypeCache[$phpClass->className] = $objectType;
-
         return $objectType;
+    }
+
+
+    /**
+     * @param PhpClass<Model> $phpClass
+     */
+    private function getTypeFromCast(string $cast, PhpClass $phpClass, string $typeName): Type
+    {
+        $propertyType = match ($cast) {
+            'array' => new ArrayType,
+            'bool', 'boolean' => new BoolType,
+            'collection' => new ArrayType(className: Collection::class),
+            'date' => new StringType(format: 'date'),
+            'datetime' => new StringType(format: 'date-time'),
+            'immutable_date' => new StringType(format: 'date'),
+            'immutable_datetime' => new StringType(format: 'date-time'),
+            'double' => new FloatType,
+            'encrypted' => new StringType,
+            'encrypted:array' => new ArrayType,
+            'encrypted:collection' => new ArrayType(className: Collection::class),
+            'encrypted:object' => new ObjectType,
+            'float' => new FloatType,
+            'hashed' => new StringType,
+            'int', 'integer' => new IntegerType,
+            'object' => new ObjectType,
+            'real' => new FloatType,
+            'string' => new StringType,
+            'timestamp' => new IntegerType,
+            'Illuminate\Database\Eloquent\Casts\AsArrayObject' => new ObjectType,
+            'Illuminate\Database\Eloquent\Casts\AsCollection' => new ArrayType(className: Collection::class),
+            'Illuminate\Database\Eloquent\Casts\AsEncryptedArrayObject' => new ObjectType,
+            'Illuminate\Database\Eloquent\Casts\AsEncryptedCollection' => new ArrayType(className: Collection::class),
+            'Illuminate\Database\Eloquent\Casts\AsEnumArrayObject' => new ObjectType,
+            'Illuminate\Database\Eloquent\Casts\AsEnumCollection' => new ArrayType(className: Collection::class),
+            'Illuminate\Database\Eloquent\Casts\AsStringable' => new StringType,
+            default => new UnknownType,
+        };
+
+        if ($propertyType instanceof UnknownType && class_exists($cast)) {
+            if (enum_exists($cast) || is_a($cast, 'Illuminate\Contracts\Database\Eloquent\Castable', true)) {
+                $propertyType = new UnresolvedClassType(className: $cast, scope: $phpClass->scope);
+
+            } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes', true)) {
+                $propertyType = $this->getTypeFromColumnTypeName($typeName);
+
+            } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsAttributes', true)) {
+                $propertyType = $phpClass->scope->getPhpClassInDeeperScope($cast)->getMethod('get')->getReturnType();
+            }
+        }
+
+        return $propertyType;
     }
 
 
@@ -218,14 +270,8 @@ class EloquentModel extends ClassExtension
         };
     }
 
-
     /**
-     * @var array<class-string, Type>
+     * @var array<class-string<Model>, Type>
      */
-    private static array $returnTypeCache = [];
-
-    /**
-     * @var array<class-string, ObjectType>
-     */
-    private static array $objectTypeCache = [];
+    private static array $cache = [];
 }
