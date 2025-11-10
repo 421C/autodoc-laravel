@@ -88,7 +88,7 @@ class RequestValidate extends MethodCallExtension
             return null;
         }
 
-        $requestDataObjectType = $this->parseValidationRules($validationArray->shape);
+        $requestDataObjectType = $this->parseValidationRules($validationArray->shape, $scope);
 
         if ($requestDataObjectType instanceof ObjectType) {
             return new ArrayType(shape: $requestDataObjectType->properties);

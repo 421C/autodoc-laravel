@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Validation;
 
 use AutoDoc\Analyzer\PhpEnum;
+use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\FloatType;
@@ -29,7 +30,7 @@ trait ValidationRulesParser
     /**
      * @param array<string, Type> $validationRules
      */
-    protected function parseValidationRules(array $validationRules): ObjectType|ArrayType
+    protected function parseValidationRules(array $validationRules, Scope $scope): ObjectType|ArrayType
     {
         $structured = [];
         $hasWildcardRoot = false;
@@ -42,7 +43,7 @@ trait ValidationRulesParser
                 $hasWildcardRoot = true;
             }
 
-            $validationType = $this->parseTypeContainingValidationRules($value);
+            $validationType = $this->parseTypeContainingValidationRules($value, $scope);
 
             if ($validationType instanceof ConfirmedType) {
                 $this->buildTypeStructure($structured, $segments, $validationType->type);
@@ -149,7 +150,7 @@ trait ValidationRulesParser
         }
     }
 
-    protected function parseTypeContainingValidationRules(?Type $value): Type
+    protected function parseTypeContainingValidationRules(?Type $value, Scope $scope): Type
     {
         $paramType = new UnknownType;
 
@@ -159,23 +160,23 @@ trait ValidationRulesParser
              * Otherwise extract laravel validation rules to determine parameter type.
              */
             if ($value instanceof UnresolvedPhpDocType) {
-                $typeFromLaravelValidation = $this->parseTypeContainingValidationRules($value->fallbackType);
+                $typeFromLaravelValidation = $this->parseTypeContainingValidationRules($value->fallbackType, $scope);
 
                 $value->required = $typeFromLaravelValidation->required;
 
-                return $value;
+                return $value->unwrapType($scope->config);
             }
 
             $originalValueType = $value;
-            $value = $originalValueType->unwrapType();
+            $value = $originalValueType->unwrapType($scope->config);
 
             if ($value instanceof StringType) {
                 if (is_string($value->value)) {
-                    $paramType = $this->getTypeFromRules(explode('|', $value->value));
+                    $paramType = $this->getTypeFromRules(explode('|', $value->value), $scope);
                 }
 
             } else if ($value instanceof ArrayType && $value->itemType) {
-                $resolvedItemType = $value->itemType->unwrapType();
+                $resolvedItemType = $value->itemType->unwrapType($scope->config);
 
                 if ($resolvedItemType instanceof UnionType) {
                     $typesInArray = $resolvedItemType->types;
@@ -187,13 +188,13 @@ trait ValidationRulesParser
                 $rules = [];
 
                 foreach ($typesInArray as $typeInArray) {
-                    $resolvedType = $typeInArray->unwrapType();
+                    $resolvedType = $typeInArray->unwrapType($scope->config);
 
                     if ($resolvedType instanceof UnionType) {
                         $types = array_filter($resolvedType->types, fn ($type) => ! ($type instanceof VoidType));
 
                         if (count($types) === 1) {
-                            $resolvedType = reset($types)->unwrapType();
+                            $resolvedType = reset($types)->unwrapType($scope->config);
                         }
                     }
 
@@ -212,13 +213,13 @@ trait ValidationRulesParser
                     }
                 }
 
-                $paramType = $this->getTypeFromRules($rules);
+                $paramType = $this->getTypeFromRules($rules, $scope);
 
             } else if ($value instanceof ObjectType) {
                 if ($value->className) {
                     $paramType = $this->getTypeFromRules([
                         new Rule($value->className, $value->constructorArgs),
-                    ]);
+                    ], $scope);
                 }
             }
 
@@ -233,7 +234,7 @@ trait ValidationRulesParser
     /**
      * @param array<string|Rule> $rules
      */
-    protected function getTypeFromRules(array $rules): Type
+    protected function getTypeFromRules(array $rules, Scope $scope): Type
     {
         $type = new UnknownType;
 
@@ -308,7 +309,7 @@ trait ValidationRulesParser
                                 $enumValues = [];
 
                                 foreach ($allowedValueTypes as $allowedType) {
-                                    $allowedType = $allowedType->unwrapType();
+                                    $allowedType = $allowedType->unwrapType($scope->config);
 
                                     if ($allowedType instanceof StringType) {
                                         $isStringType = true;
@@ -391,8 +392,8 @@ trait ValidationRulesParser
                 if ($rule->className === Enum::class) {
                     $arg = $rule->args[0] ?? null;
 
-                    if ($arg && $arg->node instanceof Node\Arg) {
-                        $enumClassNameType = $arg->scope->resolveType($arg->node->value);
+                    if ($arg) {
+                        $enumClassNameType = $arg->getType()?->unwrapType($scope->config);
 
                         if ($enumClassNameType instanceof StringType && is_string($enumClassNameType->value) && enum_exists($enumClassNameType->value)) {
                             $enumClass = $arg->scope->getPhpClassInDeeperScope($enumClassNameType->value);

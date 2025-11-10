@@ -860,7 +860,7 @@ class Controller
     public function route12(): void
     {
         request()->validate([
-            'token' => ['required', Password::defaults(), 'confirmed'],
+            'token' => ['required', 'confirmed', Password::defaults()],
         ]);
     }
 
@@ -1512,4 +1512,86 @@ class Controller
 
         return $planet;
     }
+
+
+    /**
+     * Route 23
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route 23',
+        'description' => '',
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'nested' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'enum' => [
+                                        'type' => [
+                                            'integer',
+                                            'null',
+                                        ],
+                                        'description' => '[StateEnum](#/schemas/StateEnum)',
+                                        'enum' => [
+                                            1,
+                                            2,
+                                        ],
+                                    ],
+                                    'filled' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required' => [
+                                    'enum',
+                                    'filled',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'nested',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'integer',
+                                'null',
+                            ],
+                            'description' => '[StateEnum](#/schemas/StateEnum)',
+                            'enum' => [
+                                1,
+                                2,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route23(Request $request): mixed
+    {
+        $validated = $request->validate([
+            /**
+             * status description
+             */
+            'nested.enum' => ['nullable', 'present', new Enum(StateEnum::class)],
+
+            'nested.filled' => ['required', 'filled'],
+        ]);
+
+        return $validated['nested']['enum'];
+    }
+
 }
