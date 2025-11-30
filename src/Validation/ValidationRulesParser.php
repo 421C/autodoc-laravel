@@ -17,6 +17,7 @@ use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedPhpDocType;
 use AutoDoc\DataTypes\VoidType;
+use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Email;
 use Illuminate\Validation\Rules\Enum;
@@ -27,6 +28,8 @@ use PhpParser\Node;
 
 trait ValidationRulesParser
 {
+    use DotNotationParser;
+
     /**
      * @param array<string, Type> $validationRules
      */
@@ -46,7 +49,7 @@ trait ValidationRulesParser
             $validationType = $this->parseTypeContainingValidationRules($value, $scope);
 
             if ($validationType instanceof ConfirmedType) {
-                $this->buildTypeStructure($structured, $segments, $validationType->type);
+                $this->dotNotationToNestedArrayType($structured, $segments, $validationType->type);
 
                 /** @var int */
                 $lastSegmentIndex = array_key_last($segments);
@@ -70,10 +73,10 @@ trait ValidationRulesParser
 
                 $segments[$lastSegmentIndex] = $validationType->confirmationKey ?? ($segments[$lastSegmentIndex] . '_confirmation');
 
-                $this->buildTypeStructure($structured, $segments, $confirmationType);
+                $this->dotNotationToNestedArrayType($structured, $segments, $confirmationType);
 
             } else {
-                $this->buildTypeStructure($structured, $segments, $validationType);
+                $this->dotNotationToNestedArrayType($structured, $segments, $validationType);
             }
         }
 
@@ -87,68 +90,6 @@ trait ValidationRulesParser
         return $this->checkRequiredContainerTypes($resultType);
     }
 
-    /**
-     * @param array<string, Type> $structure
-     * @param array<int, string> $segments
-     */
-    protected function buildTypeStructure(array &$structure, array $segments, Type $type): void
-    {
-        if (empty($segments)) {
-            return;
-        }
-
-        $segment = array_shift($segments);
-
-        if (empty($segments)) {
-            $structure[$segment] = $type;
-
-            return;
-        }
-
-        if ($segments[0] === '*') {
-            if (! isset($structure[$segment])) {
-                $structure[$segment] = new ArrayType(itemType: new ArrayType(shape: []));
-
-            } else if (! ($structure[$segment] instanceof ArrayType)) {
-                $structure[$segment] = (new ArrayType(itemType: new ArrayType(shape: [])))->setRequired($structure[$segment]->required);
-
-            } else if ($structure[$segment]->itemType === null) {
-                $structure[$segment]->itemType = new ArrayType(shape: []);
-
-            } else if (!($structure[$segment]->itemType instanceof ArrayType)) {
-                $structure[$segment]->itemType = (new ArrayType(shape: []))->setRequired($structure[$segment]->itemType->required);
-
-            } else if (! $structure[$segment]->itemType->shape) {
-                $structure[$segment]->itemType = (new ArrayType(shape: []))->setRequired($structure[$segment]->itemType->required);
-            }
-
-            $itemShape = &$structure[$segment]->itemType->shape;
-
-            array_shift($segments);
-
-            if (empty($segments)) {
-                $structure[$segment]->itemType = $type;
-
-                return;
-            }
-
-            $this->buildTypeStructure($itemShape, $segments, $type);
-
-        } else {
-            if (! isset($structure[$segment])) {
-                $structure[$segment] = new ArrayType(shape: []);
-
-            } else if (!($structure[$segment] instanceof ArrayType)) {
-                $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
-
-            } else if (! $structure[$segment]->shape) {
-                $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
-            }
-
-            /** @phpstan-ignore argument.type */
-            $this->buildTypeStructure($structure[$segment]->shape, $segments, $type);
-        }
-    }
 
     protected function parseTypeContainingValidationRules(?Type $value, Scope $scope): Type
     {
@@ -223,7 +164,7 @@ trait ValidationRulesParser
                 }
             }
 
-            $paramType->description = $paramType->description ?: $value->description;
+            $paramType->addDescription($value->description);
             $paramType->examples = $paramType->examples ?: $value->examples;
         }
 
@@ -535,8 +476,7 @@ trait ValidationRulesParser
                         /** @var ?string */
                         $format = config('autodoc.laravel.format_generated_descriptions');
 
-                        $description = $format ? sprintf($format, $description) : $description;
-                        $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
+                        $type->addDescription($format ? sprintf($format, $description) : $description);
                     }
                 }
 
@@ -588,8 +528,7 @@ trait ValidationRulesParser
                             /** @var ?string */
                             $format = config('autodoc.laravel.format_generated_descriptions');
 
-                            $description = $format ? sprintf($format, $description) : $description;
-                            $type->description = $type->description ? $type->description . "\n\n" . $description : $description;
+                            $type->addDescription($format ? sprintf($format, $description) : $description);
                         }
                     }
                 }

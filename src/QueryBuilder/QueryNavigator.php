@@ -2,6 +2,7 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
+use AutoDoc\Analyzer\PhpClass;
 use AutoDoc\Analyzer\PhpFunctionArgument;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
@@ -13,6 +14,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
+use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -21,8 +23,11 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use Throwable;
 
+
 class QueryNavigator
 {
+    use DotNotationParser;
+
     public function __construct(
         private Scope $scope,
     ) {}
@@ -30,7 +35,7 @@ class QueryNavigator
     /** @var ?class-string<Model> */
     private ?string $modelClassName = null;
 
-    private ?Type $modelType = null;
+    private ?ObjectType $modelType = null;
 
     private ?string $modelTableName = null;
 
@@ -41,6 +46,15 @@ class QueryNavigator
      * }>
      */
     private array $builderMethods = [];
+
+    /** @var array<array<string, Type>> */
+    private array $columnSetVariants = [];
+
+    /** @var array<string, Type> */
+    private array $eagerLoadedRelations = [];
+
+    /** @var array<string, Type> */
+    private array $relationArguments = [];
 
     private bool $allMethodsAreBuilderMethods = true;
 
@@ -79,7 +93,7 @@ class QueryNavigator
             ))->resolveType();
         }
 
-        if (in_array($methodName, ['first', 'latest', 'oldest'])) {
+        if (in_array($methodName, ['first', 'latest', 'oldest', 'firstWhere'])) {
             return new UnionType([$rowType, new NullType]);
         }
 
@@ -126,122 +140,216 @@ class QueryNavigator
             return null;
         }
 
-        /** @var Type[][] */
-        $columnSetVariants = [];
-
         $modelPhpClass = $this->scope->getPhpClassInDeeperScope($this->modelClassName);
 
         $this->modelType = clone $modelPhpClass->resolveType();
-
-        if (! ($this->modelType instanceof ObjectType)) {
-            return null;
-        }
-
         $this->modelTableName = app()->make($this->modelClassName)->getTable();
 
         foreach ($this->builderMethods as $builderMethod) {
             if ($builderMethod['name'] === 'select') {
-                $columnSetVariants = [
+                $this->columnSetVariants = [
                     $this->getColumnsFromArguments($builderMethod['args']),
                 ];
             }
 
             if ($builderMethod['name'] === 'addSelect') {
-                $columns = $this->getColumnsFromArguments($builderMethod['args']);
+                $this->handleAddSelect($builderMethod['args']);
+            }
 
-                if ($columnSetVariants) {
-                    foreach ($columnSetVariants as $index => $columnSet) {
-                        $columnSetVariants[$index] = array_merge($columnSet, $columns);
-                    }
-
-                } else {
-                    $columnSetVariants = [$columns];
-                }
+            if ($builderMethod['name'] === 'with') {
+                $this->handleWith($builderMethod['args']);
             }
 
             if ($builderMethod['name'] === 'pluck') {
-                $columnArg = $builderMethod['args'][0] ?? null;
-                $keyArg = $builderMethod['args'][1] ?? null;
-
-                if (! $columnArg) {
-                    return null;
-                }
-
-                $keyArgType = $keyArg?->getType()?->unwrapType($keyArg?->scope->config);
-
-                if ($keyArgType instanceof StringType) {
-                    $keyArgStrings = $keyArgType->getPossibleValues() ?? [];
-
-                    if (count($keyArgStrings) === 1) {
-                        [$propertyName, $propertyType] = $this->getColumnType($keyArgStrings[0]);
-
-                        $this->collectionKeyType = $propertyType;
-
-                    } else {
-                        $this->collectionKeyType = new UnionType(
-                            array_filter(array_map(
-                                fn ($keyArgString) => $this->getColumnType($keyArgString)[1],
-                                $keyArgStrings,
-                            ))
-                        );
-                    }
-                }
-
-                $columnArgType = $columnArg->getType()?->unwrapType($columnArg->scope->config);
-
-                if ($columnArgType instanceof StringType) {
-                    $columnArgStrings = $columnArgType->getPossibleValues() ?? [];
-
-                    if (count($columnArgStrings) === 1) {
-                        return $this->getColumnType($columnArgStrings[0])[1] ?? new UnknownType;
-                    }
-
-                    return new UnionType(
-                        array_filter(array_map(
-                            fn ($columnArgString) => $this->getColumnType($columnArgString)[1],
-                            $columnArgStrings,
-                        ))
-                    );
-                }
+                return $this->handlePluck($builderMethod['args']);
             }
 
             if (in_array($builderMethod['name'], ['get', 'all'])) {
                 if (! empty($builderMethod['args'])) {
-                    $columnSetVariants = [
+                    $this->columnSetVariants = [
                         $this->getColumnsFromArguments($builderMethod['args']),
                     ];
                 }
             }
         }
 
-        if (! $columnSetVariants) {
-            return $this->modelType;
+        if (! $this->modelType) {
+            return null;
+        }
+
+        if (! $this->columnSetVariants) {
+            $this->columnSetVariants = [
+                $this->modelType->properties,
+            ];
+        }
+
+        $this->resolveEagerLoadedRelations();
+
+        if (! $this->modelType) {
+            return null;
         }
 
         $rowType = new UnionType;
 
-        foreach ($columnSetVariants as $columnSet) {
-            $columns = [];
-
-            foreach ($columnSet as $column) {
-                if ($column instanceof StringType) {
-                    $columnStrings = $column->getPossibleValues() ?? [];
-
-                    foreach ($columnStrings as $columnString) {
-                        [$propertyName, $propertyType] = $this->getColumnType($columnString);
-
-                        $columns[$propertyName] = $propertyType ?? new UnknownType;
-                    }
-                }
-            }
-
+        foreach ($this->columnSetVariants as $columns) {
             $objectType = clone $this->modelType;
-            $objectType->properties = $columns;
+
+            $objectType->properties = array_merge($columns, $this->eagerLoadedRelations);
 
             $rowType->types[] = $objectType;
         }
 
         return $rowType;
+    }
+
+    /**
+     * @param PhpFunctionArgument[] $arguments
+     */
+    private function handleAddSelect(array $arguments): void
+    {
+        $columns = $this->getColumnsFromArguments($arguments);
+
+        if ($this->columnSetVariants) {
+            foreach ($this->columnSetVariants as $index => $columnSet) {
+                $this->columnSetVariants[$index] = array_merge($columnSet, $columns);
+            }
+
+        } else {
+            $this->columnSetVariants = [$columns];
+        }
+    }
+
+    /**
+     * @param PhpFunctionArgument[] $arguments
+     */
+    private function handleWith(array $arguments): void
+    {
+        $argumentListArrayType = $this->scope->withPartialArraysResolvingAsShapes(function () use ($arguments) {
+            if (isset($arguments[0])) {
+                $firstArgType = $arguments[0]->getType()?->unwrapType($arguments[0]->scope->config);
+
+                if ($firstArgType instanceof ArrayType) {
+                    /**
+                     * Example: ->with([
+                     *     'planets:id,name',
+                     *     'stations' => Closure,
+                     *     'planets' => [
+                     *         'stations' => Closure,
+                     *         'moons',
+                     *     ],
+                     * ])
+                     */
+
+                    return $firstArgType;
+                }
+            }
+
+            /**
+             * Example: ->with('planets', 'moons')
+             */
+            return new ArrayType(
+                shape: array_map(fn ($arg) => $arg->getType()?->unwrapType($arg->scope->config) ?? new UnknownType, $arguments),
+            );
+        });
+
+        $this->normalizeRelationArgumentArray($argumentListArrayType, $this->relationArguments);
+    }
+
+    /**
+     * @param array<string, Type> &$normalizedShape
+     */
+    private function normalizeRelationArgumentArray(ArrayType $arrayType, array &$normalizedShape): void
+    {
+        $shape = $arrayType->shape;
+
+        if (! $shape && $arrayType->itemType) {
+            $shape = $arrayType->itemType instanceof UnionType
+                ? $arrayType->itemType->types
+                : [$arrayType->itemType];
+        }
+
+        foreach ($shape as $key => $valueType) {
+            $valueType = $valueType->unwrapType($this->scope->config);
+
+            if (is_string($key)) {
+                $keyVariants = [$key];
+
+                if ($valueType instanceof ArrayType) {
+                    $relationArgumentShape = [];
+
+                    $this->normalizeRelationArgumentArray($valueType, $relationArgumentShape);
+
+                    $valueType = new ArrayType(shape: $relationArgumentShape);
+                }
+
+            } else {
+                $keyVariants = [];
+
+                if ($valueType instanceof StringType) {
+                    $keyVariants = $valueType->getPossibleValues() ?? [];
+                    $valueType = new UnknownType;
+                }
+            }
+
+            foreach ($keyVariants as $dotNotationString) {
+                $segments = preg_split('/(?<!\\\\)\./', $dotNotationString);
+                $segments = array_map(fn ($s) => str_replace('\\.', '.', $s), $segments ?: []);
+
+                $this->dotNotationToNestedArrayType($normalizedShape, $segments, $valueType);
+            }
+        }
+    }
+
+    /**
+     * @param PhpFunctionArgument[] $arguments
+     */
+    private function handlePluck(array $arguments): ?Type
+    {
+        $columnArg = $arguments[0] ?? null;
+        $keyArg = $arguments[1] ?? null;
+
+        if (! $columnArg) {
+            return null;
+        }
+
+        $keyArgType = $keyArg?->getType()?->unwrapType($keyArg?->scope->config);
+
+        if ($keyArgType instanceof StringType) {
+            $keyArgStrings = $keyArgType->getPossibleValues() ?? [];
+
+            if (count($keyArgStrings) === 1) {
+                [$propertyName, $propertyType] = $this->getColumnType($keyArgStrings[0]);
+
+                $this->collectionKeyType = $propertyType;
+
+            } else {
+                $this->collectionKeyType = new UnionType(
+                    array_filter(array_map(
+                        fn ($keyArgString) => $this->getColumnType($keyArgString)[1],
+                        $keyArgStrings,
+                    ))
+                );
+            }
+        }
+
+        $columnArgType = $columnArg->getType()?->unwrapType($columnArg->scope->config);
+
+        if ($columnArgType instanceof StringType) {
+            $columnArgStrings = $columnArgType->getPossibleValues() ?? [];
+
+            if (count($columnArgStrings) === 1) {
+                return $this->getColumnType($columnArgStrings[0])[1] ?? new UnknownType;
+            }
+
+            return new UnionType(
+                array_filter(array_map(
+                    fn ($columnArgString) => $this->getColumnType($columnArgString)[1],
+                    $columnArgStrings,
+                ))
+            );
+        }
+
+        return null;
     }
 
 
@@ -342,11 +450,12 @@ class QueryNavigator
 
     /**
      * @param PhpFunctionArgument[] $args
-     * @return Type[]
+     * @return array<string, Type>
      */
     private function getColumnsFromArguments(array $args): array
     {
         $columns = [];
+        $columnTypes = [];
         $firstArgIsArray = false;
 
         if (isset($args[0])) {
@@ -364,11 +473,11 @@ class QueryNavigator
 
                 if ($arrayItemType instanceof UnionType) {
                     // array<ColumnA | ColumnB> -> [ColumnA, ColumnB]
-                    $columns = $arrayItemType->types;
+                    $columnTypes = $arrayItemType->types;
 
                 } else if ($arrayItemType) {
                     // array<ColumnA> -> [ColumnA]
-                    $columns = [$arrayItemType];
+                    $columnTypes = [$arrayItemType];
                 }
             }
         }
@@ -386,7 +495,19 @@ class QueryNavigator
                 }
 
                 if ($argType) {
-                    $columns[] = $argType;
+                    $columnTypes[] = $argType;
+                }
+            }
+        }
+
+        foreach ($columnTypes as $columnType) {
+            if ($columnType instanceof StringType) {
+                $columnStrings = $columnType->getPossibleValues() ?? [];
+
+                foreach ($columnStrings as $columnString) {
+                    [$propertyName, $propertyType] = $this->getColumnType($columnString);
+
+                    $columns[$propertyName] = $propertyType ?? new UnknownType;
                 }
             }
         }
@@ -425,5 +546,88 @@ class QueryNavigator
         }
 
         return [$propertyName, $propertyType];
+    }
+
+
+    private function resolveEagerLoadedRelations(): void
+    {
+        if (! $this->modelClassName) {
+            return;
+        }
+
+        if (! $this->relationArguments) {
+            return;
+        }
+
+        $modelPhpClass = $this->scope->getPhpClassInDeeperScope($this->modelClassName);
+        $relations = [];
+
+        foreach ($this->relationArguments as $key => $relationArgumentType) {
+            $relation = $this->makeRelationObject($key, $relationArgumentType, $modelPhpClass);
+
+            if (isset($relations[$relation->name])) {
+                $relations[$relation->name]->columns = array_merge($relations[$relation->name]->columns, $relation->columns);
+                $relations[$relation->name]->relations = array_merge($relations[$relation->name]->relations, $relation->relations);
+
+            } else {
+                $relations[$relation->name] = $relation;
+            }
+        }
+
+        $relationTypes = [];
+
+        foreach ($relations as $name => $relation) {
+            $relationTypes[$name] = $relation->resolveType() ?? new UnknownType;
+        }
+
+        $this->eagerLoadedRelations = $relationTypes;
+    }
+
+
+    /**
+     * @param PhpClass<Model> $modelPhpClass
+     */
+    private function makeRelationObject(string $key, Type $relationArgumentType, PhpClass $modelPhpClass): Relation
+    {
+        $parts = explode(':', $key, 2);
+
+        $name = $parts[0];
+        $columns = isset($parts[1]) ? explode(',', $parts[1]) : [];
+
+        $relationArgumentType = $this->scope->withPartialArraysResolvingAsShapes(
+            fn () => $relationArgumentType->unwrapType($this->scope->config)
+        );
+
+        $relation = new Relation(
+            modelPhpClass: $modelPhpClass,
+            name: $name,
+            columns: $columns,
+            relations: [],
+        );
+
+        if ($relationArgumentType instanceof ArrayType) {
+            $relatedModelClassName = $relation->getRelatedModelClassName();
+
+            if ($relatedModelClassName) {
+                $relatedModelPhpClass = $modelPhpClass->scope->getPhpClassInDeeperScope($relatedModelClassName);
+
+                if ($relationArgumentType->shape) {
+                    foreach ($relationArgumentType->shape as $subRelationKey => $valueType) {
+                        $subRelation = $this->makeRelationObject((string) $subRelationKey, $valueType, $relatedModelPhpClass);
+
+                        $relation->relations[$subRelation->name] = $subRelation;
+                    }
+
+                } else if ($relationArgumentType->itemType instanceof StringType) {
+                    foreach ($relationArgumentType->itemType->getPossibleValues() ?? [] as $subRelationKey) {
+                        $subRelation = $this->makeRelationObject($subRelationKey, new UnknownType, $relatedModelPhpClass);
+
+                        $relation->relations[$subRelation->name] = $subRelation;
+                    }
+                }
+            }
+        }
+
+        return $relation;
     }
 }

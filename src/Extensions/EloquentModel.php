@@ -19,8 +19,16 @@ use AutoDoc\Exceptions\AutoDocException;
 use AutoDoc\Extensions\ClassExtension;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use ReflectionNamedType;
 use Throwable;
 
@@ -65,9 +73,12 @@ class EloquentModel extends ClassExtension
             return null;
         }
 
-        $propertyType = $objectType->properties[$propertyName] ?? $objectType->hiddenProperties[$propertyName] ?? new UnknownType;
+        $propertyType = $objectType->properties[$propertyName]
+            ?? $objectType->hiddenProperties[$propertyName]
+            ?? $this->getRelationType($phpClass, $propertyName)
+            ?? new UnknownType;
 
-        return $this->getModelAttributeType($phpClass, $propertyName, $propertyType);
+        return clone $this->getModelAttributeType($phpClass, $propertyName, $propertyType);
     }
 
 
@@ -115,7 +126,7 @@ class EloquentModel extends ClassExtension
             $modelArrayRepresentation = $modelToArrayMethod->getReturnType()->unwrapType($phpClass->scope->config);
 
             if ($modelArrayRepresentation instanceof ArrayType) {
-                if (isset($modelArrayRepresentation->shape) || isset($modelArrayRepresentation->itemType)) {
+                if ($modelArrayRepresentation->shape || isset($modelArrayRepresentation->itemType)) {
                     return $modelArrayRepresentation;
                 }
             }
@@ -269,6 +280,51 @@ class EloquentModel extends ClassExtension
             default => new UnknownType,
         };
     }
+
+
+    /**
+     * @param PhpClass<Model> $phpClass
+     */
+    private function getRelationType(PhpClass $phpClass, string $relationName): ?Type
+    {
+        if ($phpClass->getReflection()->hasMethod($relationName)) {
+            $phpDocReturnType = $phpClass->getMethod($relationName)->getPhpFunction()?->getTypeFromPhpDocReturnTag();
+
+            if ($phpDocReturnType && $phpDocReturnType->typeNode instanceof GenericTypeNode) {
+                $returnTypeClassName = $phpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);
+
+                if (isset($phpDocReturnType->typeNode->genericTypes[0])
+                    && $phpDocReturnType->typeNode->genericTypes[0] instanceof IdentifierTypeNode
+                ) {
+                    $firstGenericTypeName = $phpDocReturnType->typeNode->genericTypes[0]->name;
+
+                    if ($returnTypeClassName === HasOne::class || $returnTypeClassName === BelongsTo::class || $returnTypeClassName === HasOneThrough::class) {
+                        $associatedModelClassName = $phpClass->scope->getResolvedClassName($firstGenericTypeName);
+
+                        if ($associatedModelClassName) {
+                            return new UnionType([
+                                $phpClass->scope->getPhpClassInDeeperScope($associatedModelClassName)->resolveType(),
+                                new NullType,
+                            ]);
+                        }
+
+                    } else if ($returnTypeClassName === HasMany::class || $returnTypeClassName === BelongsToMany::class || $returnTypeClassName === HasManyThrough::class) {
+                        $associatedModelClassName = $phpClass->scope->getResolvedClassName($firstGenericTypeName);
+
+                        if ($associatedModelClassName) {
+                            return new ArrayType(
+                                itemType: $phpClass->scope->getPhpClassInDeeperScope($associatedModelClassName)->resolveType(),
+                                className: Collection::class,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     /**
      * @var array<class-string<Model>, Type>

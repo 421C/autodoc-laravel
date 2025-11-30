@@ -58,7 +58,8 @@ class RouteParamResolver extends OperationExtension
                 $type = $phpDocParams[$param['name']]->resolve();
             }
 
-            $description = $type->description;
+            $phpDocParamDescription = $type->description;
+            $type->description = null;
 
             $reflectionType = $this->findReflectionParam($reflectionParams, $param['name'])?->getType();
             $isModel = false;
@@ -107,7 +108,7 @@ class RouteParamResolver extends OperationExtension
                 $type = Type::resolveFromReflection($reflectionType, $scope);
             }
 
-            $type->description = $description;
+            $type->addDescription($phpDocParamDescription, prepend: true);
 
             $operation->parameters[] = new Parameter(
                 name: $param['name'],

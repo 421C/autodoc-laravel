@@ -87,6 +87,15 @@ trait ComparesSchemaArrays
                     }
 
                 } else if ($value !== $actual[$key]) {
+                    if (is_string($value) && is_string($actual[$key])) {
+                        $value = str_replace("\r\n", "\n", $value);
+                        $actual[$key] = str_replace("\r\n", "\n", $actual[$key]);
+
+                        if ($value === $actual[$key]) {
+                            continue;
+                        }
+                    }
+
                     $diff[] = $dotKey . ":\n        expected: " . $this->valueToPhpString($value) . ",\n        actual: " . $this->valueToPhpString($actual[$key]);
                 }
 

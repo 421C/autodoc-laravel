@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Tests\TestProject\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Rocket extends Model
 {
@@ -14,5 +15,13 @@ class Rocket extends Model
             'id' => $id,
             'name' => 'Rocket ' . $id,
         ];
+    }
+
+    /**
+     * @return HasOne<Planet, $this>
+     */
+    public function targetPlanet(): HasOne
+    {
+        return $this->hasOne(Planet::class, 'id', 'target_planet_id');
     }
 }

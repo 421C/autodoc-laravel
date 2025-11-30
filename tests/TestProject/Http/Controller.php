@@ -1544,7 +1544,9 @@ class Controller
                                             'integer',
                                             'null',
                                         ],
-                                        'description' => '[StateEnum](#/schemas/StateEnum)',
+                                        'description' => '[StateEnum](#/schemas/StateEnum)
+
+status description',
                                         'enum' => [
                                             1,
                                             2,
@@ -1578,7 +1580,9 @@ class Controller
                                 'integer',
                                 'null',
                             ],
-                            'description' => '[StateEnum](#/schemas/StateEnum)',
+                            'description' => '[StateEnum](#/schemas/StateEnum)
+
+status description',
                             'enum' => [
                                 1,
                                 2,
@@ -2638,8 +2642,8 @@ class Controller
                                         'items' => [
                                             'type' => [
                                                 'string',
-                                                'null',
                                                 'integer',
+                                                'null',
                                             ],
                                         ],
                                     ],
@@ -2953,7 +2957,6 @@ class Controller
                                     ],
                                     'priority' => [
                                         'type' => [
-                                            'string',
                                             'integer',
                                             'boolean',
                                         ],
@@ -2994,5 +2997,653 @@ class Controller
                 'priority' => array_search($station->size, ['big', 'small']),
                 ...$station->toArray(),
             ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route46(): mixed
+    {
+        $planet = Rocket::firstWhere('name', '123');
+
+        /** @phpstan-ignore property.nonObject */
+        return $planet->targetPlanet;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                    'id' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'spaceStations' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'id' => [
+                                                    'anyOf' => [
+                                                        [
+                                                            'type' => 'string',
+                                                            'const' => '',
+                                                        ],
+                                                        [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                ],
+                                                'name' => [
+                                                    'type' => [
+                                                        'string',
+                                                        'null',
+                                                    ],
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'id',
+                                                'name',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'diameter',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route47(): JsonResponse
+    {
+        return response()->json(Planet::with('spaceStations:id,name')->select('id', 'diameter')->get());
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'created_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                    'id' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'spaceStations' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'description' => [
+                                                    'type' => 'string',
+                                                ],
+                                                'name' => [
+                                                    'type' => [
+                                                        'string',
+                                                        'null',
+                                                    ],
+                                                ],
+                                                'rockets' => [
+                                                    'type' => 'array',
+                                                    'items' => [
+                                                        'type' => 'object',
+                                                        'properties' => [
+                                                            'id' => [
+                                                                'type' => 'integer',
+                                                            ],
+                                                            'name' => [
+                                                                'type' => 'string',
+                                                            ],
+                                                        ],
+                                                        'required' => [
+                                                            'id',
+                                                            'name',
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'name',
+                                                'description',
+                                            ],
+                                        ],
+                                    ],
+                                    'updated_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'visited' => [
+                                        'type' => 'boolean',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'diameter',
+                                    'visited',
+                                    'created_at',
+                                    'updated_at',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route48(): JsonResponse
+    {
+        return response()->json(
+            Planet::query()
+                ->with([
+                    'spaceStations:name,description' => fn ($query) => $query->where('id', '>', 1),
+                    'spaceStations.rockets',
+                ])
+                ->get()
+                ->keyBy('id')
+        );
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'id' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'string',
+                                            'const' => '',
+                                        ],
+                                        [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                ],
+                                'planet' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'rockets' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'diameter',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route49(): JsonResponse
+    {
+        return response()->json(
+            SpaceStation::select(['id'])
+                ->with('planet.rockets')
+                ->get()
+                ->get(0)
+        );
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'planet' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'diameter',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'created_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route50(): ?SpaceStation
+    {
+        return SpaceStation::where([])
+            ->limit(1)
+            ->with([
+                'planet:id,diameter' => [
+                    'rockets' => static function () {},
+                ],
+            ])
+            ->select('created_at')
+            ->first();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'description' => [
+                                    'type' => 'string',
+                                ],
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'id' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'string',
+                                            'const' => '',
+                                        ],
+                                        [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                ],
+                                'name' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'planet' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'spaceStations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'description' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'id' => [
+                                                        'anyOf' => [
+                                                            [
+                                                                'type' => 'string',
+                                                                'const' => '',
+                                                            ],
+                                                            [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                    'rockets' => [
+                                                        'type' => 'array',
+                                                        'items' => [
+                                                            'type' => 'object',
+                                                            'properties' => [
+                                                                'id' => [
+                                                                    'type' => 'integer',
+                                                                ],
+                                                                'name' => [
+                                                                    'type' => 'string',
+                                                                ],
+                                                            ],
+                                                            'required' => [
+                                                                'id',
+                                                                'name',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'description',
+                                                    'size',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'diameter',
+                                    ],
+                                ],
+                                'size' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'description',
+                                'size',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route51(): SpaceStation
+    {
+        $relations = [
+            'planet:id,diameter',
+            'planet' => ['spaceStations.rockets:id'],
+        ];
+
+        return SpaceStation::with($relations)->firstOrFail();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'anyOf' => [
+                                [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'updated_at' => [
+                                            'type' => 'string',
+                                            'description' => 'Updated at (UTC)',
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                            'description' => 'Is the planet visited?',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'visited',
+                                        'updated_at',
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route52(): mixed
+    {
+        $station = SpaceStation::first();
+
+        if ($station?->planet) {
+            return [
+                /**
+                 * Is the planet visited?
+                 *
+                 * @phpstan-ignore property.notFound
+                 */
+                'visited' => $station->planet->visited,
+
+                /**
+                 * Updated at (UTC)
+                 *
+                 * @var \DateTimeInterface
+                 * @phpstan-ignore property.notFound
+                 */
+                'updated_at' => $station->planet->updated_at,
+            ];
+        }
+
+        return [];
     }
 }

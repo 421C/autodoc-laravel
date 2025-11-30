@@ -67,7 +67,7 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
             ',
             expected: '
             /** @autodoc AutoDoc\Laravel\Tests\TestProject\Models\Rocket */
-            interface Rocket {
+            type Rocket = {
                 id: number
                 name: string
             }
@@ -90,6 +90,41 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
                 diameter: number
             }>
             ',
+        );
+    }
+
+
+    #[Test]
+    public function modelWithOmitAndExtraData(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: <<<EOS
+            /**
+             * @autodoc AutoDoc\Laravel\Tests\TestProject\Models\Planet {
+             *     omit: 'created_at' | 'updated_at',
+             *     with: object{
+             *         radius: float,
+             *     }
+             * }
+             */
+            EOS,
+            expected: <<<EOS
+            /**
+             * @autodoc AutoDoc\Laravel\Tests\TestProject\Models\Planet {
+             *     omit: 'created_at' | 'updated_at',
+             *     with: object{
+             *         radius: float,
+             *     }
+             * }
+             */
+            type Planet = {
+                id: number
+                name: string
+                diameter: number
+                visited: boolean
+                radius: number
+            }
+            EOS,
         );
     }
 

@@ -38,6 +38,7 @@ class EloquentModelStaticCall extends StaticCallExtension
             'insertGetId',
             'insertUsingGetId',
             'find',
+            'firstWhere',
             'first',
             'firstOrFail',
             'findOrFail',
