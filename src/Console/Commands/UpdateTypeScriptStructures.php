@@ -22,10 +22,16 @@ class UpdateTypeScriptStructures extends Command
         $commandOutput = (new \AutoDoc\Commands\UpdateTypeScriptStructures($config))->run($workingDirectory);
 
         foreach ($commandOutput as $message) {
-            if (isset($message['filePath'])) {
+            if (isset($message['filePath'], $message['processedTags'])) {
                 $tagsText = $message['processedTags'] . ' tag' . ($message['processedTags'] === 1 ? '' : 's');
 
                 $this->line('Updated <fg=bright-white>' . $this->formatFilePath($message['filePath']) . '</> <fg=gray>(' . $tagsText . ')</>');
+
+            } else if (isset($message['filePath'], $message['exportedRequests'], $message['exportedResponses'])) {
+                $requestsResponsesText = $message['exportedRequests'] . ' request' . ($message['exportedRequests'] === 1 ? '' : 's') . ', '
+                    . $message['exportedResponses'] . ' response' . ($message['exportedResponses'] === 1 ? '' : 's');
+
+                $this->line('Updated <fg=bright-white>' . $this->formatFilePath($message['filePath']) . '</> <fg=gray>(' . $requestsResponsesText . ')</>');
 
             } else if (isset($message['error'])) {
                 if ($message['error'] instanceof Throwable) {

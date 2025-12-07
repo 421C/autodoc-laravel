@@ -31,7 +31,7 @@ class InvokableController
         'responses' => [
             200 => [
                 'content' => [
-                    'application/json' => [
+                    'text/plain' => [
                         'schema' => [
                             'const' => 'yo',
                             'type' => 'string',
