@@ -59,6 +59,7 @@ Route::get('/test/49', [Controller::class, 'route49']);
 Route::get('/test/50', [Controller::class, 'route50']);
 Route::get('/test/51', [Controller::class, 'route51']);
 Route::get('/test/52', [Controller::class, 'route52']);
+Route::get('/test/53', [Controller::class, 'route53']);
 
 Route::get('/test/invoke', InvokableController::class);
 

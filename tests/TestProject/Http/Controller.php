@@ -19,6 +19,7 @@ use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
 
 /**
  * @phpstan-type Symbol 'a'|'b'|'c'
@@ -3645,5 +3646,25 @@ status description',
         }
 
         return [];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'text/html' => [
+                        'schema' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route53(): View
+    {
+        return view('laravel-exceptions::419');
     }
 }

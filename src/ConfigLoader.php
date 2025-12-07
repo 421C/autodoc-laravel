@@ -31,6 +31,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\ResourceJson::class,
                 \AutoDoc\Laravel\Extensions\ResourceStaticCall::class,
                 \AutoDoc\Laravel\Extensions\RedirectResponse::class,
+                \AutoDoc\Laravel\Extensions\ViewResponse::class,
                 \AutoDoc\Laravel\Extensions\LengthAwarePaginatorJson::class,
                 \AutoDoc\Laravel\Extensions\RouteParamResolver::class,
                 \AutoDoc\Laravel\Extensions\QueryBuilderMethodCall::class,
