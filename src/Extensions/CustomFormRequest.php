@@ -37,7 +37,9 @@ class CustomFormRequest extends ClassExtension
             return null;
         }
 
-        $requestType = $this->parseValidationRules($validationArray->shape, $phpClass->scope);
+        $requestType = $phpClass->scope->withoutScalarTypeValueMerging(function () use ($phpClass, $validationArray) {
+            return $this->parseValidationRules($validationArray->shape, $phpClass->scope);
+        });
 
         self::$cache[$phpClass->className] = $requestType;
 

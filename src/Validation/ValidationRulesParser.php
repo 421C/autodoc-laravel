@@ -272,7 +272,7 @@ trait ValidationRulesParser
                                     if (is_array($allowedType->value)) {
                                         $enumValues = array_map(fn ($value) => $value, $allowedType->value);
 
-                                    } else {
+                                    } else if ($allowedType->value !== null) {
                                         $enumValues[] = $allowedType->value;
                                     }
                                 }
