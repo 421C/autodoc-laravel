@@ -565,12 +565,12 @@ class QueryNavigator
         foreach ($this->relationArguments as $key => $relationArgumentType) {
             $relation = $this->makeRelationObject($key, $relationArgumentType, $modelPhpClass);
 
-            if (isset($relations[$relation->name])) {
-                $relations[$relation->name]->columns = array_merge($relations[$relation->name]->columns, $relation->columns);
-                $relations[$relation->name]->relations = array_merge($relations[$relation->name]->relations, $relation->relations);
+            if (isset($relations[$relation->exportedName])) {
+                $relations[$relation->exportedName]->columns = array_merge($relations[$relation->exportedName]->columns, $relation->columns);
+                $relations[$relation->exportedName]->relations = array_merge($relations[$relation->exportedName]->relations, $relation->relations);
 
             } else {
-                $relations[$relation->name] = $relation;
+                $relations[$relation->exportedName] = $relation;
             }
         }
 
@@ -615,14 +615,14 @@ class QueryNavigator
                     foreach ($relationArgumentType->shape as $subRelationKey => $valueType) {
                         $subRelation = $this->makeRelationObject((string) $subRelationKey, $valueType, $relatedModelPhpClass);
 
-                        $relation->relations[$subRelation->name] = $subRelation;
+                        $relation->relations[$subRelation->exportedName] = $subRelation;
                     }
 
                 } else if ($relationArgumentType->itemType instanceof StringType) {
                     foreach ($relationArgumentType->itemType->getPossibleValues() ?? [] as $subRelationKey) {
                         $subRelation = $this->makeRelationObject($subRelationKey, new UnknownType, $relatedModelPhpClass);
 
-                        $relation->relations[$subRelation->name] = $subRelation;
+                        $relation->relations[$subRelation->exportedName] = $subRelation;
                     }
                 }
             }

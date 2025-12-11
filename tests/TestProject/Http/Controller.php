@@ -3082,7 +3082,7 @@ status description',
                                     'id' => [
                                         'type' => 'integer',
                                     ],
-                                    'spaceStations' => [
+                                    'space_stations' => [
                                         'type' => 'array',
                                         'items' => [
                                             'type' => 'object',
@@ -3157,7 +3157,7 @@ status description',
                                     'name' => [
                                         'type' => 'string',
                                     ],
-                                    'spaceStations' => [
+                                    'space_stations' => [
                                         'type' => 'array',
                                         'items' => [
                                             'type' => 'object',
@@ -3470,7 +3470,7 @@ status description',
                                         'id' => [
                                             'type' => 'integer',
                                         ],
-                                        'spaceStations' => [
+                                        'space_stations' => [
                                             'type' => 'array',
                                             'items' => [
                                                 'type' => 'object',
@@ -3666,5 +3666,47 @@ status description',
     public function route53(): View
     {
         return view('laravel-exceptions::419');
+    }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'param1',
+                'required' => true,
+                'schema' => [
+                    'allOf' => [
+                        [
+                            'type' => 'string',
+                        ],
+                        [
+                            'type' => 'number',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'param2',
+                'schema' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'string',
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route54(): void
+    {
+        request()->validate([
+            'param1' => 'required|string',
+        ]);
+
+        request()->validate([
+            'param1' => 'numeric',
+            'param2' => 'array',
+        ]);
     }
 }

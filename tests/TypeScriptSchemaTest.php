@@ -81,10 +81,10 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
     {
         $this->assertTypeScriptGeneratedCorrectly(
             input: '
-            /** @autodoc GET /test/29 */
+            /** @autodoc Post /test/29 */
             ',
             expected: '
-            /** @autodoc GET /test/29 */
+            /** @autodoc Post /test/29 */
             type 29Response = Array<{
                 planet_name: string
                 diameter: number

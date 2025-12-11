@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 
@@ -26,21 +27,34 @@ class Relation
     public function __construct(
         /** @var PhpClass<Model> */
         private PhpClass $modelPhpClass,
-        public string $name,
+        public readonly string $name,
 
         /** @var string[] */
         public array $columns = [],
 
         /** @var array<string, Relation> */
         public array $relations = [],
-    ) {}
+    ) {
+        $this->exportedName = $this->getExportedName();
+    }
 
+    public readonly string $exportedName;
 
     /** @var ?class-string<Model> */
     private ?string $relatedModelClassName = null;
 
     /** @var ?class-string */
     private ?string $relationTypeClassName = null;
+
+
+    public function getExportedName(): string
+    {
+        if (app()->make($this->modelPhpClass->className)::$snakeAttributes ?? true) {
+            return Str::snake($this->name);
+        }
+
+        return $this->name;
+    }
 
 
     /**
