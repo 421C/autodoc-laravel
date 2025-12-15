@@ -156,14 +156,14 @@ class Controller
                         'schema' => [
                             'anyOf' => [
                                 [
-                                    'type' => 'string',
-                                    'format' => 'date-time',
-                                ],
-                                [
                                     'type' => 'array',
                                     'items' => [
                                         'type' => 'string',
                                     ],
+                                ],
+                                [
+                                    'type' => 'string',
+                                    'format' => 'date-time',
                                 ],
                                 [
                                     'type' => 'integer',
@@ -348,8 +348,8 @@ class Controller
                                     'type' => 'number',
                                     'format' => 'float',
                                     'enum' => [
-                                        115,
                                         -0.1,
+                                        115,
                                     ],
                                 ],
                             ],
@@ -3708,5 +3708,98 @@ status description',
             'param1' => 'numeric',
             'param2' => 'array',
         ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'token',
+                'schema' => [
+                    'type' => 'string',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'additionalProperties' => [
+                                'type' => [
+                                    'string',
+                                    'boolean',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route55(): mixed
+    {
+        $tokens = request()->query('token');
+
+        $tokens['required'] = true;
+
+        return $tokens;
+    }
+
+
+    /**
+     * @request-query user_id {type: int}
+     */
+    #[ExpectedOperationSchema([
+        'summary' => '',
+        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'user_id',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'anyOf' => [
+                                    [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                    ],
+                                    [
+                                        'type' => 'null',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route56(): mixed
+    {
+        return [
+            request()->query('user_id'),
+            request()->query('user_id'),
+            request()->query('user_id'),
+        ];
     }
 }

@@ -61,6 +61,8 @@ Route::post('/test/51', [Controller::class, 'route51']);
 Route::post('/test/52', [Controller::class, 'route52']);
 Route::post('/test/53', [Controller::class, 'route53']);
 Route::get('/test/54', [Controller::class, 'route54']);
+Route::post('/test/55', [Controller::class, 'route55']);
+Route::post('/test/56', [Controller::class, 'route56']);
 
 Route::post('/test/invoke', InvokableController::class);
 

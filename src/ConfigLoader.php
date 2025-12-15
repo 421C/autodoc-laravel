@@ -20,8 +20,9 @@ class ConfigLoader
             $configArray['extensions'] = array_unique([
                 ...$configArray['extensions'],
 
-                \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
+                \AutoDoc\Laravel\Extensions\RequestValidate::class,
+                \AutoDoc\Laravel\Extensions\RequestQuery::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,

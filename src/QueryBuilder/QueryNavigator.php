@@ -14,6 +14,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
+use AutoDoc\DataTypes\UnresolvedVariableType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -388,10 +389,14 @@ class QueryNavigator
         } else if ($expr instanceof Node\Expr\Variable) {
             $unresolvedVarType = $this->scope->getVariableType($expr);
 
-            if ($unresolvedVarType instanceof UnresolvedParserNodeType
-                && $unresolvedVarType->node instanceof Node\Expr
-            ) {
-                $this->extractBuilderMethodsAndModel($unresolvedVarType->node);
+            if ($unresolvedVarType instanceof UnresolvedVariableType) {
+                foreach ($unresolvedVarType->phpVariable->getDirectAssignmentTypes() as $type) {
+                    if ($type instanceof UnresolvedParserNodeType && $type->node instanceof Node\Expr) {
+                        $this->extractBuilderMethodsAndModel($type->node);
+
+                        break;
+                    }
+                }
             }
         }
     }

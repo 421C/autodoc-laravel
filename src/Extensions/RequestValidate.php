@@ -6,14 +6,12 @@ use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
-use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
 use Illuminate\Http\Request;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\Variable;
 
 /**
  * Handles Laravel Request `validate` method.
@@ -50,29 +48,17 @@ class RequestValidate extends MethodCallExtension
             return false;
         }
 
-        if ($methodCall->var instanceof Variable) {
-            $unresolvedVarType = $scope->getVariableType($methodCall->var);
-
-            if ($unresolvedVarType instanceof UnresolvedParserNodeType
-                && $unresolvedVarType->node instanceof Node\Name
-            ) {
-                $className = $scope->getResolvedClassName($unresolvedVarType->node);
-
-                if (! $className) {
-                    return false;
-                }
-
-                if (is_a($className, Request::class, true)) {
-                    return true;
-                }
-            }
-        }
-
         if ($methodCall->var instanceof FuncCall
             && $methodCall->var->name instanceof Node\Name
             && $methodCall->var->name->name === 'request'
         ) {
             return true;
+        }
+
+        $varType = $scope->resolveType($methodCall->var);
+
+        if ($varType instanceof ObjectType && $varType->className) {
+            return is_a($varType->className, Request::class, true);
         }
 
         return false;
