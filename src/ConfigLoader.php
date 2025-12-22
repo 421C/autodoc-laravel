@@ -18,7 +18,8 @@ class ConfigLoader
 
         if (config('autodoc.laravel.autoload_builtin_extensions') ?? true) {
             $configArray['extensions'] = array_unique([
-                ...$configArray['extensions'],
+                /** @phpstan-ignore nullCoalesce.offset */
+                ...($configArray['extensions'] ?? []),
 
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
