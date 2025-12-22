@@ -55,7 +55,7 @@ class EloquentModel extends ClassExtension
 
         EloquentModel::$cache[$phpClass->className] = $modelType;
 
-        return $modelType;
+        return clone $modelType;
     }
 
 

@@ -16,6 +16,7 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\DataTypes\UnresolvedVariableType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -52,9 +53,6 @@ class QueryNavigator
     private array $columnSetVariants = [];
 
     /** @var array<string, Type> */
-    private array $eagerLoadedRelations = [];
-
-    /** @var array<string, Type> */
     private array $relationArguments = [];
 
     private bool $allMethodsAreBuilderMethods = true;
@@ -70,9 +68,7 @@ class QueryNavigator
 
     public function getResultType(MethodCall|StaticCall $methodCall, string $methodName): ?Type
     {
-        $rowType = $this->scope->withoutScalarTypeValueMerging(function () use ($methodCall) {
-            return $this->getRowType($methodCall);
-        });
+        $rowType = $this->scope->withoutScalarTypeValueMerging(fn () => $this->getRowType($methodCall));
 
         if (! $rowType) {
             return null;
@@ -82,16 +78,12 @@ class QueryNavigator
             return new ArrayType(itemType: $rowType, className: Collection::class);
         }
 
-        if (in_array($methodName, ['firstOrFail', 'findOrFail', 'firstOrNew', 'firstOrCreate'])) {
+        if (in_array($methodName, ['firstOrFail', 'findOrFail', 'firstOrNew', 'firstOrCreate', 'create'])) {
             return $rowType;
         }
 
         if ($methodName === 'paginate') {
-            return (new Paginator(
-                paginatorPhpClass: $this->scope->getPhpClassInDeeperScope(LengthAwarePaginator::class),
-                entryClass: $this->modelClassName,
-                entryType: $rowType,
-            ))->resolveType();
+            return $this->scope->withoutScalarTypeValueMerging(fn () => $this->getPaginatorType($rowType, $methodCall));
         }
 
         if (in_array($methodName, ['first', 'latest', 'oldest', 'firstWhere'])) {
@@ -184,23 +176,74 @@ class QueryNavigator
             ];
         }
 
-        $this->resolveEagerLoadedRelations();
-
-        if (! $this->modelType) {
-            return null;
-        }
-
+        $eagerLoadedRelations = $this->resolveEagerLoadedRelations();
         $rowType = new UnionType;
 
         foreach ($this->columnSetVariants as $columns) {
             $objectType = clone $this->modelType;
 
-            $objectType->properties = array_merge($columns, $this->eagerLoadedRelations);
+            if (isset($columns['*'])) {
+                unset($columns['*']);
+
+                $columns = array_merge($objectType->properties, $columns);
+            }
+
+            $objectType->properties = array_merge($columns, $eagerLoadedRelations);
 
             $rowType->types[] = $objectType;
         }
 
-        return $rowType;
+        return $rowType->unwrapType($this->scope->config);
+    }
+
+    private function getPaginatorType(Type $rowType, MethodCall|StaticCall $methodCall): Type
+    {
+        $args = PhpFunctionArgument::list($methodCall->args, $this->scope);
+        $phpFunction = $this->scope->getPhpClassInDeeperScope(Builder::class)->getMethod('paginate', $args)->getPhpFunction();
+
+        if ($this->scope->route) {
+            $pageNameType = $phpFunction?->getParsedArgumentType('pageName')?->unwrapType($this->scope->config);
+            $pageParamName = null;
+
+            if ($pageNameType) {
+                if ($pageNameType instanceof StringType && is_string($pageNameType->value)) {
+                    $pageParamName = $pageNameType->value;
+                }
+
+            } else {
+                $pageParamName = 'page';
+            }
+
+            if ($pageParamName) {
+                $this->scope->route->requestQueryParams[$pageParamName] = new IntegerType;
+            }
+        }
+
+        $columnsArgType = $phpFunction?->getParsedArgumentType('columns');
+
+        if ($columnsArgType) {
+            $columns = $this->getColumnsFromArgument($columnsArgType);
+
+            if ($columns) {
+                if ($rowType instanceof ObjectType) {
+                    $eagerLoadedRelations = $this->resolveEagerLoadedRelations();
+
+                    if (isset($columns['*'])) {
+                        unset($columns['*']);
+
+                        $columns = array_merge($rowType->properties, $columns);
+                    }
+
+                    $rowType->properties = array_merge($columns, $eagerLoadedRelations);
+                }
+            }
+        }
+
+        return (new Paginator(
+            paginatorPhpClass: $this->scope->getPhpClassInDeeperScope(LengthAwarePaginator::class),
+            entryClass: $this->modelClassName,
+            entryType: $rowType,
+        ))->resolveType();
     }
 
     /**
@@ -522,6 +565,49 @@ class QueryNavigator
 
 
     /**
+     * @return array<string, Type>
+     */
+    private function getColumnsFromArgument(Type $columnsArgType): array
+    {
+        $columnsArgType = $columnsArgType->unwrapType();
+
+        $columnTypes = [];
+
+        if ($columnsArgType instanceof ArrayType) {
+            $arrayItemType = $columnsArgType->convertShapeToTypePair()->itemType;
+
+            if ($arrayItemType instanceof UnionType) {
+                // array<ColumnA | ColumnB> -> [ColumnA, ColumnB]
+                $columnTypes = $arrayItemType->types;
+
+            } else if ($arrayItemType) {
+                // array<ColumnA> -> [ColumnA]
+                $columnTypes = [$arrayItemType];
+            }
+
+        } else {
+            $columnTypes[] = $columnsArgType;
+        }
+
+        $columns = [];
+
+        foreach ($columnTypes as $columnType) {
+            if ($columnType instanceof StringType) {
+                $columnStrings = $columnType->getPossibleValues() ?? [];
+
+                foreach ($columnStrings as $columnString) {
+                    [$propertyName, $propertyType] = $this->getColumnType($columnString);
+
+                    $columns[$propertyName] = $propertyType ?? new UnknownType;
+                }
+            }
+        }
+
+        return $columns;
+    }
+
+
+    /**
      * @return array{string|null, Type|null}
      */
     private function getColumnType(string $column): array
@@ -554,14 +640,17 @@ class QueryNavigator
     }
 
 
-    private function resolveEagerLoadedRelations(): void
+    /**
+     * @return array<string, Type>
+     */
+    private function resolveEagerLoadedRelations(): array
     {
         if (! $this->modelClassName) {
-            return;
+            return [];
         }
 
         if (! $this->relationArguments) {
-            return;
+            return [];
         }
 
         $modelPhpClass = $this->scope->getPhpClassInDeeperScope($this->modelClassName);
@@ -585,7 +674,7 @@ class QueryNavigator
             $relationTypes[$name] = $relation->resolveType() ?? new UnknownType;
         }
 
-        $this->eagerLoadedRelations = $relationTypes;
+        return $relationTypes;
     }
 
 
