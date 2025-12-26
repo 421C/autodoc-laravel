@@ -156,6 +156,18 @@ return [
          * If disabled, arrays will be resolved as shapes only if all keys are known.
          */
         'resolve_partial_shapes' => false,
+
+        /**
+         * When enabled, array shapes will be merged in type unions.
+         */
+        'merge_shapes_in_type_unions' => false,
+    ],
+
+    'objects' => [
+        /**
+         * When enabled, object shapes will be merged in type unions.
+         */
+        'merge_shapes_in_type_unions' => false,
     ],
 
     /**
@@ -195,10 +207,15 @@ return [
         'enabled' => false, // filter_var(env('APP_DEBUG'), FILTER_VALIDATE_BOOL),
 
         /**
-         * Ignore errors about non-existant methods on classes that have a
+         * Ignore errors about unknown methods on classes that have a
          * __call or __callStatic magic method.
          */
         'ignore_dynamic_method_errors' => true,
+
+        /**
+         * Ignore errors about unknown methods in traits.
+         */
+        'ignore_unknown_method_errors_in_traits' => true,
     ],
 
     /**

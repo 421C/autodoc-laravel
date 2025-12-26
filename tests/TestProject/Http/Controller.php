@@ -14,6 +14,7 @@ use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
@@ -1324,6 +1325,15 @@ class Controller
     #[ExpectedOperationSchema([
         'summary' => 'Route 21',
         'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'page',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
         'responses' => [
             200 => [
                 'description' => '',
@@ -1474,6 +1484,7 @@ class Controller
                             'properties' => [
                                 'id' => [
                                     'type' => 'integer',
+                                    'const' => 1,
                                 ],
                                 'name' => [
                                     'type' => 'string',
@@ -2347,6 +2358,15 @@ status description',
     #[ExpectedOperationSchema([
         'summary' => 'Route 36',
         'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'page_number',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
         'responses' => [
             200 => [
                 'description' => '',
@@ -2471,7 +2491,7 @@ status description',
     ])]
     public function route36(): mixed
     {
-        return SpaceStation::select('id', 'size')->paginate(50);
+        return SpaceStation::select('id', 'size')->paginate(50, pageName: 'page_number');
     }
 
 
@@ -3801,5 +3821,466 @@ status description',
             request()->query('user_id'),
             request()->query('user_id'),
         ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route57(): mixed
+    {
+        return Planet::create([
+            'name' => 'Earth',
+            'diameter' => 12345,
+            'visited' => true,
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'last_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'last_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'links' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'active' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'url' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'total' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'first_page_url',
+                                'from',
+                                'last_page',
+                                'last_page_url',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                                'total',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route58(): mixed
+    {
+        return Planet::query()->paginate(null, ['planets.id', 'diameter'], strtoupper('page'));
+    }
+
+
+    /**
+     * @return LengthAwarePaginator<int, int>
+     */
+    #[ExpectedOperationSchema([
+        'summary' => '',
+        'description' => '',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'last_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'last_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'links' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'active' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'url' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'total' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'first_page_url',
+                                'from',
+                                'last_page',
+                                'last_page_url',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                                'total',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route59(): LengthAwarePaginator
+    {
+        /** @phpstan-ignore return.type */
+        return null;
+    }
+
+
+    /**
+     * @phpstan-ignore missingType.generics
+     */
+    #[ExpectedOperationSchema([
+        'summary' => '',
+        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'p',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'y' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'last_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'last_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'links' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'active' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'url' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'total' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'first_page_url',
+                                'from',
+                                'last_page',
+                                'last_page_url',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                                'total',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function route60(): LengthAwarePaginator
+    {
+        return Planet::query()->paginate(10, ['*', 'x.y'], 'p', null, null);
     }
 }

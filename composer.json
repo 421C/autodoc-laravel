@@ -1,9 +1,9 @@
 {
     "name": "421c/autodoc-laravel",
-    "description": "Automatic API documentation generation tool for Laravel projects",
+    "description": "Automatic OpenApi documentation and TypeScript generation tool for Laravel projects",
     "license": "MIT",
     "require": {
-        "421c/autodoc-php": "^1.13.1",
+        "421c/autodoc-php": "^1.15.0",
         "illuminate/database": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0||^12.0",
         "illuminate/routing": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0||^12.0",
         "illuminate/support": "^6.0||^7.0||^8.0||^9.0||^10.0||^11.0||^12.0"
