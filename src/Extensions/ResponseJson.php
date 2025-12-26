@@ -3,8 +3,9 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\Scope;
-use AutoDoc\DataTypes\ArrayType;
+use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallExtension;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
@@ -26,11 +27,20 @@ class ResponseJson extends MethodCallExtension
             $dataForJsonResponse = $methodCall->args[0]->value ?? null;
 
             if ($dataForJsonResponse) {
-                return $scope->resolveType($dataForJsonResponse);
+                $payloadType = $scope->resolveType($dataForJsonResponse);
+
+                if ($payloadType instanceof UnknownType) {
+                    $payloadType = new ObjectType;
+                }
 
             } else {
-                return new ArrayType;
+                $payloadType = new ObjectType;
             }
+
+            return new ObjectType(
+                className: \Illuminate\Http\JsonResponse::class,
+                typeToDisplay: $payloadType,
+            );
         }
 
         return null;
