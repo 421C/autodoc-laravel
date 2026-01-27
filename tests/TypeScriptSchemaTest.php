@@ -81,11 +81,11 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
     {
         $this->assertTypeScriptGeneratedCorrectly(
             input: '
-            /** @autodoc Post /test/29 */
+            /** @autodoc Post /test/eloquent/all-alias */
             ',
             expected: '
-            /** @autodoc Post /test/29 */
-            type 29Response = Array<{
+            /** @autodoc Post /test/eloquent/all-alias */
+            type AllAliasResponse = Array<{
                 planet_name: string
                 diameter: number
             }>
@@ -125,6 +125,45 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
                 radius: number
             }
             EOS,
+        );
+    }
+
+
+    #[Test]
+    public function orderEndpointRequestResponse(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: '
+            /** @autodoc patch /test/orders/{order} request */
+            /** @autodoc patch /test/orders/{order} */
+            /** @autodoc patch /test/orders/{order} 400 */
+            type OrderResponseBadRequest = unknown
+            ',
+            expected: '
+            /** @autodoc patch /test/orders/{order} request */
+            type OrderRequest = {
+                status: 1|2|3|4
+            }
+            /** @autodoc patch /test/orders/{order} */
+            type OrderResponse = {
+                status_updated: true
+                products: Array<{
+                    id: number
+                    name: string
+                }>
+            }
+            /** @autodoc patch /test/orders/{order} 400 */
+            type OrderResponseBadRequest = {
+                status_updated: false
+                message: \'Completed orders can’t be changed\'
+                order: {
+                    id: number
+                    status: 1|2|3|4
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            ',
         );
     }
 
