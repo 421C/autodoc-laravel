@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\Scope;
+use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnknownType;
@@ -25,6 +26,7 @@ class ResponseJson extends MethodCallExtension
             && $methodCall->var->name->name === 'response'
         ) {
             $dataForJsonResponse = $methodCall->args[0]->value ?? null;
+            $statusCodeType = $methodCall->args[1]->value ?? null;
 
             if ($dataForJsonResponse) {
                 $payloadType = $scope->resolveType($dataForJsonResponse);
@@ -37,10 +39,20 @@ class ResponseJson extends MethodCallExtension
                 $payloadType = new ObjectType;
             }
 
-            return new ObjectType(
+            $responseType = new ObjectType(
                 className: \Illuminate\Http\JsonResponse::class,
                 typeToDisplay: $payloadType,
             );
+
+            if ($statusCodeType) {
+                $statusCodeType = $scope->resolveType($statusCodeType);
+
+                if ($statusCodeType instanceof IntegerType && is_int($statusCodeType->value)) {
+                    $responseType->httpStatusCode = $statusCodeType->value;
+                }
+            }
+
+            return $responseType;
         }
 
         return null;
