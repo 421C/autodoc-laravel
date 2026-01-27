@@ -42,11 +42,29 @@ class CollectionMethodCall extends MethodCallExtension
 
         $varType = $scope->resolveType($methodCall->var);
 
-        $isLaravelCollection = $varType instanceof ArrayType
-            && $varType->className
-            && is_a($varType->className, Collection::class, true);
+        $isLaravelCollection = fn (Type $type): bool => $type instanceof ArrayType
+            && $type->className
+            && is_a($type->className, Collection::class, true);
 
-        if (! $isLaravelCollection) {
+        if (! $isLaravelCollection($varType)) {
+            $foundCollection = false;
+
+            if ($varType instanceof UnionType) {
+                foreach ($varType->types as $typeInUnion) {
+                    if ($isLaravelCollection($typeInUnion)) {
+                        $varType = $typeInUnion;
+                        $foundCollection = true;
+                        break;
+                    }
+                }
+            }
+
+            if (! $foundCollection) {
+                return null;
+            }
+        }
+
+        if (! ($varType instanceof ArrayType)) {
             return null;
         }
 
@@ -105,10 +123,13 @@ class CollectionMethodCall extends MethodCallExtension
 
         if ($callbackType instanceof CallableType) {
             $collectionType->shape = [];
-            $collectionType->itemType = $callbackType->getReturnType([
-                new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
-                new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
-            ]);
+            $collectionType->itemType = $callbackType->getReturnType(
+                args: [
+                    new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
+                    new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
+                ],
+                callerNode: $methodCall,
+            );
 
             return $collectionType;
         }
@@ -128,10 +149,13 @@ class CollectionMethodCall extends MethodCallExtension
         $callbackType = $scope->resolveType($callbackArg->value);
 
         if ($callbackType instanceof CallableType) {
-            $returnType = $callbackType->getReturnType([
-                new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
-                new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
-            ]);
+            $returnType = $callbackType->getReturnType(
+                args: [
+                    new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
+                    new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
+                ],
+                callerNode: $methodCall,
+            );
 
             if ($returnType instanceof UnionType) {
                 foreach ($returnType->types as $variantIndex => $returnTypeVariant) {
