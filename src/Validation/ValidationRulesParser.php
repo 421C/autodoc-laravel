@@ -51,20 +51,22 @@ trait ValidationRulesParser
             if ($validationType instanceof ConfirmedType) {
                 $this->dotNotationToNestedArrayType($structured, $segments, $validationType->type);
 
-                /** @var int */
                 $lastSegmentIndex = array_key_last($segments);
+
+                if ($lastSegmentIndex === null) {
+                    continue;
+                }
                 $typeClass = get_class($validationType->type);
 
                 $confirmationType = new $typeClass;
                 $confirmationType->required = $validationType->type->required;
 
                 if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
-                    /** @var ?string */
                     $format = config('autodoc.laravel.format_generated_descriptions');
 
                     $description = 'Must match "' . $segments[$lastSegmentIndex] . '".';
 
-                    $confirmationType->description = $format ? sprintf($format, $description) : $description;
+                    $confirmationType->description = is_string($format) ? sprintf($format, $description) : $description;
                 }
 
                 if ($confirmationType instanceof StringType) {
@@ -87,7 +89,10 @@ trait ValidationRulesParser
             $resultType = new ObjectType($structured);
         }
 
-        return $this->checkRequiredContainerTypes($resultType);
+        /** @var ObjectType|ArrayType */
+        $result = $this->checkRequiredContainerTypes($resultType);
+
+        return $result;
     }
 
 
@@ -196,20 +201,40 @@ trait ValidationRulesParser
             } else {
                 [$rule, $params] = explode(':', $rule, 2) + [1 => null];
 
+                if ($rule === 'date_format') {
+                    if ($params === 'Y-m-d') {
+                        $type = new StringType(format: 'date');
+
+                    } else if ($params === 'Y-m-d\TH:i:sP'
+                        || $params === 'Y-m-d\TH:i:s.vP'
+                        || $params === 'Y-m-d\TH:i:s.uP'
+                        || $params === 'Y-m-d\TH:i:s\Z'
+                        || $params === 'Y-m-d\TH:i:s.v\Z'
+                        || $params === 'Y-m-d\TH:i:s.u\Z'
+                    ) {
+                        $type = new StringType(format: 'date-time');
+
+                    } else {
+                        $type = new StringType;
+                    }
+
+                    break;
+                }
+
                 $typeOrNull = match ($rule) {
-                    'array'     => new ArrayType,
-                    'boolean'   => new BoolType,
+                    'array'       => new ArrayType,
+                    'boolean'     => new BoolType,
                     'current_password' => new StringType(format: 'password'),
-                    'date'      => new StringType(format: 'date'),
-                    'email'     => new StringType(format: 'email'),
-                    'integer'   => new IntegerType,
-                    'ipv4'      => new StringType(format: 'ipv4'),
-                    'ipv6'      => new StringType(format: 'ipv6'),
-                    'numeric'   => new NumberType,
-                    'object'    => new ObjectType,
-                    'uuid'      => new StringType(format: 'uuid'),
-                    'url'       => new StringType(format: 'uri'),
-                    default     => null,
+                    'date'        => new StringType(format: 'date'),
+                    'email'       => new StringType(format: 'email'),
+                    'integer'     => new IntegerType,
+                    'ipv4'        => new StringType(format: 'ipv4'),
+                    'ipv6'        => new StringType(format: 'ipv6'),
+                    'numeric'     => new NumberType,
+                    'object'      => new ObjectType,
+                    'uuid'        => new StringType(format: 'uuid'),
+                    'url'         => new StringType(format: 'uri'),
+                    default       => null,
                 };
 
                 if ($typeOrNull) {
@@ -473,10 +498,9 @@ trait ValidationRulesParser
                     }
 
                     if ($description) {
-                        /** @var ?string */
                         $format = config('autodoc.laravel.format_generated_descriptions');
 
-                        $type->addDescription($format ? sprintf($format, $description) : $description);
+                        $type->addDescription(is_string($format) ? sprintf($format, $description) : $description);
                     }
                 }
 
@@ -525,10 +549,9 @@ trait ValidationRulesParser
                         }
 
                         if ($description) {
-                            /** @var ?string */
                             $format = config('autodoc.laravel.format_generated_descriptions');
 
-                            $type->addDescription($format ? sprintf($format, $description) : $description);
+                            $type->addDescription(is_string($format) ? sprintf($format, $description) : $description);
                         }
                     }
                 }
