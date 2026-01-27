@@ -13,8 +13,25 @@ class QueryBuilderMethodCall extends MethodCallExtension
 {
     public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
     {
+        $supportedMethods = [
+            'get',
+            'create',
+            'first',
+            'firstWhere',
+            'firstOrFail',
+            'find',
+            'findOrFail',
+            'firstOrNew',
+            'firstOrCreate',
+            'updateOrCreate',
+            'latest',
+            'oldest',
+            'pluck',
+            'paginate',
+        ];
+
         if (! ($methodCall->name instanceof Node\Identifier)
-            || ! in_array($methodCall->name->name, ['get', 'first', 'firstWhere', 'firstOrFail', 'findOrFail', 'firstOrNew', 'firstOrCreate', 'latest', 'oldest', 'pluck', 'paginate'])
+            || ! in_array($methodCall->name->name, $supportedMethods)
         ) {
             return null;
         }

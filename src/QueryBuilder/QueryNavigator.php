@@ -74,27 +74,57 @@ class QueryNavigator
             return null;
         }
 
+        if ($methodName === 'count') {
+            return new IntegerType(minimum: 0);
+        }
+
         if ($methodName === 'get' || $methodName === 'pluck') {
             return new ArrayType(itemType: $rowType, className: Collection::class);
         }
 
-        if (in_array($methodName, ['firstOrFail', 'findOrFail', 'firstOrNew', 'firstOrCreate', 'create'])) {
+        if (in_array($methodName, ['create', 'firstOrNew', 'firstOrCreate', 'updateOrCreate'])) {
             return $rowType;
+        }
+
+        if ($methodName === 'firstWhere') {
+            return new UnionType([$rowType, new NullType]);
         }
 
         if ($methodName === 'paginate') {
             return $this->scope->withoutScalarTypeValueMerging(fn () => $this->getPaginatorType($rowType, $methodCall));
         }
 
-        if (in_array($methodName, ['first', 'latest', 'oldest', 'firstWhere'])) {
+        if (in_array($methodName, ['latest', 'oldest'])) {
             return new UnionType([$rowType, new NullType]);
         }
 
-        if ($methodName === 'count') {
-            return new IntegerType(minimum: 0);
+        if ($methodName === 'first') {
+            return new UnionType([$rowType, new NullType]);
+        }
+
+        if ($methodName === 'firstOrFail') {
+            return $rowType;
         }
 
         $methodArgs = PhpFunctionArgument::list($methodCall->args, scope: $this->scope);
+
+        if ($methodName === 'find' || $methodName === 'findOrFail') {
+            $firstArg = ($methodArgs[0] ?? null)?->getType()?->unwrapType();
+
+            $multipleKeysPassed = isset($methodArgs[0])
+                && ($firstArg instanceof ArrayType
+                    || $firstArg instanceof ObjectType && $firstArg->typeToDisplay instanceof ArrayType);
+
+            if ($multipleKeysPassed) {
+                return new ArrayType(itemType: $rowType, className: Collection::class);
+            }
+
+            if ($methodName === 'find') {
+                return new UnionType([$rowType, new NullType]);
+            }
+
+            return $rowType;
+        }
 
         try {
             $phpClassMethod = $this->scope->getPhpClassInDeeperScope(\Illuminate\Database\Eloquent\Builder::class)->getMethod(
