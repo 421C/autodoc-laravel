@@ -58,10 +58,7 @@ trait DotNotationParser
             if (! isset($structure[$segment])) {
                 $structure[$segment] = new ArrayType(shape: []);
 
-            } else if (!($structure[$segment] instanceof ArrayType)) {
-                $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
-
-            } else if (! $structure[$segment]->shape) {
+            } else if (! ($structure[$segment] instanceof ArrayType)) {
                 $structure[$segment] = (new ArrayType(shape: []))->setRequired($structure[$segment]->required);
             }
 

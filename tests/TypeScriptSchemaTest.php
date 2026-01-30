@@ -150,6 +150,7 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
                 products: Array<{
                     id: number
                     name: string
+                    updated_at: string|null
                 }>
             }
             /** @autodoc patch /test/orders/{order} 400 */

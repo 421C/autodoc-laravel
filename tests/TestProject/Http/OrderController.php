@@ -63,10 +63,6 @@ class OrderController
                                 'order' => [
                                     'type' => 'object',
                                     'properties' => [
-                                        'created_at' => [
-                                            'type' => 'string',
-                                            'format' => 'date-time',
-                                        ],
                                         'id' => [
                                             'type' => 'integer',
                                         ],
@@ -79,6 +75,10 @@ class OrderController
                                                 3,
                                                 4,
                                             ],
+                                        ],
+                                        'created_at' => [
+                                            'type' => 'string',
+                                            'format' => 'date-time',
                                         ],
                                         'updated_at' => [
                                             'type' => 'string',
@@ -121,10 +121,18 @@ class OrderController
                                             'name' => [
                                                 'type' => 'string',
                                             ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
                                         ],
                                         'required' => [
                                             'id',
                                             'name',
+                                            'updated_at',
                                         ],
                                     ],
                                 ],
@@ -165,6 +173,7 @@ class OrderController
             'products' => $order->products->map(fn ($product) => [ // @phpstan-ignore argument.unresolvableType, method.unresolvableReturnType
                 'id' => $product->id,
                 'name' => $product->name, // @phpstan-ignore property.notFound
+                'updated_at' => $product->updated_at, // @phpstan-ignore property.notFound
             ]),
         ]);
     }
