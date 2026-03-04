@@ -455,10 +455,9 @@ class EloquentQueryController
     ])]
     public function modelWithAccessorsAndMutatedProperties(): mixed
     {
-        /** @phpstan-ignore method.unresolvableReturnType */
         return SpaceStation::query()
             ->get()
-            /** @phpstan-ignore argument.unresolvableType */
+            /** @phpstan-ignore argument.unresolvableType, method.unresolvableReturnType */
             ->map(fn ($station) => [
                 'mutated_id' => $station->id,
                 'name' => $station->name,
@@ -1029,12 +1028,11 @@ class EloquentQueryController
     ])]
     public function filterAndMapCollection(): mixed
     {
-        /** @phpstan-ignore method.unresolvableReturnType */
         return SpaceStation::where('created_at', '>', now()->subYear())
             ->orderBy('created_at', 'desc')
             ->get()
             ->filter(fn ($station) => $station->name !== null)
-            /** @phpstan-ignore argument.unresolvableType */
+            /** @phpstan-ignore argument.unresolvableType, method.unresolvableReturnType */
             ->map(fn ($station) => [
                 'entry' => [
                     'name' => $station->name,
@@ -1860,30 +1858,16 @@ class EloquentQueryController
                 'content' => [
                     'application/json' => [
                         'schema' => [
-                            'anyOf' => [
-                                [
-                                    'type' => 'object',
-                                    'properties' => [
-                                        'updated_at' => [
-                                            'type' => 'string',
-                                            'description' => 'Updated at (UTC)',
-                                            'format' => 'date-time',
-                                        ],
-                                        'visited' => [
-                                            'type' => 'boolean',
-                                            'description' => 'Is the planet visited?',
-                                        ],
-                                    ],
-                                    'required' => [
-                                        'visited',
-                                        'updated_at',
-                                    ],
+                            'type' => 'object',
+                            'properties' => [
+                                'updated_at' => [
+                                    'type' => 'string',
+                                    'description' => 'Updated at (UTC)',
+                                    'format' => 'date-time',
                                 ],
-                                [
-                                    'type' => 'array',
-                                    'items' => [
-                                        'type' => 'string',
-                                    ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                    'description' => 'Is the planet visited?',
                                 ],
                             ],
                         ],

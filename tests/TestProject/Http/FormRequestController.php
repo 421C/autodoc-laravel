@@ -16,6 +16,53 @@ class FormRequestController
                     'schema' => [
                         'type' => 'object',
                         'properties' => [
+                            'access_token' => [
+                                'type' => 'string',
+                                'format' => 'uuid',
+                            ],
+                            'items' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'data' => [
+                                            'type' => 'object',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'data',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'items',
+                            'access_token',
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+    ])]
+    public function customFormRequestWithExtraParameters(CustomRequest $request, string $id): void
+    {
+        $request->validate([
+            'access_token' => 'uuid|required',
+        ]);
+    }
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
                             'items' => [
                                 'type' => 'array',
                                 'items' => [

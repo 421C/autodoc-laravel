@@ -22,7 +22,7 @@ class CustomFormRequest extends ClassExtension
         }
 
         if (self::$cache[$phpClass->className] ?? false) {
-            return self::$cache[$phpClass->className];
+            return clone self::$cache[$phpClass->className];
         }
 
         $validationRulesMethod = $phpClass->getMethod('rules');
@@ -41,7 +41,7 @@ class CustomFormRequest extends ClassExtension
             return $this->parseValidationRules($validationArray->shape, $phpClass->scope);
         });
 
-        self::$cache[$phpClass->className] = $requestType;
+        self::$cache[$phpClass->className] = clone $requestType;
 
         return $requestType;
     }

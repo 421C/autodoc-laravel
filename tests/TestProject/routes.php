@@ -27,7 +27,9 @@ Route::post('/test/validation/numeric', [ValidationController::class, 'numericVa
 Route::post('/test/validation/nested-required-wildcard', [ValidationController::class, 'nestedRequiredWithWildcard']);
 Route::post('/test/validation/phpdoc-type', [ValidationController::class, 'phpdocTypeInValidation']);
 Route::post('/test/validation/enum-nested-filled', [ValidationController::class, 'enumWithNestedAndFilledRules']);
+Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
 
+Route::post('/test/form-request/custom-with-extra-parameters', [FormRequestController::class, 'customFormRequestWithExtraParameters']);
 Route::post('/test/form-request/custom', [FormRequestController::class, 'customFormRequest']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
@@ -146,7 +148,7 @@ Route::get('/test/closure2/{category}/search/{rocket:launch_date?}', (
                 ],
             ],
         ],
-    ])] function (RocketCategory $category, Rocket $rocket = null) {}
+    ])] function (RocketCategory $category, ?Rocket $rocket = null) {}
 ));
 
 Route::get('/test/closure3/{uuid}/{name}/{version}', (

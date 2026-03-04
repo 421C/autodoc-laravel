@@ -916,4 +916,46 @@ status description',
 
         return $validated['nested']['enum'];
     }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'nested' => [
+                                'type' => 'object',
+                                'description' => 'Description of nested data',
+                                'properties' => [
+                                    'data' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required' => [
+                                    'data',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'nested',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+    ])]
+    public function nestedDataWithTopLevelDescription(Request $request): void
+    {
+        $request->validate([
+            /**
+             * Description of nested data
+             */
+            'nested' => 'array',
+            'nested.data' => 'required',
+        ]);
+    }
 }
