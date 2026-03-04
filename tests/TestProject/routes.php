@@ -52,6 +52,7 @@ Route::post('/test/request-params/header', [RequestParamsController::class, 'hea
 Route::get('/test/request-params/multiple-validate', [RequestParamsController::class, 'multipleValidateCalls']);
 Route::post('/test/request-params/query-mutation', [RequestParamsController::class, 'queryParamWithMutation']);
 Route::post('/test/request-params/phpdoc-query', [RequestParamsController::class, 'phpdocQueryParam']);
+Route::post('/test/request-params/authorization-header', [RequestParamsController::class, 'authorizationHeader']);
 
 Route::post('/test/eloquent/query-builder-select', [EloquentQueryController::class, 'queryBuilderWithSelect']);
 Route::post('/test/eloquent/select-columns', [EloquentQueryController::class, 'selectWithSpecificColumns']);

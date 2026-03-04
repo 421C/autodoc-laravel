@@ -222,4 +222,52 @@ class RequestParamsController
             request()->query('user_id'),
         ];
     }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'header',
+                'name' => 'Authorization',
+                'schema' => [
+                    'type' => 'string',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'anyOf' => [
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                [
+                                    'type' => 'string',
+                                ],
+                                [
+                                    'type' => 'null',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function authorizationHeader(): mixed
+    {
+        $header = request()->header('Authorization');
+
+        if (is_string($header)) {
+            return $header;
+        }
+
+        return null;
+    }
 }

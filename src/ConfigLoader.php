@@ -23,6 +23,7 @@ class ConfigLoader
 
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
+                \AutoDoc\Laravel\Extensions\RequestHeader::class,
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
