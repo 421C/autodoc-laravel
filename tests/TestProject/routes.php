@@ -29,8 +29,9 @@ Route::post('/test/validation/phpdoc-type', [ValidationController::class, 'phpdo
 Route::post('/test/validation/enum-nested-filled', [ValidationController::class, 'enumWithNestedAndFilledRules']);
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
 
-Route::post('/test/form-request/custom-with-extra-parameters', [FormRequestController::class, 'customFormRequestWithExtraParameters']);
-Route::post('/test/form-request/custom', [FormRequestController::class, 'customFormRequest']);
+Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);
+Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
+Route::post('/test/form-request/extended', [FormRequestController::class, 'extendedItemsRequest']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);

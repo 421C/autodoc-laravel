@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Foundation\Http\FormRequest;
 
 
-class CustomRequest extends FormRequest
+class ItemsRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -28,7 +28,8 @@ class CustomRequest extends FormRequest
     }
 
 
-    private function getItemIdRule(): string {
+    private function getItemIdRule(): string
+    {
         return 'integer';
     }
 }

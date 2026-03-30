@@ -31,17 +31,21 @@ class CustomFormRequest extends ClassExtension
             return null;
         }
 
-        $validationArray = $validationRulesMethod->getReturnType(usePhpDocIfAvailable: false);
+        $requestType = $phpClass->scope->withDeepShapeInference(
+            fn () => $phpClass->scope->withoutScalarTypeValueMerging(function () use ($phpClass, $validationRulesMethod) {
+                $validationArray = $validationRulesMethod->getReturnType(usePhpDocIfAvailable: false);
 
-        if (! isset($validationArray->shape)) {
-            return null;
+                if (! isset($validationArray->shape)) {
+                    return null;
+                }
+
+                return $this->parseValidationRules($validationArray->shape, $phpClass->scope);
+            })
+        );
+
+        if ($requestType) {
+            self::$cache[$phpClass->className] = clone $requestType;
         }
-
-        $requestType = $phpClass->scope->withoutScalarTypeValueMerging(function () use ($phpClass, $validationArray) {
-            return $this->parseValidationRules($validationArray->shape, $phpClass->scope);
-        });
-
-        self::$cache[$phpClass->className] = clone $requestType;
 
         return $requestType;
     }

@@ -49,7 +49,7 @@ class FormRequestController
             'required' => false,
         ],
     ])]
-    public function customFormRequestWithExtraParameters(CustomRequest $request, string $id): void
+    public function itemsRequestWithExtraParameters(ItemsRequest $request, string $id): void
     {
         $request->validate([
             'access_token' => 'uuid|required',
@@ -106,9 +106,52 @@ class FormRequestController
             ],
         ],
     ])]
-    public function customFormRequest(CustomRequest $request): mixed
+    public function itemsRequest(ItemsRequest $request): mixed
     {
         // @phpstan-ignore offsetAccess.nonOffsetAccessible, offsetAccess.nonOffsetAccessible
         return response()->json($request->items[0]['id'] ?? null);
     }
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'items' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'data' => [
+                                            'type' => 'object',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'data',
+                                    ],
+                                ],
+                            ],
+                            'names' => [
+                                'type' => ['array', 'null'],
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'items',
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+    ])]
+    public function extendedItemsRequest(ExtendedItemsRequest $request): void {}
 }
