@@ -427,15 +427,18 @@ class QueryNavigator
     }
 
 
-    private function extractBuilderMethodsAndModel(Node\Expr $expr): void
+    /**
+     * @param array<int, true> $visitedPositions
+     */
+    private function extractBuilderMethodsAndModel(Node\Expr $expr, array $visitedPositions = []): void
     {
         if ($expr instanceof MethodCall || $expr instanceof StaticCall) {
             if ($expr instanceof MethodCall) {
-                $this->extractBuilderMethodsAndModel($expr->var);
+                $this->extractBuilderMethodsAndModel($expr->var, $visitedPositions);
 
             } else {
                 if ($expr->class instanceof Node\Expr) {
-                    $this->extractBuilderMethodsAndModel($expr->class);
+                    $this->extractBuilderMethodsAndModel($expr->class, $visitedPositions);
 
                 } else {
                     $className = $this->scope->getResolvedClassName($expr->class);
@@ -460,12 +463,22 @@ class QueryNavigator
             ];
 
         } else if ($expr instanceof Node\Expr\Variable) {
+            $position = $expr->getAttribute('startFilePos');
+
+            if (is_int($position) && isset($visitedPositions[$position])) {
+                return;
+            }
+
+            if (is_int($position)) {
+                $visitedPositions[$position] = true;
+            }
+
             $unresolvedVarType = $this->scope->getVariableType($expr);
 
             if ($unresolvedVarType instanceof UnresolvedVariableType) {
                 foreach ($unresolvedVarType->phpVariable->getDirectAssignmentTypes() as $type) {
                     if ($type instanceof UnresolvedParserNodeType && $type->node instanceof Node\Expr) {
-                        $this->extractBuilderMethodsAndModel($type->node);
+                        $this->extractBuilderMethodsAndModel($type->node, $visitedPositions);
 
                         break;
                     }
