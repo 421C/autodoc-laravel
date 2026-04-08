@@ -231,6 +231,7 @@ trait ValidationRulesParser
                     'ipv4'        => new StringType(format: 'ipv4'),
                     'ipv6'        => new StringType(format: 'ipv6'),
                     'numeric'     => new NumberType,
+                    'decimal'     => new FloatType,
                     'object'      => new ObjectType,
                     'uuid'        => new StringType(format: 'uuid'),
                     'url'         => new StringType(format: 'uri'),
