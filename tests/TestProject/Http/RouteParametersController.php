@@ -17,7 +17,6 @@ class RouteParametersController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Model binding',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'path',
@@ -64,7 +63,6 @@ class RouteParametersController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Implicit enum binding',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'path',
@@ -91,7 +89,6 @@ class RouteParametersController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Scalar path parameter with PHPDoc',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'path',

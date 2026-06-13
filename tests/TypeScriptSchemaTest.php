@@ -158,7 +158,7 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
                 status_updated: false
                 message: \'Completed orders can’t be changed\'
                 order: {
-                    id: number
+                    id?: number
                     status: 1|2|3|4
                     created_at?: string
                     updated_at?: string

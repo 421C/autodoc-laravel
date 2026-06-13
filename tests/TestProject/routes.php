@@ -54,6 +54,8 @@ Route::get('/test/request-params/multiple-validate', [RequestParamsController::c
 Route::post('/test/request-params/query-mutation', [RequestParamsController::class, 'queryParamWithMutation']);
 Route::post('/test/request-params/phpdoc-query', [RequestParamsController::class, 'phpdocQueryParam']);
 Route::post('/test/request-params/authorization-header', [RequestParamsController::class, 'authorizationHeader']);
+Route::post('/test/request-params/typed-helpers', [RequestParamsController::class, 'typedParameterHelpers']);
+Route::post('/test/request-params/dot-notation', [RequestParamsController::class, 'dotNotationParameters']);
 
 Route::post('/test/eloquent/query-builder-select', [EloquentQueryController::class, 'queryBuilderWithSelect']);
 Route::post('/test/eloquent/select-columns', [EloquentQueryController::class, 'selectWithSpecificColumns']);
@@ -96,8 +98,17 @@ Route::get('/test/closure1', (
      * @return object{test: int}
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'email',
+                'required' => true,
+                'schema' => [
+                    'type' => 'string',
+                    'format' => 'email',
+                ],
+            ],
+        ],
         'responses' => [
             200 => [
                 'content' => [

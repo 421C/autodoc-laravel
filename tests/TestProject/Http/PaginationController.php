@@ -19,7 +19,6 @@ class PaginationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Basic pagination',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',
@@ -156,7 +155,6 @@ class PaginationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Pagination with custom page name',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',
@@ -420,8 +418,6 @@ class PaginationController
      * @return LengthAwarePaginator<int, int>
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -535,8 +531,6 @@ class PaginationController
      * @phpstan-ignore missingType.generics
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',

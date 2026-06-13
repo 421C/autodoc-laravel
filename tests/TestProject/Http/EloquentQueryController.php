@@ -18,7 +18,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Query builder with select',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -62,7 +61,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Select with specific columns',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -109,7 +107,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Select with addSelect',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -160,7 +157,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Select with alias',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -198,7 +194,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Pluck single column',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -230,7 +225,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'All with column alias',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -271,7 +265,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Collection map with arithmetic',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -300,7 +293,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Collection map with property access',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -334,7 +326,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Chained collection methods',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -374,7 +365,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Model with accessors and mutated properties',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -475,7 +465,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'First and firstOrFail with query builder',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -612,7 +601,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'First and firstOrFail static',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -749,7 +737,6 @@ class EloquentQueryController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Collection methods on literal array',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',

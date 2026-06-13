@@ -268,7 +268,6 @@ class ResourceController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Collection inside array response',
-        'description' => '',
         'responses' => [
             200 => [
                 'content' => [

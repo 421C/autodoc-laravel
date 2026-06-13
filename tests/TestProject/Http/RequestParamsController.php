@@ -18,7 +18,6 @@ class RequestParamsController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Request header parameter',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'header',
@@ -169,8 +168,6 @@ class RequestParamsController
      * @request-query user_id {type: int}
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',

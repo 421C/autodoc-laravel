@@ -402,7 +402,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Wildcard array validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -453,7 +452,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Password rule validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -494,7 +492,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'URL and IP validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -587,7 +584,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Rule::when and Rule::requiredIf',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -646,7 +642,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Numeric and integer string validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -732,7 +727,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Nested required with wildcard',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -778,7 +772,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'PHPDoc type in validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -848,7 +841,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Enum with nested and filled rules',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
