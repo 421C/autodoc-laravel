@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
+use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 
 /**
@@ -234,19 +235,9 @@ class RequestParamsController
                 'content' => [
                     'application/json' => [
                         'schema' => [
-                            'anyOf' => [
-                                [
-                                    'type' => 'array',
-                                    'items' => [
-                                        'type' => 'string',
-                                    ],
-                                ],
-                                [
-                                    'type' => 'string',
-                                ],
-                                [
-                                    'type' => 'null',
-                                ],
+                            'type' => [
+                                'string',
+                                'null',
                             ],
                         ],
                     ],
@@ -263,5 +254,161 @@ class RequestParamsController
         }
 
         return null;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'tags' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'states' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'integer',
+                                    'description' => '[StateEnum](#/schemas/StateEnum)',
+                                    'enum' => [
+                                        1,
+                                        2,
+                                    ],
+                                ],
+                            ],
+                            'name' => [
+                                'type' => 'string',
+                            ],
+                            'active' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'tags' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'states' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'description' => '[StateEnum](#/schemas/StateEnum)',
+                                        'enum' => [
+                                            1,
+                                            2,
+                                        ],
+                                    ],
+                                ],
+                                'subset' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'active' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'tags',
+                                'states',
+                                'subset',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function typedParameterHelpers(): mixed
+    {
+        return [
+            'tags' => request()->collect('tags'),
+            'states' => request()->enums('states', StateEnum::class),
+            'subset' => request()->array(['name', 'active']),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'address' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'city' => [
+                                        'type' => 'string',
+                                    ],
+                                    'zip' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                            ],
+                            'items' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'active' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'user' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'age' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+    ])]
+    public function dotNotationParameters(): void
+    {
+        // Dot-notation keys map to nested request shapes; `*` segments describe
+        // array-of-object input; array([...]) key lists merge siblings under a
+        // shared parent. Separate calls sharing a parent (user.*) deep-merge
+        // into one object. Mirrors Laravel's data_get/Arr::set semantics.
+        request()->string('user.name');
+        request()->integer('user.age');
+        request()->boolean('items.*.active');
+        request()->array(['address.city', 'address.zip']);
     }
 }

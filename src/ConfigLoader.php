@@ -18,13 +18,13 @@ class ConfigLoader
 
         if (config('autodoc.laravel.autoload_builtin_extensions') ?? true) {
             $configArray['extensions'] = array_unique([
-                /** @phpstan-ignore nullCoalesce.offset */
                 ...($configArray['extensions'] ?? []),
 
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\RequestHeader::class,
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
+                \AutoDoc\Laravel\Extensions\RequestParameter::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,

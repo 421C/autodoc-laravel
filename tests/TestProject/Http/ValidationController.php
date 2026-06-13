@@ -314,6 +314,14 @@ class ValidationController
                                     -0.1,
                                 ],
                             ],
+                            'status' => [
+                                'type' => 'integer',
+                                'description' => '[StateEnum](#/schemas/StateEnum)',
+                                'enum' => [
+                                    1,
+                                    2,
+                                ],
+                            ],
                         ],
                     ],
                 ],
