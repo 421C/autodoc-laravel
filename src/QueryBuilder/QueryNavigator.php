@@ -2,8 +2,8 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
+use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\PhpClass;
-use AutoDoc\Analyzer\PhpFunctionArgument;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\IntegerType;
@@ -14,7 +14,6 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
-use AutoDoc\DataTypes\UnresolvedVariableType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -44,7 +43,7 @@ class QueryNavigator
     /**
      * @var array<int, array{
      *     name: string,
-     *     args: PhpFunctionArgument[],
+     *     args: ArgumentList,
      * }>
      */
     private array $builderMethods = [];
@@ -106,12 +105,12 @@ class QueryNavigator
             return $rowType;
         }
 
-        $methodArgs = PhpFunctionArgument::list($methodCall->args, scope: $this->scope);
+        $methodArgs = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
 
         if ($methodName === 'find' || $methodName === 'findOrFail') {
-            $firstArg = ($methodArgs[0] ?? null)?->getType()?->unwrapType();
+            $firstArg = $methodArgs->has(0) ? $methodArgs->get(0)->unwrapType($this->scope->config) : null;
 
-            $multipleKeysPassed = isset($methodArgs[0])
+            $multipleKeysPassed = $methodArgs->has(0)
                 && ($firstArg instanceof ArrayType
                     || $firstArg instanceof ObjectType && $firstArg->typeToDisplay instanceof ArrayType);
 
@@ -188,7 +187,7 @@ class QueryNavigator
             }
 
             if (in_array($builderMethod['name'], ['get', 'all'])) {
-                if (! empty($builderMethod['args'])) {
+                if (count($builderMethod['args']) > 0) {
                     $this->columnSetVariants = [
                         $this->getColumnsFromArguments($builderMethod['args']),
                     ];
@@ -228,19 +227,17 @@ class QueryNavigator
 
     private function getPaginatorType(Type $rowType, MethodCall|StaticCall $methodCall): Type
     {
-        $args = PhpFunctionArgument::list($methodCall->args, $this->scope);
-        $phpFunction = $this->scope->getPhpClassInDeeperScope(Builder::class)->getMethod('paginate', $args)->getPhpFunction();
+        $args = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
+        $paginateMethod = $this->scope->getPhpClassInDeeperScope(Builder::class)->getMethod('paginate', $args);
 
         if ($this->scope->route) {
-            $pageNameType = $phpFunction?->getParsedArgumentType('pageName')?->unwrapType($this->scope->config);
+            $pageNameType = $paginateMethod->getArgumentType('pageName')->unwrapType($this->scope->config);
             $pageParamName = null;
 
-            if ($pageNameType) {
-                if ($pageNameType instanceof StringType && is_string($pageNameType->value)) {
-                    $pageParamName = $pageNameType->value;
-                }
+            if ($pageNameType instanceof StringType && is_string($pageNameType->value)) {
+                $pageParamName = $pageNameType->value;
 
-            } else {
+            } else if ($pageNameType instanceof UnknownType) {
                 $pageParamName = 'page';
             }
 
@@ -249,23 +246,19 @@ class QueryNavigator
             }
         }
 
-        $columnsArgType = $phpFunction?->getParsedArgumentType('columns');
+        $columns = $this->getColumnsFromArgument($paginateMethod->getArgumentType('columns'));
 
-        if ($columnsArgType) {
-            $columns = $this->getColumnsFromArgument($columnsArgType);
+        if ($columns) {
+            if ($rowType instanceof ObjectType) {
+                $eagerLoadedRelations = $this->resolveEagerLoadedRelations();
 
-            if ($columns) {
-                if ($rowType instanceof ObjectType) {
-                    $eagerLoadedRelations = $this->resolveEagerLoadedRelations();
+                if (isset($columns['*'])) {
+                    unset($columns['*']);
 
-                    if (isset($columns['*'])) {
-                        unset($columns['*']);
-
-                        $columns = array_merge($rowType->properties, $columns);
-                    }
-
-                    $rowType->properties = array_merge($columns, $eagerLoadedRelations);
+                    $columns = array_merge($rowType->properties, $columns);
                 }
+
+                $rowType->properties = array_merge($columns, $eagerLoadedRelations);
             }
         }
 
@@ -276,10 +269,7 @@ class QueryNavigator
         ))->resolveType();
     }
 
-    /**
-     * @param PhpFunctionArgument[] $arguments
-     */
-    private function handleAddSelect(array $arguments): void
+    private function handleAddSelect(ArgumentList $arguments): void
     {
         $columns = $this->getColumnsFromArguments($arguments);
 
@@ -293,14 +283,11 @@ class QueryNavigator
         }
     }
 
-    /**
-     * @param PhpFunctionArgument[] $arguments
-     */
-    private function handleWith(array $arguments): void
+    private function handleWith(ArgumentList $arguments): void
     {
         $argumentListArrayType = $this->scope->withPartialArraysResolvingAsShapes(function () use ($arguments) {
-            if (isset($arguments[0])) {
-                $firstArgType = $arguments[0]->getType()?->unwrapType($arguments[0]->scope->config);
+            if ($arguments->has(0)) {
+                $firstArgType = $arguments->get(0)->unwrapType($this->scope->config);
 
                 if ($firstArgType instanceof ArrayType) {
                     /**
@@ -321,9 +308,13 @@ class QueryNavigator
             /**
              * Example: ->with('planets', 'moons')
              */
-            return new ArrayType(
-                shape: array_map(fn ($arg) => $arg->getType()?->unwrapType($arg->scope->config) ?? new UnknownType, $arguments),
-            );
+            $shape = [];
+
+            for ($index = 0; $index < count($arguments); $index++) {
+                $shape[] = $arguments->get($index)->unwrapType($this->scope->config);
+            }
+
+            return new ArrayType(shape: $shape);
         });
 
         $this->normalizeRelationArgumentArray($argumentListArrayType, $this->relationArguments);
@@ -366,27 +357,21 @@ class QueryNavigator
             }
 
             foreach ($keyVariants as $dotNotationString) {
-                $segments = preg_split('/(?<!\\\\)\./', $dotNotationString);
-                $segments = array_map(fn ($s) => str_replace('\\.', '.', $s), $segments ?: []);
-
-                $this->dotNotationToNestedArrayType($normalizedShape, $segments, $valueType);
+                $this->dotNotationToNestedArrayType($normalizedShape, $this->splitDotNotation($dotNotationString), $valueType);
             }
         }
     }
 
-    /**
-     * @param PhpFunctionArgument[] $arguments
-     */
-    private function handlePluck(array $arguments): ?Type
+    private function handlePluck(ArgumentList $arguments): ?Type
     {
-        $columnArg = $arguments[0] ?? null;
-        $keyArg = $arguments[1] ?? null;
-
-        if (! $columnArg) {
+        if (! $arguments->has(0)) {
             return null;
         }
 
-        $keyArgType = $keyArg?->getType()?->unwrapType($keyArg?->scope->config);
+        $columnArg = $arguments->get(0);
+        $keyArg = $arguments->has(1) ? $arguments->get(1) : null;
+
+        $keyArgType = $keyArg?->unwrapType($this->scope->config);
 
         if ($keyArgType instanceof StringType) {
             $keyArgStrings = $keyArgType->getPossibleValues() ?? [];
@@ -406,7 +391,7 @@ class QueryNavigator
             }
         }
 
-        $columnArgType = $columnArg->getType()?->unwrapType($columnArg->scope->config);
+        $columnArgType = $columnArg->unwrapType($this->scope->config);
 
         if ($columnArgType instanceof StringType) {
             $columnArgStrings = $columnArgType->getPossibleValues() ?? [];
@@ -459,7 +444,7 @@ class QueryNavigator
 
             $this->builderMethods[] = [
                 'name' => $methodName,
-                'args' => PhpFunctionArgument::list($expr->args, $this->scope),
+                'args' => ArgumentList::fromArgNodes($expr->args, $this->scope),
             ];
 
         } else if ($expr instanceof Node\Expr\Variable) {
@@ -473,10 +458,8 @@ class QueryNavigator
                 $visitedPositions[$position] = true;
             }
 
-            $unresolvedVarType = $this->scope->getVariableType($expr);
-
-            if ($unresolvedVarType instanceof UnresolvedVariableType) {
-                foreach ($unresolvedVarType->phpVariable->getDirectAssignmentTypes() as $type) {
+            if (is_string($expr->name)) {
+                foreach ($this->scope->eventLog->getDirectAssignmentTypes($expr->name) as $type) {
                     if ($type instanceof UnresolvedParserNodeType && $type->node instanceof Node\Expr) {
                         $this->extractBuilderMethodsAndModel($type->node, $visitedPositions);
 
@@ -540,17 +523,16 @@ class QueryNavigator
 
 
     /**
-     * @param PhpFunctionArgument[] $args
      * @return array<string, Type>
      */
-    private function getColumnsFromArguments(array $args): array
+    private function getColumnsFromArguments(ArgumentList $args): array
     {
         $columns = [];
         $columnTypes = [];
         $firstArgIsArray = false;
 
-        if (isset($args[0])) {
-            $firstArgType = $args[0]->getType()?->unwrapType($args[0]->scope->config);
+        if ($args->has(0)) {
+            $firstArgType = $args->get(0)->unwrapType($this->scope->config);
 
             if ($firstArgType instanceof ArrayType) {
                 /**
@@ -560,7 +542,7 @@ class QueryNavigator
                  * ])
                  */
                 $firstArgIsArray = true;
-                $arrayItemType = $firstArgType->convertShapeToTypePair()->itemType;
+                $arrayItemType = $firstArgType->convertShapeToTypePair($this->scope->config)->itemType;
 
                 if ($arrayItemType instanceof UnionType) {
                     // array<ColumnA | ColumnB> -> [ColumnA, ColumnB]
@@ -577,17 +559,15 @@ class QueryNavigator
             /**
              * Example: ->select('id', 'name')
              */
-            foreach ($args as $index => $arg) {
+            for ($index = 0; $index < count($args); $index++) {
                 if ($index === 0 && isset($firstArgType)) {
                     $argType = $firstArgType;
 
                 } else {
-                    $argType = $arg->getType()?->unwrapType($arg->scope->config);
+                    $argType = $args->get($index)->unwrapType($this->scope->config);
                 }
 
-                if ($argType) {
-                    $columnTypes[] = $argType;
-                }
+                $columnTypes[] = $argType;
             }
         }
 
@@ -598,7 +578,9 @@ class QueryNavigator
                 foreach ($columnStrings as $columnString) {
                     [$propertyName, $propertyType] = $this->getColumnType($columnString);
 
-                    $columns[$propertyName] = $propertyType ?? new UnknownType;
+                    if ($propertyName !== null) {
+                        $columns[$propertyName] = $propertyType ?? new UnknownType;
+                    }
                 }
             }
         }
@@ -612,12 +594,12 @@ class QueryNavigator
      */
     private function getColumnsFromArgument(Type $columnsArgType): array
     {
-        $columnsArgType = $columnsArgType->unwrapType();
+        $columnsArgType = $columnsArgType->unwrapType($this->scope->config);
 
         $columnTypes = [];
 
         if ($columnsArgType instanceof ArrayType) {
-            $arrayItemType = $columnsArgType->convertShapeToTypePair()->itemType;
+            $arrayItemType = $columnsArgType->convertShapeToTypePair($this->scope->config)->itemType;
 
             if ($arrayItemType instanceof UnionType) {
                 // array<ColumnA | ColumnB> -> [ColumnA, ColumnB]
@@ -641,7 +623,9 @@ class QueryNavigator
                 foreach ($columnStrings as $columnString) {
                     [$propertyName, $propertyType] = $this->getColumnType($columnString);
 
-                    $columns[$propertyName] = $propertyType ?? new UnknownType;
+                    if ($propertyName !== null) {
+                        $columns[$propertyName] = $propertyType ?? new UnknownType;
+                    }
                 }
             }
         }

@@ -2,7 +2,7 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
+use AutoDoc\Analyzer\StaticCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\IntegerType;
@@ -11,24 +11,14 @@ use AutoDoc\Extensions\StaticCallExtension;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use PhpParser\Node;
-use PhpParser\Node\Expr\StaticCall;
 
 /**
  * Handles static calls on `Illuminate\Database\Eloquent\Model` class.
  */
 class EloquentModelStaticCall extends StaticCallExtension
 {
-    public function getReturnType(StaticCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(StaticCallContext $call): ?Type
     {
-        if (! ($methodCall->name instanceof Node\Identifier)) {
-            return null;
-        }
-
-        if (! ($methodCall->class instanceof Node\Name)) {
-            return null;
-        }
-
         $supportedMethods = [
             'count',
             'insert',
@@ -52,13 +42,13 @@ class EloquentModelStaticCall extends StaticCallExtension
             'pluck',
         ];
 
-        $methodName = $methodCall->name->name;
+        $methodName = $call->methodName;
 
         if (! in_array($methodName, $supportedMethods)) {
             return null;
         }
 
-        $className = $scope->getResolvedClassName($methodCall->class);
+        $className = $call->className;
 
         if (! $className) {
             return null;
@@ -67,6 +57,9 @@ class EloquentModelStaticCall extends StaticCallExtension
         if (! is_subclass_of($className, Model::class)) {
             return null;
         }
+
+        $scope = $call->scope;
+        $node = $call->node;
 
         if ($methodName === 'insert') {
             return new BoolType;
@@ -77,8 +70,8 @@ class EloquentModelStaticCall extends StaticCallExtension
         }
 
         if ($methodName === 'all') {
-            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $methodCall) {
-                return (new QueryNavigator($scope))->getRowType($methodCall);
+            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $node) {
+                return (new QueryNavigator($scope))->getRowType($node);
             });
 
             return new ArrayType(
@@ -87,6 +80,6 @@ class EloquentModelStaticCall extends StaticCallExtension
             );
         }
 
-        return (new QueryNavigator($scope))->getResultType($methodCall, $methodName);
+        return (new QueryNavigator($scope))->getResultType($node, $methodName);
     }
 }

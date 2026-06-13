@@ -2,7 +2,7 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
+use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\NullType;
 use AutoDoc\DataTypes\ObjectType;
@@ -14,25 +14,23 @@ use AutoDoc\Extensions\MethodCallExtension;
 use Illuminate\Http\Request;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
 
 /**
  * Handles Laravel Request `query` method.
  */
 class RequestQuery extends MethodCallExtension
 {
-    public function getRequestType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getRequestType(MethodCallContext $call): ?Type
     {
-        if (! $scope->route || ! $this->isRequestQueryMethod($methodCall, $scope)) {
+        if (! $call->scope->route || ! $this->isRequestQueryMethod($call)) {
             return null;
         }
 
-        $keyArgNode = $methodCall->getArgs()[0]->value ?? null;
-        $keyArgType = $keyArgNode ? $scope->resolveType($keyArgNode) : null;
+        $keyArgType = $call->argTypes->has(0) ? $call->argTypes->get(0) : null;
 
         if ($keyArgType instanceof StringType) {
             foreach ($keyArgType->getPossibleValues() ?? [] as $key) {
-                $scope->route->requestQueryParams[$key] ??= new UnknownType;
+                $call->scope->route->requestQueryParams[$key] ??= new UnknownType;
             }
         }
 
@@ -40,14 +38,13 @@ class RequestQuery extends MethodCallExtension
     }
 
 
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(MethodCallContext $call): ?Type
     {
-        if (! $this->isRequestQueryMethod($methodCall, $scope)) {
+        if (! $this->isRequestQueryMethod($call)) {
             return null;
         }
 
-        $keyArgNode = $methodCall->getArgs()[0]->value ?? null;
-        $keyArgType = $keyArgNode ? $scope->resolveType($keyArgNode) : null;
+        $keyArgType = $call->argTypes->has(0) ? $call->argTypes->get(0) : null;
 
         if ($keyArgType instanceof StringType) {
             return new UnionType([
@@ -76,22 +73,22 @@ class RequestQuery extends MethodCallExtension
     }
 
 
-    private function isRequestQueryMethod(MethodCall $methodCall, Scope $scope): bool
+    private function isRequestQueryMethod(MethodCallContext $call): bool
     {
-        if (! ($methodCall->name instanceof Node\Identifier)
-            || $methodCall->name->name !== 'query'
-        ) {
+        if ($call->methodName !== 'query') {
             return false;
         }
 
-        if ($methodCall->var instanceof FuncCall
-            && $methodCall->var->name instanceof Node\Name
-            && $methodCall->var->name->name === 'request'
+        $var = $call->node->var;
+
+        if ($var instanceof FuncCall
+            && $var->name instanceof Node\Name
+            && $var->name->name === 'request'
         ) {
             return true;
         }
 
-        $varType = $scope->resolveType($methodCall->var);
+        $varType = $call->getVarType();
 
         if ($varType instanceof ObjectType && $varType->className) {
             return is_a($varType->className, Request::class, true);

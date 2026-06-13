@@ -85,7 +85,7 @@ class Relation
     private function parseRelationDefinition(): void
     {
         if ($this->modelPhpClass->getReflection()->hasMethod($this->name)) {
-            $phpDocReturnType = $this->modelPhpClass->getMethod($this->name)->getPhpFunction()?->getTypeFromPhpDocReturnTag();
+            $phpDocReturnType = $this->modelPhpClass->getMethod($this->name)->getTypeFromPhpDocReturnTag();
 
             if ($phpDocReturnType && $phpDocReturnType->typeNode instanceof GenericTypeNode) {
                 $this->relationTypeClassName = $this->modelPhpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);

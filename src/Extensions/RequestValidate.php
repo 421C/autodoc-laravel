@@ -2,7 +2,7 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
+use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
@@ -11,7 +11,6 @@ use AutoDoc\Laravel\Validation\ValidationRulesParser;
 use Illuminate\Http\Request;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
 
 /**
  * Handles Laravel Request `validate` method.
@@ -20,42 +19,42 @@ class RequestValidate extends MethodCallExtension
 {
     use ValidationRulesParser;
 
-    public function getRequestType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getRequestType(MethodCallContext $call): ?Type
     {
-        if ($this->isRequestValidateMethod($methodCall, $scope)) {
-            return $this->parseValidateMethodCallArguments($methodCall, $scope);
+        if ($this->isRequestValidateMethod($call)) {
+            return $this->parseValidateMethodCallArguments($call);
         }
 
         return null;
     }
 
 
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(MethodCallContext $call): ?Type
     {
-        if ($this->isRequestValidateMethod($methodCall, $scope)) {
-            return $this->parseValidateMethodCallArguments($methodCall, $scope);
+        if ($this->isRequestValidateMethod($call)) {
+            return $this->parseValidateMethodCallArguments($call);
         }
 
         return null;
     }
 
 
-    private function isRequestValidateMethod(MethodCall $methodCall, Scope $scope): bool
+    private function isRequestValidateMethod(MethodCallContext $call): bool
     {
-        if (! ($methodCall->name instanceof Node\Identifier)
-            || $methodCall->name->name !== 'validate'
-        ) {
+        if ($call->methodName !== 'validate') {
             return false;
         }
 
-        if ($methodCall->var instanceof FuncCall
-            && $methodCall->var->name instanceof Node\Name
-            && $methodCall->var->name->name === 'request'
+        $var = $call->node->var;
+
+        if ($var instanceof FuncCall
+            && $var->name instanceof Node\Name
+            && $var->name->name === 'request'
         ) {
             return true;
         }
 
-        $varType = $scope->resolveType($methodCall->var);
+        $varType = $call->getVarType();
 
         if ($varType instanceof ObjectType && $varType->className) {
             return is_a($varType->className, Request::class, true);
@@ -65,10 +64,14 @@ class RequestValidate extends MethodCallExtension
     }
 
 
-    private function parseValidateMethodCallArguments(MethodCall $methodCall, Scope $scope): ?ArrayType
+    private function parseValidateMethodCallArguments(MethodCallContext $call): ?ArrayType
     {
-        $validationArrayNode = $methodCall->getArgs()[0]->value;
-        $validationArray = $scope->resolveType($validationArrayNode);
+        if (! $call->argTypes->has(0)) {
+            return null;
+        }
+
+        $scope = $call->scope;
+        $validationArray = $call->argTypes->get(0);
 
         if (! isset($validationArray->shape)) {
             return null;

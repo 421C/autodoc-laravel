@@ -2,8 +2,8 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
+use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\PhpClass;
-use AutoDoc\Analyzer\PhpFunctionArgument;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\FloatType;
@@ -29,6 +29,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use ReflectionMethod;
 use ReflectionNamedType;
 use Throwable;
 
@@ -92,7 +93,7 @@ class EloquentModel extends ClassExtension
         $getMutatorName = 'get' . ucfirst($accessorName) . 'Attribute';
 
         if ($phpClass->getReflection()->hasMethod($getMutatorName)) {
-            $args = [new PhpFunctionArgument($propertyType, $phpClass->scope)];
+            $args = ArgumentList::fromTypes([$propertyType], $phpClass->scope);
 
             return $phpClass->getMethod($getMutatorName, $args)->getReturnType();
         }
@@ -120,7 +121,10 @@ class EloquentModel extends ClassExtension
     {
         $modelToArrayMethod = $phpClass->getMethod('toArray');
 
-        $modelToArrayMethodDeclaringClass = $modelToArrayMethod->getReflection()?->class;
+        $modelToArrayMethodReflection = $modelToArrayMethod->getReflection();
+        $modelToArrayMethodDeclaringClass = $modelToArrayMethodReflection instanceof ReflectionMethod
+            ? $modelToArrayMethodReflection->getDeclaringClass()->getName()
+            : null;
 
         if ($modelToArrayMethodDeclaringClass && $modelToArrayMethodDeclaringClass !== Model::class) {
             $modelArrayRepresentation = $modelToArrayMethod->getReturnType()->unwrapType($phpClass->scope->config);
@@ -288,7 +292,7 @@ class EloquentModel extends ClassExtension
     private function getRelationType(PhpClass $phpClass, string $relationName): ?Type
     {
         if ($phpClass->getReflection()->hasMethod($relationName)) {
-            $phpDocReturnType = $phpClass->getMethod($relationName)->getPhpFunction()?->getTypeFromPhpDocReturnTag();
+            $phpDocReturnType = $phpClass->getMethod($relationName)->getTypeFromPhpDocReturnTag();
 
             if ($phpDocReturnType && $phpDocReturnType->typeNode instanceof GenericTypeNode) {
                 $returnTypeClassName = $phpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);

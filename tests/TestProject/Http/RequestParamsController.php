@@ -96,14 +96,8 @@ class RequestParamsController
                 'name' => 'param1',
                 'required' => true,
                 'schema' => [
-                    'allOf' => [
-                        [
-                            'type' => 'string',
-                        ],
-                        [
-                            'type' => 'number',
-                        ],
-                    ],
+                    'type' => 'string',
+                    'format' => 'numeric',
                 ],
             ],
             [

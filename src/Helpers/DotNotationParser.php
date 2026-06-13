@@ -10,6 +10,20 @@ use AutoDoc\DataTypes\UnionType;
 trait DotNotationParser
 {
     /**
+     * Split a Laravel dot-notation key into segments, honoring escaped dots
+     * (`\.`). Wildcard segments (`*`) are preserved for array inference.
+     *
+     * @return list<string>
+     */
+    protected function splitDotNotation(string $key): array
+    {
+        $segments = preg_split('/(?<!\\\\)\./', $key) ?: [];
+
+        return array_map(fn (string $segment): string => str_replace('\\.', '.', $segment), $segments);
+    }
+
+
+    /**
      * @param array<string, Type> $structure
      * @param array<int, string> $segments
      */

@@ -2,7 +2,8 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\PhpFunctionArgument;
+use AutoDoc\Analyzer\ArgumentList;
+use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\CallableType;
@@ -15,21 +16,15 @@ use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallExtension;
 use Illuminate\Support\Collection;
-use PhpParser\Node;
-use PhpParser\Node\Expr\MethodCall;
 
 /**
  * Handles method calls on Laravel Collection classes.
  */
 class CollectionMethodCall extends MethodCallExtension
 {
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(MethodCallContext $call): ?Type
     {
-        if (! ($methodCall->name instanceof Node\Identifier)) {
-            return null;
-        }
-
-        $methodName = $methodCall->name->name;
+        $methodName = $call->methodName;
 
         $supportedMethodNames = [
             'first', 'last', 'toArray', 'map', 'mapWithKeys', 'filter', 'reject', 'pluck', 'flatten',
@@ -40,7 +35,7 @@ class CollectionMethodCall extends MethodCallExtension
             return null;
         }
 
-        $varType = $scope->resolveType($methodCall->var);
+        $varType = $call->getVarType();
 
         $isLaravelCollection = fn (Type $type): bool => $type instanceof ArrayType
             && $type->className
@@ -81,16 +76,16 @@ class CollectionMethodCall extends MethodCallExtension
         }
 
         return match ($methodName) {
-            'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($methodCall, $varType, $scope),
-            'map' => $this->handleMapMethod($methodCall, $varType, $scope),
-            'mapWithKeys' => $this->handleMapWithKeysMethod($methodCall, $varType, $scope),
-            'pluck' => $this->handlePluckMethod($methodCall, $varType, $scope),
+            'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($call, $varType),
+            'map' => $this->handleMapMethod($call, $varType),
+            'mapWithKeys' => $this->handleMapWithKeysMethod($call, $varType),
+            'pluck' => $this->handlePluckMethod($call, $varType),
             'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy' => $varType,
         };
     }
 
 
-    private function handleSingleEntryWithDefaultValue(MethodCall $methodCall, ArrayType $collectionType, Scope $scope): Type
+    private function handleSingleEntryWithDefaultValue(MethodCallContext $call, ArrayType $collectionType): Type
     {
         $itemType = $collectionType->itemType;
 
@@ -98,37 +93,30 @@ class CollectionMethodCall extends MethodCallExtension
             return new UnknownType;
         }
 
-        $defaultValueArg = $methodCall->args[1] ?? null;
-        $defaultValueType = new NullType;
-
-        if ($defaultValueArg) {
-            $defaultValueType = $scope->resolveType($defaultValueArg);
-        }
+        $defaultValueType = $call->argTypes->has(1) ? $call->argTypes->get(1) : new NullType;
 
         $returnType = new UnionType([$itemType, $defaultValueType]);
 
-        return $returnType->unwrapType($scope->config);
+        return $returnType->unwrapType($call->scope->config);
     }
 
 
-    private function handleMapMethod(MethodCall $methodCall, ArrayType $collectionType, Scope $scope): ArrayType
+    private function handleMapMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
     {
-        $callbackArg = $methodCall->args[0] ?? null;
-
-        if (! ($callbackArg instanceof Node\Arg)) {
+        if (! $call->argTypes->has(0)) {
             return $collectionType;
         }
 
-        $callbackType = $scope->resolveType($callbackArg->value);
+        $callbackType = $call->argTypes->get(0);
 
         if ($callbackType instanceof CallableType) {
             $collectionType->shape = [];
             $collectionType->itemType = $callbackType->getReturnType(
-                args: [
-                    new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
-                    new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
-                ],
-                callerNode: $methodCall,
+                ArgumentList::fromTypes([
+                    $collectionType->itemType ?? new UnknownType,
+                    $collectionType->keyType ?? new IntegerType,
+                ], $call->scope),
+                $call->node,
             );
 
             return $collectionType;
@@ -138,23 +126,21 @@ class CollectionMethodCall extends MethodCallExtension
     }
 
 
-    private function handleMapWithKeysMethod(MethodCall $methodCall, ArrayType $collectionType, Scope $scope): Type
+    private function handleMapWithKeysMethod(MethodCallContext $call, ArrayType $collectionType): Type
     {
-        $callbackArg = $methodCall->args[0] ?? null;
-
-        if (! ($callbackArg instanceof Node\Arg)) {
+        if (! $call->argTypes->has(0)) {
             return $collectionType;
         }
 
-        $callbackType = $scope->resolveType($callbackArg->value);
+        $callbackType = $call->argTypes->get(0);
 
         if ($callbackType instanceof CallableType) {
             $returnType = $callbackType->getReturnType(
-                args: [
-                    new PhpFunctionArgument($collectionType->itemType ?? new UnknownType, $scope),
-                    new PhpFunctionArgument($collectionType->keyType ?? new IntegerType, $scope),
-                ],
-                callerNode: $methodCall,
+                ArgumentList::fromTypes([
+                    $collectionType->itemType ?? new UnknownType,
+                    $collectionType->keyType ?? new IntegerType,
+                ], $call->scope),
+                $call->node,
             );
 
             if ($returnType instanceof UnionType) {
@@ -177,27 +163,25 @@ class CollectionMethodCall extends MethodCallExtension
         return new ArrayType(className: Collection::class);
     }
 
-    private function handlePluckMethod(MethodCall $methodCall, ArrayType $collectionType, Scope $scope): ArrayType
+    private function handlePluckMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
     {
         if (! $collectionType->itemType) {
             return new ArrayType(className: Collection::class);
         }
 
-        $columnArg = $methodCall->args[0] ?? null;
-        $keyArg = $methodCall->args[1] ?? null;
-
-        if (! ($columnArg instanceof Node\Arg)) {
+        if (! $call->argTypes->has(0)) {
             return new ArrayType(className: Collection::class);
         }
 
+        $scope = $call->scope;
         $keyType = null;
 
-        if ($keyArg instanceof Node\Arg) {
-            $keyArgType = $scope->resolveType($keyArg->value);
+        if ($call->argTypes->has(1)) {
+            $keyArgType = $call->argTypes->get(1);
             $keyType = $this->getCollectionItemPropertyType($collectionType, $keyArgType, $scope);
         }
 
-        $columnArgType = $scope->resolveType($columnArg->value);
+        $columnArgType = $call->argTypes->get(0);
         $resultItemType = $this->getCollectionItemPropertyType($collectionType, $columnArgType, $scope);
 
         if (! $resultItemType) {

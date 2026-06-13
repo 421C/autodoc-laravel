@@ -2,16 +2,15 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
+use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
-use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 
 class QueryBuilderMethodCall extends MethodCallExtension
 {
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(MethodCallContext $call): ?Type
     {
         $supportedMethods = [
             'get',
@@ -30,12 +29,16 @@ class QueryBuilderMethodCall extends MethodCallExtension
             'paginate',
         ];
 
-        if (! ($methodCall->name instanceof Node\Identifier)
-            || ! in_array($methodCall->name->name, $supportedMethods)
-        ) {
+        if (! in_array($call->methodName, $supportedMethods)) {
             return null;
         }
 
-        return (new QueryNavigator($scope))->getResultType($methodCall, $methodCall->name->name);
+        $node = $call->node;
+
+        if (! ($node instanceof MethodCall)) {
+            return null;
+        }
+
+        return (new QueryNavigator($call->scope))->getResultType($node, $call->methodName);
     }
 }

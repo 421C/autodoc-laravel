@@ -86,7 +86,6 @@ class OrderController
                                         ],
                                     ],
                                     'required' => [
-                                        'id',
                                         'status',
                                     ],
                                 ],

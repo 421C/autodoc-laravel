@@ -779,6 +779,10 @@ class EloquentQueryController
                                             ],
                                         ],
                                     ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                    ],
                                 ],
                                 'lastWithDefaultFalse' => [
                                     'anyOf' => [
@@ -799,6 +803,10 @@ class EloquentQueryController
                                                         'bānis',
                                                     ],
                                                 ],
+                                            ],
+                                            'required' => [
+                                                'id',
+                                                'name',
                                             ],
                                         ],
                                         [
