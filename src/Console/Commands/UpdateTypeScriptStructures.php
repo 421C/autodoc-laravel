@@ -21,19 +21,12 @@ class UpdateTypeScriptStructures extends Command
 
         $commandOutput = (new \AutoDoc\Commands\UpdateTypeScriptStructures($config))->run($workingDirectory);
 
+        $hasErrors = false;
+
         foreach ($commandOutput as $message) {
-            if (isset($message['filePath'], $message['processedTags'])) {
-                $tagsText = $message['processedTags'] . ' tag' . ($message['processedTags'] === 1 ? '' : 's');
+            if (isset($message['error'])) {
+                $hasErrors = true;
 
-                $this->line('Updated <fg=bright-white>' . $this->formatFilePath($message['filePath']) . '</> <fg=gray>(' . $tagsText . ')</>');
-
-            } else if (isset($message['filePath'], $message['exportedRequests'], $message['exportedResponses'])) {
-                $requestsResponsesText = $message['exportedRequests'] . ' request' . ($message['exportedRequests'] === 1 ? '' : 's') . ', '
-                    . $message['exportedResponses'] . ' response' . ($message['exportedResponses'] === 1 ? '' : 's');
-
-                $this->line('Updated <fg=bright-white>' . $this->formatFilePath($message['filePath']) . '</> <fg=gray>(' . $requestsResponsesText . ')</>');
-
-            } else if (isset($message['error'])) {
                 if ($message['error'] instanceof Throwable) {
                     $errorText = $message['error']->getMessage() . ' [' . $message['error']->getFile() . ':' . $message['error']->getLine() . ']';
 
@@ -48,10 +41,30 @@ class UpdateTypeScriptStructures extends Command
                 } else {
                     $this->error($errorText);
                 }
+
+            } else if (isset($message['processedTags'])) {
+                $this->updatedLine($message['filePath'], $this->pluralize($message['processedTags'], 'tag'));
+
+            } else {
+                $this->updatedLine(
+                    $message['filePath'],
+                    $this->pluralize($message['exportedRequests'], 'request') . ', '
+                        . $this->pluralize($message['exportedResponses'], 'response'),
+                );
             }
         }
 
-        return Command::SUCCESS;
+        return $hasErrors ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    private function updatedLine(string $filePath, string $detail): void
+    {
+        $this->line('Updated <fg=bright-white>' . $this->formatFilePath($filePath) . '</> <fg=gray>(' . $detail . ')</>');
+    }
+
+    private function pluralize(int $count, string $noun): string
+    {
+        return $count . ' ' . $noun . ($count === 1 ? '' : 's');
     }
 
     private function formatFilePath(string $path): string
