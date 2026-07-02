@@ -206,4 +206,48 @@ class RawQueryController
             'avg' => DB::table('planets')->avg('diameter'),
         ]);
     }
+
+
+    /**
+     * DB transaction callback return value
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'DB transaction callback return value',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'committed' => [
+                                    'type' => 'boolean',
+                                ],
+                                'transactionId' => [
+                                    'type' => 'integer',
+                                    'const' => 123,
+                                ],
+                            ],
+                            'required' => [
+                                'committed',
+                                'transactionId',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function transaction(): JsonResponse
+    {
+        $result = DB::transaction(function () {
+            return [
+                'committed' => true,
+                'transactionId' => 123,
+            ];
+        });
+
+        return response()->json($result);
+    }
 }

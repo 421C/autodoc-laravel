@@ -94,6 +94,7 @@ Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::cl
 Route::post('/test/raw-query/map-sum', [RawQueryController::class, 'rawQueryWithMapAndSum']);
 Route::post('/test/raw-query/collection-sum', [RawQueryController::class, 'collectionSum']);
 Route::post('/test/raw-query/scalar-finishers', [RawQueryController::class, 'rawQueryScalarFinishers']);
+Route::post('/test/raw-query/transaction', [RawQueryController::class, 'transaction']);
 
 Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
 Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);

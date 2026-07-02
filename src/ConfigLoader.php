@@ -26,6 +26,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\RequestHeader::class,
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
                 \AutoDoc\Laravel\Extensions\RequestParameter::class,
+                \AutoDoc\Laravel\Extensions\DatabaseTransactionStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,
