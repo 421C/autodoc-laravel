@@ -192,6 +192,7 @@ class ResourceController
                                 'count' => [
                                     'description' => 'Number of users returned.',
                                     'type' => 'integer',
+                                    'minimum' => 0,
                                 ],
                             ],
                             'required' => [

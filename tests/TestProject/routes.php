@@ -8,6 +8,7 @@ use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
 use AutoDoc\Laravel\Tests\TestProject\Http\OrderController;
 use AutoDoc\Laravel\Tests\TestProject\Http\PaginationController;
+use AutoDoc\Laravel\Tests\TestProject\Http\RawQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RequestParamsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ResourceController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RouteParametersController;
@@ -87,6 +88,12 @@ Route::post('/test/eloquent/with-array', [EloquentQueryController::class, 'withA
 Route::post('/test/eloquent/complex-nested', [EloquentQueryController::class, 'complexNestedRelations']);
 Route::post('/test/eloquent/conditional-return', [EloquentQueryController::class, 'conditionalReturnWithRelation']);
 Route::post('/test/eloquent/model-create', [EloquentQueryController::class, 'modelCreate']);
+Route::post('/test/eloquent/builder-scalar-finishers', [EloquentQueryController::class, 'builderScalarFinishers']);
+Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::class, 'collectionAggregates']);
+
+Route::post('/test/raw-query/map-sum', [RawQueryController::class, 'rawQueryWithMapAndSum']);
+Route::post('/test/raw-query/collection-sum', [RawQueryController::class, 'collectionSum']);
+Route::post('/test/raw-query/scalar-finishers', [RawQueryController::class, 'rawQueryScalarFinishers']);
 
 Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
 Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);

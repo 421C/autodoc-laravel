@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Extensions;
 use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\MethodCallExtension;
+use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
 use PhpParser\Node\Expr\MethodCall;
 
@@ -12,24 +13,7 @@ class QueryBuilderMethodCall extends MethodCallExtension
 {
     public function getReturnType(MethodCallContext $call): ?Type
     {
-        $supportedMethods = [
-            'get',
-            'create',
-            'first',
-            'firstWhere',
-            'firstOrFail',
-            'find',
-            'findOrFail',
-            'firstOrNew',
-            'firstOrCreate',
-            'updateOrCreate',
-            'latest',
-            'oldest',
-            'pluck',
-            'paginate',
-        ];
-
-        if (! in_array($call->methodName, $supportedMethods)) {
+        if (! BuilderMethodClassifier::supportsResultInference($call->methodName)) {
             return null;
         }
 

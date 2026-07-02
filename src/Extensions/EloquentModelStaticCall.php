@@ -8,6 +8,7 @@ use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallExtension;
+use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -19,32 +20,9 @@ class EloquentModelStaticCall extends StaticCallExtension
 {
     public function getReturnType(StaticCallContext $call): ?Type
     {
-        $supportedMethods = [
-            'count',
-            'insert',
-            'insertOrIgnore',
-            'insertOrThrow',
-            'insertUsing',
-            'insertGetId',
-            'insertUsingGetId',
-            'find',
-            'firstWhere',
-            'first',
-            'firstOrFail',
-            'findOrFail',
-            'firstOrNew',
-            'firstOrCreate',
-            'updateOrCreate',
-            'create',
-            'all',
-            'get',
-            'paginate',
-            'pluck',
-        ];
-
         $methodName = $call->methodName;
 
-        if (! in_array($methodName, $supportedMethods)) {
+        if (! BuilderMethodClassifier::supportsModelStaticCall($methodName)) {
             return null;
         }
 

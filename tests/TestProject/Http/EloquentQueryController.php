@@ -590,8 +590,8 @@ class EloquentQueryController
     public function firstAndFirstOrFailWithQueryBuilder(): mixed
     {
         return [
-            'first' => SpaceStation::query()->first(),
-            'firstOrFail' => SpaceStation::query()->firstOrFail(),
+            'first' => SpaceStation::query()->latest()->first(),
+            'firstOrFail' => SpaceStation::query()->oldest()->firstOrFail(),
         ];
     }
 
@@ -1955,6 +1955,161 @@ class EloquentQueryController
             'name' => 'Earth',
             'diameter' => 12345,
             'visited' => true,
+        ]);
+    }
+
+
+    /**
+     * Builder scalar finishers
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Builder scalar finishers',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'count' => [
+                                    'type' => 'integer',
+                                    'minimum' => 0,
+                                ],
+                                'exists' => [
+                                    'type' => 'boolean',
+                                ],
+                                'doesntExist' => [
+                                    'type' => 'boolean',
+                                ],
+                                'sum' => [
+                                    'type' => 'number',
+                                ],
+                                'avg' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                ],
+                                'staticExists' => [
+                                    'type' => 'boolean',
+                                ],
+                                'staticSum' => [
+                                    'type' => 'number',
+                                ],
+                            ],
+                            'required' => [
+                                'count',
+                                'exists',
+                                'doesntExist',
+                                'sum',
+                                'avg',
+                                'staticExists',
+                                'staticSum',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function builderScalarFinishers(): JsonResponse
+    {
+        return response()->json([
+            'count' => Planet::where('visited', true)->count(),
+            'exists' => Planet::where('visited', true)->exists(),
+            'doesntExist' => Planet::where('visited', true)->doesntExist(),
+            'sum' => Planet::query()->sum('diameter'),
+            'avg' => Planet::query()->avg('diameter'),
+            // Direct static calls (no ->query()/->where() prefix).
+            'staticExists' => Planet::exists(),
+            'staticSum' => Planet::sum('diameter'),
+        ]);
+    }
+
+
+    /**
+     * Collection aggregates and passthrough methods
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Collection aggregates and passthrough methods',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'count' => [
+                                    'type' => 'integer',
+                                    'minimum' => 0,
+                                ],
+                                'avg' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                ],
+                                'isEmpty' => [
+                                    'type' => 'boolean',
+                                ],
+                                'isNotEmpty' => [
+                                    'type' => 'boolean',
+                                ],
+                                'containsName' => [
+                                    'type' => 'boolean',
+                                ],
+                                'names' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                        'enum' => [
+                                            'a',
+                                            'b',
+                                        ],
+                                    ],
+                                ],
+                                'namesString' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'required' => [
+                                'count',
+                                'avg',
+                                'isEmpty',
+                                'isNotEmpty',
+                                'containsName',
+                                'names',
+                                'namesString',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function collectionAggregates(): JsonResponse
+    {
+        $items = collect([
+            [
+                'name' => 'a',
+                'price' => 10,
+            ],
+            [
+                'name' => 'b',
+                'price' => 20,
+            ],
+        ]);
+
+        return response()->json([
+            'count' => $items->count(),
+            'avg' => $items->avg('price'),
+            'isEmpty' => $items->isEmpty(),
+            'isNotEmpty' => $items->isNotEmpty(),
+            'containsName' => $items->contains('name', 'a'),
+            'names' => $items->sortDesc()->unique('name')->reverse()->slice(0, 2)->each(fn ($item) => $item)->pluck('name'),
+            'namesString' => $items->implode('name', ', '),
         ]);
     }
 }

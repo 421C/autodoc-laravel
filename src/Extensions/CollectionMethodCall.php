@@ -6,9 +6,11 @@ use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
+use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\CallableType;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\NullType;
+use AutoDoc\DataTypes\NumberType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
@@ -28,7 +30,9 @@ class CollectionMethodCall extends MethodCallExtension
 
         $supportedMethodNames = [
             'first', 'last', 'toArray', 'map', 'mapWithKeys', 'filter', 'reject', 'pluck', 'flatten',
-            'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'get', 'keyBy', 'values',
+            'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'get', 'keyBy', 'values', 'sum',
+            'count', 'avg', 'average', 'isEmpty', 'isNotEmpty', 'contains', 'implode',
+            'unique', 'reverse', 'slice', 'sortDesc', 'each',
         ];
 
         if (! in_array($methodName, $supportedMethodNames)) {
@@ -80,7 +84,13 @@ class CollectionMethodCall extends MethodCallExtension
             'map' => $this->handleMapMethod($call, $varType),
             'mapWithKeys' => $this->handleMapWithKeysMethod($call, $varType),
             'pluck' => $this->handlePluckMethod($call, $varType),
-            'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy' => $varType,
+            'sum' => new NumberType,
+            'count' => new IntegerType(minimum: 0),
+            'avg', 'average' => new UnionType([new NumberType, new NullType]),
+            'isEmpty', 'isNotEmpty', 'contains' => new BoolType,
+            'implode' => new StringType,
+            'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy',
+            'unique', 'reverse', 'slice', 'sortDesc', 'each' => $varType,
         };
     }
 

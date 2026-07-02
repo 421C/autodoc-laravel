@@ -6,7 +6,7 @@ use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\MethodCallExtension;
-use Throwable;
+use AutoDoc\Laravel\QueryBuilder\BuilderMethodResolver;
 
 class EloquentBuilderMethodCall extends MethodCallExtension
 {
@@ -24,21 +24,6 @@ class EloquentBuilderMethodCall extends MethodCallExtension
         $methodName = $call->methodName;
         $methodArgs = $call->argTypes;
 
-        try {
-            $phpClassMethod = $scope->getPhpClassInDeeperScope(\Illuminate\Database\Eloquent\Builder::class)->getMethod(
-                name: $methodName,
-                args: $methodArgs,
-            );
-
-            return $phpClassMethod->getReturnType()->unwrapType($scope->config);
-
-        } catch (Throwable $exception) {
-            $phpClassMethod = $scope->getPhpClassInDeeperScope(\Illuminate\Database\Query\Builder::class)->getMethod(
-                name: $methodName,
-                args: $methodArgs,
-            );
-
-            return $phpClassMethod->getReturnType()->unwrapType($scope->config);
-        }
+        return (new BuilderMethodResolver($scope))->getReturnType($methodName, $methodArgs);
     }
 }
