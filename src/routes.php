@@ -16,8 +16,14 @@ if ($url) {
         ->middleware($middleware)
         ->group(function () {
 
-            Route::get('/', [DocsController::class, 'getView'])->name('view');
-            Route::get('/openapi-json', [DocsController::class, 'getJson'])->name('openapi-json');
+            /**
+             * Single catch-all that serves the docs HTML page, the vendored
+             * viewer assets (`assets/<file>`) and the workspace OpenAPI JSON
+             * (`openapi.json`) through `DocViewer::handle()`.
+             */
+            Route::get('{path?}', [DocsController::class, 'handle'])
+                ->where('path', '.*')
+                ->name('view');
 
         });
 }
