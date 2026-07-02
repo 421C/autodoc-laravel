@@ -2,6 +2,7 @@
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
+use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
@@ -86,6 +87,10 @@ Route::post('/test/eloquent/with-array', [EloquentQueryController::class, 'withA
 Route::post('/test/eloquent/complex-nested', [EloquentQueryController::class, 'complexNestedRelations']);
 Route::post('/test/eloquent/conditional-return', [EloquentQueryController::class, 'conditionalReturnWithRelation']);
 Route::post('/test/eloquent/model-create', [EloquentQueryController::class, 'modelCreate']);
+
+Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
+Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);
+Route::post('/test/app-helper/application-method', [AppHelperController::class, 'methodCallOnApplication']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
 

@@ -20,6 +20,7 @@ class ConfigLoader
             $configArray['extensions'] = array_unique([
                 ...($configArray['extensions'] ?? []),
 
+                \AutoDoc\Laravel\Extensions\AppCall::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\RequestHeader::class,
