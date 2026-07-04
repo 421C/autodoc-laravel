@@ -14,19 +14,17 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallExtension;
+use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
-use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
 
 /**
  * Handles Laravel Request parameter methods.
  */
 class RequestParameter extends MethodCallExtension
 {
-    use DotNotationParser;
+    use ChecksRequestReceiver, DotNotationParser;
 
     private const METHODS = [
         'boolean',
@@ -255,23 +253,6 @@ class RequestParameter extends MethodCallExtension
             return null;
         }
 
-        $var = $call->node->var;
-
-        if ($var instanceof FuncCall
-            && $var->name instanceof Node\Name
-            && $var->name->name === 'request'
-        ) {
-            return $call->methodName;
-        }
-
-        $varType = $call->getVarType();
-
-        if ($varType instanceof ObjectType && $varType->className) {
-            if (is_a($varType->className, Request::class, true)) {
-                return $call->methodName;
-            }
-        }
-
-        return null;
+        return $this->isRequestReceiver($call) ? $call->methodName : null;
     }
 }

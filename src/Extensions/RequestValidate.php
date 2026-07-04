@@ -7,17 +7,15 @@ use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\MethodCallExtension;
+use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
-use Illuminate\Http\Request;
-use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
 
 /**
  * Handles Laravel Request `validate` method.
  */
 class RequestValidate extends MethodCallExtension
 {
-    use ValidationRulesParser;
+    use ChecksRequestReceiver, ValidationRulesParser;
 
     public function handleSideEffect(MethodCallContext $call): void
     {
@@ -43,26 +41,7 @@ class RequestValidate extends MethodCallExtension
 
     private function isRequestValidateMethod(MethodCallContext $call): bool
     {
-        if ($call->methodName !== 'validate') {
-            return false;
-        }
-
-        $var = $call->node->var;
-
-        if ($var instanceof FuncCall
-            && $var->name instanceof Node\Name
-            && $var->name->name === 'request'
-        ) {
-            return true;
-        }
-
-        $varType = $call->getVarType();
-
-        if ($varType instanceof ObjectType && $varType->className) {
-            return is_a($varType->className, Request::class, true);
-        }
-
-        return false;
+        return $call->methodName === 'validate' && $this->isRequestReceiver($call);
     }
 
 

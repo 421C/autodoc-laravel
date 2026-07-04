@@ -5,21 +5,20 @@ namespace AutoDoc\Laravel\Extensions;
 use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\NullType;
-use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallExtension;
-use Illuminate\Http\Request;
-use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
+use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 
 /**
  * Handles Laravel Request `header` method.
  */
 class RequestHeader extends MethodCallExtension
 {
+    use ChecksRequestReceiver;
+
     public function handleSideEffect(MethodCallContext $call): void
     {
         if (! $call->scope->route || ! $this->isRequestHeaderMethod($call)) {
@@ -73,25 +72,6 @@ class RequestHeader extends MethodCallExtension
 
     private function isRequestHeaderMethod(MethodCallContext $call): bool
     {
-        if ($call->methodName !== 'header') {
-            return false;
-        }
-
-        $var = $call->node->var;
-
-        if ($var instanceof FuncCall
-            && $var->name instanceof Node\Name
-            && $var->name->name === 'request'
-        ) {
-            return true;
-        }
-
-        $varType = $call->getVarType();
-
-        if ($varType instanceof ObjectType && $varType->className) {
-            return is_a($varType->className, Request::class, true);
-        }
-
-        return false;
+        return $call->methodName === 'header' && $this->isRequestReceiver($call);
     }
 }
