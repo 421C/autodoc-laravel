@@ -20,10 +20,10 @@ use PhpParser\Node\Expr\FuncCall;
  */
 class RequestQuery extends MethodCallExtension
 {
-    public function getRequestType(MethodCallContext $call): ?Type
+    public function handleSideEffect(MethodCallContext $call): void
     {
         if (! $call->scope->route || ! $this->isRequestQueryMethod($call)) {
-            return null;
+            return;
         }
 
         $keyArgType = $call->argTypes->has(0) ? $call->argTypes->get(0) : null;
@@ -33,8 +33,6 @@ class RequestQuery extends MethodCallExtension
                 $call->scope->route->requestQueryParams[$key] ??= new UnknownType;
             }
         }
-
-        return null;
     }
 
 

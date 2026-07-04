@@ -19,13 +19,15 @@ class RequestValidate extends MethodCallExtension
 {
     use ValidationRulesParser;
 
-    public function getRequestType(MethodCallContext $call): ?Type
+    public function handleSideEffect(MethodCallContext $call): void
     {
         if ($this->isRequestValidateMethod($call)) {
-            return $this->parseValidateMethodCallArguments($call);
-        }
+            $requestType = $this->parseValidateMethodCallArguments($call);
 
-        return null;
+            if ($requestType !== null) {
+                $call->setRequestType($requestType);
+            }
+        }
     }
 
 

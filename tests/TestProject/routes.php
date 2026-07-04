@@ -88,6 +88,7 @@ Route::post('/test/eloquent/with-array', [EloquentQueryController::class, 'withA
 Route::post('/test/eloquent/complex-nested', [EloquentQueryController::class, 'complexNestedRelations']);
 Route::post('/test/eloquent/conditional-return', [EloquentQueryController::class, 'conditionalReturnWithRelation']);
 Route::post('/test/eloquent/model-create', [EloquentQueryController::class, 'modelCreate']);
+Route::post('/test/eloquent/model-set-attribute', [EloquentQueryController::class, 'modelSetAttribute']);
 Route::post('/test/eloquent/builder-scalar-finishers', [EloquentQueryController::class, 'builderScalarFinishers']);
 Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::class, 'collectionAggregates']);
 

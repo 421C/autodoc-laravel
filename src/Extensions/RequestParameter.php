@@ -57,22 +57,22 @@ class RequestParameter extends MethodCallExtension
     }
 
 
-    public function getRequestType(MethodCallContext $call): ?Type
+    public function handleSideEffect(MethodCallContext $call): void
     {
         if (! $call->scope->route) {
-            return null;
+            return;
         }
 
         $methodName = $this->getMatchedMethodName($call);
 
         if ($methodName === null) {
-            return null;
+            return;
         }
 
         $requestParameters = $this->getRequestParametersFromMethod($methodName, $call);
 
         if ($requestParameters === []) {
-            return null;
+            return;
         }
 
         if ($call->scope->route->hasMethod('get')) {
@@ -80,7 +80,7 @@ class RequestParameter extends MethodCallExtension
                 $call->scope->route->requestQueryParams[$key] ??= $paramType;
             }
 
-            return null;
+            return;
         }
 
         $paramsInRequestBody = [];
@@ -92,10 +92,10 @@ class RequestParameter extends MethodCallExtension
         }
 
         if (! $paramsInRequestBody) {
-            return null;
+            return;
         }
 
-        return new ObjectType(properties: $paramsInRequestBody);
+        $call->setRequestType(new ObjectType(properties: $paramsInRequestBody));
     }
 
 
