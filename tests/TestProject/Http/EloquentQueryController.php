@@ -3,6 +3,9 @@
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
+use AutoDoc\Laravel\Tests\TestProject\Models\AnnotatedPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\ClassifiedPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\LabeledPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
@@ -1956,6 +1959,703 @@ class EloquentQueryController
             'diameter' => 12345,
             'visited' => true,
         ]);
+    }
+
+
+    /**
+     * Model setAttribute
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'standalone' => [
+                                    'type' => 'string',
+                                    'const' => 'Gaia',
+                                ],
+                                'chained' => [
+                                    'type' => 'integer',
+                                    'const' => 42,
+                                ],
+                            ],
+                            'required' => [
+                                'standalone',
+                                'chained',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttribute(): mixed
+    {
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('display_name', 'Gaia');
+
+        return [
+            /** @phpstan-ignore property.notFound */
+            'standalone' => $planet->display_name,
+            /** @phpstan-ignore property.nonObject */
+            'chained' => Planet::firstOrFail()->setAttribute(key: 'score', value: 42)->score,
+        ];
+    }
+
+
+    /**
+     * Model setAttribute value types
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute value types',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'as_float' => [
+                                    'type' => 'number',
+                                    'const' => 1.5,
+                                    'format' => 'float',
+                                ],
+                                'as_bool' => [
+                                    'type' => 'boolean',
+                                ],
+                                'as_string' => [
+                                    'type' => 'string',
+                                    'const' => 'text',
+                                ],
+                            ],
+                            'required' => [
+                                'as_float',
+                                'as_bool',
+                                'as_string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeValueTypes(): mixed
+    {
+        // Several attributes set on one variable across separate statements all
+        // stick; each value type renders on its own (a literal bool carries no const).
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('as_float', 1.5);
+        $planet->setAttribute('as_bool', true);
+        $planet->setAttribute('as_string', 'text');
+
+        return [
+            /** @phpstan-ignore property.notFound */
+            'as_float' => $planet->as_float,
+            /** @phpstan-ignore property.notFound */
+            'as_bool' => $planet->as_bool,
+            /** @phpstan-ignore property.notFound */
+            'as_string' => $planet->as_string,
+        ];
+    }
+
+
+    /**
+     * Model setAttribute alongside real columns
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute alongside real columns',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'extra' => [
+                                    'type' => 'string',
+                                    'const' => 'E',
+                                ],
+                                'real_name' => [
+                                    'type' => 'string',
+                                ],
+                                'real_visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'extra',
+                                'real_name',
+                                'real_visited',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeAlongsideColumns(): mixed
+    {
+        // A set attribute does not disturb resolution of the model's real columns.
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('extra', 'E');
+
+        return [
+            /** @phpstan-ignore property.notFound */
+            'extra' => $planet->extra,
+            /** @phpstan-ignore property.notFound */
+            'real_name' => $planet->name,
+            /** @phpstan-ignore property.notFound */
+            'real_visited' => $planet->visited,
+        ];
+    }
+
+
+    /**
+     * Model setAttribute preserved when the model is serialized
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute preserved when the model is serialized',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'extra_json' => [
+                                    'type' => 'string',
+                                    'const' => 'kept',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'extra_json',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeSerialized(): mixed
+    {
+        // Returning the whole model serializes it to JSON; the set attribute is
+        // kept alongside the model's real columns.
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('extra_json', 'kept');
+
+        return $planet;
+    }
+
+
+    /**
+     * Model setAttribute with a JSON path key
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute with a JSON path key',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeJsonPath(): mixed
+    {
+        // Laravel routes `->` keys into a JSON column write, so no attribute
+        // named `options->theme` may be fabricated on the model shape.
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('options->theme', 'dark');
+
+        return $planet;
+    }
+
+
+    /**
+     * Model setAttribute honors hidden and visible
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute honors hidden and visible',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'nickname' => [
+                                    'type' => 'string',
+                                    'const' => 'N',
+                                ],
+                            ],
+                            'required' => [
+                                'name',
+                                'nickname',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeVisibility(): mixed
+    {
+        // Serialization applies the model's $visible whitelist and $hidden list
+        // to set attributes, same as Laravel's getArrayableItems().
+        $planet = ClassifiedPlanet::firstOrFail();
+        $planet->setAttribute('nickname', 'N');
+        $planet->setAttribute('secret_token', 'x');
+        $planet->setAttribute('unlisted', 'y');
+
+        return $planet;
+    }
+
+
+    /**
+     * Model setAttribute on cast and mutated attributes
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model setAttribute on cast and mutated attributes',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'slug' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'slug',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelSetAttributeCastAttributes(): mixed
+    {
+        // Laravel transforms values assigned to cast or mutated attributes on
+        // write, so the assigned literal must not override the attribute type:
+        // `visited` keeps its boolean cast type and `slug` (a set mutator with
+        // no column) is present without a value type.
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('visited', 'yes');
+        $planet->setAttribute('slug', 15);
+
+        return $planet;
+    }
+
+
+    /**
+     * Custom toArray building on parent::toArray
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Custom toArray building on parent::toArray',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'kind' => [
+                                    'type' => 'string',
+                                    'const' => 'planet',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'kind',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelCustomToArrayParent(): mixed
+    {
+        // `parent::toArray()` resolves to the model's attributes shape, so the
+        // custom toArray merge keeps all columns plus the extra key.
+        return AnnotatedPlanet::firstOrFail();
+    }
+
+
+    /**
+     * Custom toArray building on attributesToArray
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Custom toArray building on attributesToArray',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'label' => [
+                                    'type' => 'string',
+                                    'const' => 'L',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'label',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelCustomToArrayAttributes(): mixed
+    {
+        // `$this->attributesToArray()` resolves to the model's attributes
+        // shape inside a custom toArray body.
+        return LabeledPlanet::firstOrFail();
+    }
+
+
+    /**
+     * Model getAttribute
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model getAttribute',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'column' => [
+                                    'type' => 'string',
+                                ],
+                                'cast' => [
+                                    'type' => 'boolean',
+                                ],
+                                'set' => [
+                                    'type' => 'string',
+                                    'const' => 'Gaia',
+                                ],
+                                'accessor' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'reference' => [
+                                            'type' => 'string',
+                                            'const' => 'Galactic Center',
+                                        ],
+                                        'x' => [
+                                            'type' => 'number',
+                                            'const' => 123000,
+                                            'format' => 'float',
+                                        ],
+                                        'y' => [
+                                            'type' => 'number',
+                                            'const' => -456000,
+                                            'format' => 'float',
+                                        ],
+                                        'z' => [
+                                            'type' => 'number',
+                                            'const' => 789000,
+                                            'format' => 'float',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'x',
+                                        'y',
+                                        'z',
+                                        'reference',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'column',
+                                'cast',
+                                'set',
+                                'accessor',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelGetAttribute(): mixed
+    {
+        // getAttribute() resolves like the property read $model->key, including
+        // an attribute set earlier on the same variable.
+        $planet = Planet::firstOrFail();
+        $planet->setAttribute('display_name', 'Gaia');
+
+        return [
+            'column' => Planet::firstOrFail()->getAttribute('name'),
+            'cast' => Planet::firstOrFail()->getAttribute('visited'),
+            'set' => $planet->getAttribute('display_name'),
+            'accessor' => SpaceStation::firstOrFail()->getAttribute('coordinates'),
+        ];
+    }
+
+
+    /**
+     * Model array conversion keeps a set attribute
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model array conversion keeps a set attribute',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'to_array' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'nickname' => [
+                                            'type' => 'string',
+                                            'const' => 'N',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                        'nickname',
+                                    ],
+                                ],
+                                'attributes_to_array' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'nickname' => [
+                                            'type' => 'string',
+                                            'const' => 'N',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                        'nickname',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'to_array',
+                                'attributes_to_array',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelArrayConversionAfterSetAttribute(): mixed
+    {
+        // toArray()/attributesToArray() serialize the variable's resolved shape,
+        // so a set attribute is kept (honoring $visible/$hidden).
+        $planet = ClassifiedPlanet::firstOrFail();
+        $planet->setAttribute('nickname', 'N');
+
+        return [
+            'to_array' => $planet->toArray(),
+            'attributes_to_array' => $planet->attributesToArray(),
+        ];
     }
 
 

@@ -22,6 +22,10 @@ class EloquentModelStaticCall extends StaticCallExtension
     {
         $methodName = $call->methodName;
 
+        if ($methodName === 'toArray' || $methodName === 'attributesToArray') {
+            return $this->getModelAttributesShape($call);
+        }
+
         if (! BuilderMethodClassifier::supportsModelStaticCall($methodName)) {
             return null;
         }
@@ -59,5 +63,28 @@ class EloquentModelStaticCall extends StaticCallExtension
         }
 
         return (new QueryNavigator($scope))->getResultType($node, $methodName);
+    }
+
+
+    /**
+     * Resolves `parent::toArray()` / `parent::attributesToArray()` inside a
+     * custom `toArray()` body. The call runs with the child's `$this`, so the
+     * analyzed class supplies the attribute shape.
+     */
+    private function getModelAttributesShape(StaticCallContext $call): ?ArrayType
+    {
+        $className = $call->className;
+
+        if (! $className || ! is_a($className, Model::class, true)) {
+            return null;
+        }
+
+        $scopeClassName = $call->scope->className;
+
+        $modelClassName = $scopeClassName && is_subclass_of($scopeClassName, Model::class)
+            ? $scopeClassName
+            : $className;
+
+        return (new EloquentModel)->getModelAttributesArrayType($call->scope, $modelClassName);
     }
 }

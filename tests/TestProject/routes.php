@@ -89,6 +89,16 @@ Route::post('/test/eloquent/complex-nested', [EloquentQueryController::class, 'c
 Route::post('/test/eloquent/conditional-return', [EloquentQueryController::class, 'conditionalReturnWithRelation']);
 Route::post('/test/eloquent/model-create', [EloquentQueryController::class, 'modelCreate']);
 Route::post('/test/eloquent/model-set-attribute', [EloquentQueryController::class, 'modelSetAttribute']);
+Route::post('/test/eloquent/model-set-attribute-value-types', [EloquentQueryController::class, 'modelSetAttributeValueTypes']);
+Route::post('/test/eloquent/model-set-attribute-columns', [EloquentQueryController::class, 'modelSetAttributeAlongsideColumns']);
+Route::post('/test/eloquent/model-set-attribute-serialized', [EloquentQueryController::class, 'modelSetAttributeSerialized']);
+Route::post('/test/eloquent/model-set-attribute-json-path', [EloquentQueryController::class, 'modelSetAttributeJsonPath']);
+Route::post('/test/eloquent/model-set-attribute-visibility', [EloquentQueryController::class, 'modelSetAttributeVisibility']);
+Route::post('/test/eloquent/model-set-attribute-cast', [EloquentQueryController::class, 'modelSetAttributeCastAttributes']);
+Route::post('/test/eloquent/custom-to-array-parent', [EloquentQueryController::class, 'modelCustomToArrayParent']);
+Route::post('/test/eloquent/custom-to-array-attributes', [EloquentQueryController::class, 'modelCustomToArrayAttributes']);
+Route::post('/test/eloquent/model-get-attribute', [EloquentQueryController::class, 'modelGetAttribute']);
+Route::post('/test/eloquent/array-conversion-after-set', [EloquentQueryController::class, 'modelArrayConversionAfterSetAttribute']);
 Route::post('/test/eloquent/builder-scalar-finishers', [EloquentQueryController::class, 'builderScalarFinishers']);
 Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::class, 'collectionAggregates']);
 

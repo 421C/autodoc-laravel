@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Planet extends Model
 {
@@ -16,6 +17,11 @@ class Planet extends Model
         return [
             'visited' => 'boolean',
         ];
+    }
+
+    public function setSlugAttribute(string $value): void
+    {
+        $this->attributes['slug'] = Str::slug($value);
     }
 
     /**
