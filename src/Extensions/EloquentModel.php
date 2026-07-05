@@ -186,10 +186,14 @@ class EloquentModel extends ClassExtension
     {
         $objectType = new ObjectType(className: $phpClass->className);
 
+        $offlineMode = config('autodoc.laravel.offline_mode') ?? false;
+
         try {
             $model = app()->make($phpClass->className);
 
-            $columns = $model->getConnection()->getSchemaBuilder()->getColumns($model->getTable());
+            $columns = $offlineMode
+                ? []
+                : $model->getConnection()->getSchemaBuilder()->getColumns($model->getTable());
 
         } catch (Throwable $exception) {
             if ($phpClass->scope->isDebugModeEnabled()) {
@@ -231,6 +235,24 @@ class EloquentModel extends ClassExtension
 
             } else {
                 $objectType->properties[$propertyName] = $propertyType->setRequired(true);
+            }
+        }
+
+        if ($offlineMode) {
+            foreach ($modelCasts as $propertyName => $cast) {
+                if (isset($objectType->properties[$propertyName]) || isset($objectType->hiddenProperties[$propertyName])) {
+                    continue;
+                }
+
+                $propertyType = $this->getTypeFromCast($cast, $phpClass, '');
+                $propertyType = $this->getModelAttributeType($phpClass, $propertyName, $propertyType);
+
+                if ($this->isModelAttributeHidden($model, $propertyName)) {
+                    $objectType->hiddenProperties[$propertyName] = $propertyType;
+
+                } else {
+                    $objectType->properties[$propertyName] = $propertyType->setRequired(true);
+                }
             }
         }
 
@@ -417,6 +439,12 @@ class EloquentModel extends ClassExtension
         }
 
         return null;
+    }
+
+
+    public static function clearCache(): void
+    {
+        EloquentModel::$cache = [];
     }
 
 

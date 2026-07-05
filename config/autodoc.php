@@ -69,6 +69,14 @@ return [
          * When disabled, autodoc-laravel will ignore unknown/dynamic methods while parsing Laravel Query Builder.
          */
         'abandon_query_builder_parsing_on_unknown_methods' => false,
+
+        /**
+         * When enabled, autodoc will not connect to the database. Model attribute
+         * types are inferred from casts, appends, accessors and PHPDoc tags only.
+         * 
+         * Warning! Enabling this may result in incomplete model schemas.
+         */
+        'offline_mode' => false,
     ],
 
     /**
