@@ -18,7 +18,7 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedClassType;
 use AutoDoc\Exceptions\AutoDocException;
 use AutoDoc\Extensions\ClassExtension;
-use AutoDoc\Laravel\Helpers\ChecksModelAttributeVisibility;
+use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,7 +40,7 @@ use Throwable;
  */
 class EloquentModel extends ClassExtension
 {
-    use ChecksModelAttributeVisibility;
+    use InspectsModelAttributes;
 
     public function getReturnType(PhpClass $phpClass): ?Type
     {

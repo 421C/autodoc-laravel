@@ -2,28 +2,23 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
-use AutoDoc\Laravel\Helpers\ChecksModelAttributeVisibility;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
-use PhpParser\Node\Expr\Variable;
 use ReflectionMethod;
-use ReflectionNamedType;
-use Throwable;
 
 /**
  * Handles method calls on `Illuminate\Database\Eloquent\Model` class.
  */
 class EloquentModelMethodCall extends MethodCallExtension
 {
-    use ChecksModelAttributeVisibility;
+    use InspectsModelAttributes;
 
     public function handleSideEffect(MethodCallContext $call): void
     {
@@ -42,12 +37,11 @@ class EloquentModelMethodCall extends MethodCallExtension
         }
 
         $attribute = $this->parseSetAttributeCall($call, $modelType);
-        $var = $call->node->var;
 
-        if ($attribute !== null && $var instanceof Variable && is_string($var->name)) {
+        if ($attribute !== null) {
             [$name, $type] = $attribute;
 
-            $call->mutateVar($var->name, [$name => clone $type]);
+            $call->mutateExpression($call->node->var, [$name => clone $type]);
         }
     }
 
@@ -162,12 +156,16 @@ class EloquentModelMethodCall extends MethodCallExtension
      */
     private function resolveAttributesArrayType(MethodCallContext $call, ObjectType $modelType): ?ArrayType
     {
-        if ($modelType->properties !== []) {
-            return new ArrayType(shape: $modelType->properties);
+        if ($modelType->className === null) {
+            return $modelType->properties !== [] ? new ArrayType(shape: $modelType->properties) : null;
         }
 
-        if ($modelType->className === null) {
-            return null;
+        if ($modelType->properties !== []) {
+            return new ArrayType(shape: $this->normalizeSerializedModelProperties(
+                scope: $call->scope,
+                modelClassName: $modelType->className,
+                properties: $modelType->properties,
+            ));
         }
 
         return (new EloquentModel)->getModelAttributesArrayType($call->scope, $modelType->className);
@@ -192,14 +190,13 @@ class EloquentModelMethodCall extends MethodCallExtension
             return null;
         }
 
-        $model = $this->makeModel($modelType);
+        $model = $modelType->className ? $this->makeModel($modelType->className) : null;
+        $valueType = clone $call->argTypes->get($valueIndex)->unwrapType($call->scope->config);
 
         if ($model) {
-            if ($this->isModelAttributeHidden($model, $key)) {
-                return null;
-            }
-
-            if ($this->isAttributeValueTransformed($model, $key)) {
+            if ($this->isAttributeValueTransformed($model, $key)
+                && ! $this->castKeepsAssignedValueType($model, $key, $valueType)
+            ) {
                 // The assigned value changes on write (cast, date, or set
                 // mutator): keep the resolved attribute type when the model
                 // has one, otherwise record the attribute without a type.
@@ -208,8 +205,6 @@ class EloquentModelMethodCall extends MethodCallExtension
                     : [$key, (new UnknownType)->setRequired(true)];
             }
         }
-
-        $valueType = clone $call->argTypes->get($valueIndex)->unwrapType($call->scope->config);
 
         return [$key, $valueType->setRequired(true)];
     }
@@ -240,50 +235,6 @@ class EloquentModelMethodCall extends MethodCallExtension
         }
 
         return (string) $keys[0];
-    }
-
-
-    private function makeModel(ObjectType $modelType): ?Model
-    {
-        if (! $modelType->className) {
-            return null;
-        }
-
-        try {
-            $model = app()->make($modelType->className);
-
-        } catch (Throwable) {
-            return null;
-        }
-
-        return $model instanceof Model ? $model : null;
-    }
-
-
-    /**
-     * Whether Laravel transforms values assigned to this attribute in
-     * `setAttribute()`: casts, date attributes, and set mutators (classic
-     * `set{Studly}Attribute` or `Attribute`-style).
-     */
-    private function isAttributeValueTransformed(Model $model, string $key): bool
-    {
-        if ($model->hasCast($key) || in_array($key, $model->getDates(), true)) {
-            return true;
-        }
-
-        if (method_exists($model, 'set' . Str::studly($key) . 'Attribute')) {
-            return true;
-        }
-
-        $accessorName = Str::camel($key);
-
-        if (! method_exists($model, $accessorName)) {
-            return false;
-        }
-
-        $returnType = new ReflectionMethod($model, $accessorName)->getReturnType();
-
-        return $returnType instanceof ReflectionNamedType && $returnType->getName() === Attribute::class;
     }
 
 

@@ -39,6 +39,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\ViewResponse::class,
                 \AutoDoc\Laravel\Extensions\LengthAwarePaginatorJson::class,
                 \AutoDoc\Laravel\Extensions\RouteParamResolver::class,
+                \AutoDoc\Laravel\Extensions\EloquentModelSerialization::class,
                 \AutoDoc\Laravel\Extensions\QueryBuilderMethodCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelMethodCall::class,
                 \AutoDoc\Laravel\Extensions\CollectionMethodCall::class,

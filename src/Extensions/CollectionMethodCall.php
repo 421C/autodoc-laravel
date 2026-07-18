@@ -3,7 +3,6 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\ArgumentList;
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
@@ -16,14 +15,50 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use Illuminate\Support\Collection;
+use PhpParser\Node\Expr\Variable;
 
 /**
  * Handles method calls on Laravel Collection classes.
  */
 class CollectionMethodCall extends MethodCallExtension
 {
+    public function handleSideEffect(MethodCallContext $call): void
+    {
+        if ($call->methodName !== 'each') {
+            return;
+        }
+
+        $var = $call->node->var;
+
+        if (! ($var instanceof Variable) || ! is_string($var->name)) {
+            return;
+        }
+
+        $collectionType = $call->getVarType();
+
+        if (! ($collectionType instanceof ArrayType)
+            || ! $collectionType->className
+            || ! is_a($collectionType->className, Collection::class, true)
+        ) {
+            return;
+        }
+
+        $mutatedItemType = $this->getEachMutatedItemType($call, $collectionType);
+
+        if (! $mutatedItemType) {
+            return;
+        }
+
+        $newCollectionType = clone $collectionType;
+        $newCollectionType->itemType = $mutatedItemType;
+
+        $call->setVarType($var->name, $newCollectionType);
+    }
+
+
     public function getReturnType(MethodCallContext $call): ?Type
     {
         $methodName = $call->methodName;
@@ -89,9 +124,101 @@ class CollectionMethodCall extends MethodCallExtension
             'avg', 'average' => new UnionType([new NumberType, new NullType]),
             'isEmpty', 'isNotEmpty', 'contains' => new BoolType,
             'implode' => new StringType,
+            'each' => $this->handleEachMethod($call, $varType),
             'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy',
-            'unique', 'reverse', 'slice', 'sortDesc', 'each' => $varType,
+            'unique', 'reverse', 'slice', 'sortDesc' => $varType,
         };
+    }
+
+
+    private function handleEachMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
+    {
+        $mutatedItemType = $this->getEachMutatedItemType($call, $collectionType);
+
+        if (! $mutatedItemType) {
+            return $collectionType;
+        }
+
+        $newCollectionType = clone $collectionType;
+        $newCollectionType->itemType = $mutatedItemType;
+
+        return $newCollectionType;
+    }
+
+
+    /**
+     * Resolves surviving object mutations from an `each()` callback, accounting
+     * for pass-by-value items and early termination on `false`.
+     */
+    private function getEachMutatedItemType(MethodCallContext $call, ArrayType $collectionType): ?Type
+    {
+        if (! $call->argTypes->has(0)) {
+            return null;
+        }
+
+        $callbackType = $call->argTypes->get(0);
+        $originalItemType = $collectionType->itemType;
+
+        if (! ($callbackType instanceof CallableType)
+            || ! ($originalItemType instanceof ObjectType)
+            || $originalItemType->className === null
+        ) {
+            return null;
+        }
+
+        $args = ArgumentList::fromTypes([
+            $originalItemType,
+            $collectionType->keyType ?? new IntegerType,
+        ], $call->scope);
+
+        $itemTypeAfterCallback = $callbackType->resolveParameterTypeAfterInvocation(
+            parameterIndex: 0,
+            args: $args,
+            callerNode: $call->node,
+        );
+
+        if (! ($itemTypeAfterCallback instanceof ObjectType)
+            || $itemTypeAfterCallback->className !== $originalItemType->className
+        ) {
+            return null;
+        }
+
+        if ($this->callbackMayReturnFalse($callbackType, $args, $call)) {
+            foreach ($itemTypeAfterCallback->properties as $key => $propertyType) {
+                $originalPropertyType = $originalItemType->properties[$key] ?? null;
+
+                if ($originalPropertyType === null) {
+                    $itemTypeAfterCallback->properties[$key] = (clone $propertyType)->setRequired(false);
+
+                } else if ($originalPropertyType !== $propertyType) {
+                    $itemTypeAfterCallback->properties[$key] = (new UnionType([clone $originalPropertyType, clone $propertyType]))
+                        ->unwrapType($call->scope->config)
+                        ->setRequired($originalPropertyType->required);
+                }
+            }
+        }
+
+        return $itemTypeAfterCallback;
+    }
+
+
+    /**
+     * Whether the `each()` callback may return `false`, which stops Laravel's
+     * iteration and leaves later items unmutated.
+     */
+    private function callbackMayReturnFalse(CallableType $callbackType, ArgumentList $args, MethodCallContext $call): bool
+    {
+        $returnType = $callbackType->getReturnType($args, $call->node)->unwrapType($call->scope->config);
+
+        $variants = $returnType instanceof UnionType ? $returnType->types : [$returnType];
+
+        foreach ($variants as $variant) {
+            if ($variant instanceof BoolType && $variant->value !== true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
