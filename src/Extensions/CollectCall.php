@@ -2,9 +2,9 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\FuncCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\FuncCallContext;
 use AutoDoc\Extensions\FuncCallExtension;
 use Illuminate\Support\Collection;
 

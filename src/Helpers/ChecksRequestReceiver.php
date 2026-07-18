@@ -2,8 +2,8 @@
 
 namespace AutoDoc\Laravel\Helpers;
 
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ObjectType;
+use AutoDoc\Extensions\MethodCallContext;
 use Illuminate\Http\Request;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;

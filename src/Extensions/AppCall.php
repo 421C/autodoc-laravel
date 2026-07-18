@@ -2,10 +2,10 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\FuncCallContext;
 use AutoDoc\DataTypes\ClassStringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedClassType;
+use AutoDoc\Extensions\FuncCallContext;
 use AutoDoc\Extensions\FuncCallExtension;
 use Illuminate\Foundation\Application;
 

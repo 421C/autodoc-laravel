@@ -510,7 +510,7 @@ class QueryNavigator
             }
 
             if (is_string($expr->name)) {
-                foreach ($this->scope->eventLog->getDirectAssignmentTypes($expr->name) as $type) {
+                foreach ($this->scope->variables->events->getDirectAssignmentTypes($expr->name) as $type) {
                     if ($type instanceof UnresolvedParserNodeType && $type->node instanceof Node\Expr) {
                         $this->extractBuilderMethodsAndModel($type->node, $visitedPositions);
 

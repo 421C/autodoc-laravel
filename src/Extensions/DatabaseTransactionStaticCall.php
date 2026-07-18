@@ -3,10 +3,10 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\ArgumentList;
-use AutoDoc\Analyzer\StaticCallContext;
 use AutoDoc\DataTypes\CallableType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;

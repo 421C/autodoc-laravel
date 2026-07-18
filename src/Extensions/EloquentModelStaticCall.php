@@ -2,11 +2,11 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\StaticCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;

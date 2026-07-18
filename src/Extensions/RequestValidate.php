@@ -2,10 +2,10 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;

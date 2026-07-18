@@ -2,9 +2,9 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\StaticCallContext;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;

@@ -2,13 +2,13 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\NullType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 

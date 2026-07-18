@@ -2,8 +2,8 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\MethodCallContext;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
