@@ -150,6 +150,11 @@ return [
          * When enabled, will use pattern instead of format for numeric string types.
          */
         'use_pattern_for_numeric_strings' => false,
+
+        /**
+         * When enabled, will pretty print OpenApi JSON files.
+         */
+        'json_pretty_print' => false,
     ],
 
     /**
@@ -221,6 +226,14 @@ return [
          * When enabled, object shapes will be merged in type unions.
          */
         'merge_shapes_in_type_unions' => false,
+    ],
+
+    'intersections' => [
+        /**
+         * Render `never` type as `unknown` (OpenAPI `{ type: string }`, TypeScript `unknown`)
+         * instead of its literal form (OpenAPI `{ enum: [] }`, TypeScript `never`).
+         */
+        'render_empty_as_unknown' => true,
     ],
 
     /**

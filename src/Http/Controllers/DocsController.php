@@ -4,9 +4,12 @@ namespace AutoDoc\Laravel\Http\Controllers;
 
 use AutoDoc\Config;
 use AutoDoc\DocViewer;
+use AutoDoc\DocViewerResponse;
 use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Workspace;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DocsController extends Controller
 {
@@ -14,20 +17,12 @@ class DocsController extends Controller
      * Single front controller for the docs route. From one wildcard it serves
      * the HTML page, the vendored viewer assets and the workspace OpenAPI JSON.
      */
-    public function handle(string $path = ''): void
+    public function handle(string $path = ''): Response|BinaryFileResponse
     {
         $config = (new ConfigLoader)->load();
         $normalizedPath = trim($path, '/');
 
         $workspace = $this->resolveWorkspace($config);
-
-        if ($normalizedPath === 'openapi.json') {
-            header('Content-Type: application/json');
-
-            echo $workspace->getJson() ?? '';
-
-            return;
-        }
 
         /** @var string */
         $baseUrl = config('autodoc.laravel.url', '');
@@ -55,7 +50,16 @@ class DocsController extends Controller
             }
         }
 
-        $docViewer->handle($normalizedPath);
+        return $this->toResponse($docViewer->handle($normalizedPath));
+    }
+
+    private function toResponse(DocViewerResponse $result): Response|BinaryFileResponse
+    {
+        if ($result->filePath !== null) {
+            return new BinaryFileResponse($result->filePath, $result->status, $result->headers);
+        }
+
+        return new Response($result->body ?? '', $result->status, $result->headers);
     }
 
     private function resolveWorkspace(Config $config): Workspace
