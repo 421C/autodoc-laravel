@@ -23,7 +23,6 @@ use Illuminate\Validation\Rules\Email;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
-use PhpParser\Node;
 
 
 trait ValidationRulesParser
@@ -39,8 +38,7 @@ trait ValidationRulesParser
         $hasWildcardRoot = false;
 
         foreach ($validationRules as $key => $value) {
-            $segments = preg_split('/(?<!\\\\)\./', $key);
-            $segments = array_map(fn ($s) => str_replace('\\.', '.', $s), $segments ?: []);
+            $segments = $this->splitDotNotation($key);
 
             if (isset($segments[0]) && $segments[0] === '*') {
                 $hasWildcardRoot = true;
@@ -253,13 +251,8 @@ trait ValidationRulesParser
             foreach ($rules as $rule) {
                 if ($rule instanceof Rule) {
                     if ($rule->className === In::class) {
-                        $firstArg = $rule->args[0]->node ?? null;
-
-                        if ($firstArg instanceof Node\Arg
-                            && $firstArg->value instanceof Node\Expr\Array_
-                        ) {
-                            $scope = $rule->args[0]->scope;
-                            $arrayType = $scope->resolveType($firstArg->value);
+                        if ($rule->args !== null && $rule->args->has(0)) {
+                            $arrayType = $rule->args->get(0)->unwrapType($scope->config);
 
                             if ($arrayType instanceof ArrayType && $arrayType->itemType) {
                                 if ($arrayType->itemType instanceof UnionType) {
@@ -357,13 +350,11 @@ trait ValidationRulesParser
         foreach ($rules as $rule) {
             if ($rule instanceof Rule) {
                 if ($rule->className === Enum::class) {
-                    $arg = $rule->args[0] ?? null;
-
-                    if ($arg) {
-                        $enumClassNameType = $arg->getType()?->unwrapType($scope->config);
+                    if ($rule->args !== null && $rule->args->has(0)) {
+                        $enumClassNameType = $rule->args->get(0)->unwrapType($scope->config);
 
                         if ($enumClassNameType instanceof StringType && is_string($enumClassNameType->value) && enum_exists($enumClassNameType->value)) {
-                            $enumClass = $arg->scope->getPhpClassInDeeperScope($enumClassNameType->value);
+                            $enumClass = $scope->getPhpClassInDeeperScope($enumClassNameType->value);
 
                             $type = (new PhpEnum($enumClass))->resolveType();
                         }

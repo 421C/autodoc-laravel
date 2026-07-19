@@ -2,40 +2,32 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
 
 /**
  * Handles `response()->json(...)`.
  */
 class ResponseJson extends MethodCallExtension
 {
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function getReturnType(MethodCallContext $call): ?Type
     {
-        if ($methodCall->name instanceof Node\Identifier
-            && $methodCall->name->name === 'json'
-            && $methodCall->var instanceof FuncCall
-            && $methodCall->var->name instanceof Node\Name
-            && $methodCall->var->name->name === 'response'
+        $node = $call->node;
+
+        if ($call->methodName === 'json'
+            && $node->var instanceof FuncCall
+            && $node->var->name instanceof Node\Name
+            && $node->var->name->name === 'response'
         ) {
-            $dataForJsonResponse = $methodCall->args[0]->value ?? null;
-            $statusCodeType = $methodCall->args[1]->value ?? null;
+            $payloadType = $call->argTypes->has(0) ? $call->argTypes->get(0) : null;
 
-            if ($dataForJsonResponse) {
-                $payloadType = $scope->resolveType($dataForJsonResponse);
-
-                if ($payloadType instanceof UnknownType) {
-                    $payloadType = new ObjectType;
-                }
-
-            } else {
+            if ($payloadType === null || $payloadType instanceof UnknownType) {
                 $payloadType = new ObjectType;
             }
 
@@ -44,8 +36,8 @@ class ResponseJson extends MethodCallExtension
                 typeToDisplay: $payloadType,
             );
 
-            if ($statusCodeType) {
-                $statusCodeType = $scope->resolveType($statusCodeType);
+            if ($call->argTypes->has(1)) {
+                $statusCodeType = $call->argTypes->get(1);
 
                 if ($statusCodeType instanceof IntegerType && is_int($statusCodeType->value)) {
                     $responseType->httpStatusCode = $statusCodeType->value;

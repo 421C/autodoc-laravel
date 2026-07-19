@@ -7,6 +7,7 @@ use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Laravel\Providers\AutoDocServiceProvider;
 use AutoDoc\Laravel\Tests\TestProject\TestRouteProvider;
 use AutoDoc\TypeScript\TypeScriptFile;
+use AutoDoc\TypeScript\TypeScriptGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -31,6 +32,14 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
     protected function defineDatabaseMigrations()
     {
         $this->loadMigrationsFrom(__DIR__ . '/TestProject/migrations');
+    }
+
+    /**
+     * @param  \Illuminate\Foundation\Application  $app
+     */
+    protected function defineEnvironment($app)
+    {
+        $app['config']->set('autodoc.typescript.path_prefixes', fn () => []);
     }
 
     #[Test]
@@ -158,7 +167,7 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
                 status_updated: false
                 message: \'Completed orders can’t be changed\'
                 order: {
-                    id: number
+                    id?: number
                     status: 1|2|3|4
                     created_at?: string
                     updated_at?: string
@@ -172,7 +181,7 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
     private function assertTypeScriptGeneratedCorrectly(string $input, string $expected): void
     {
         $scope = new Scope((new ConfigLoader)->load());
-        $tsFile = new TypeScriptFile;
+        $tsFile = new TypeScriptFile(null, new TypeScriptGenerator());
 
         $tsFile->lines = explode("\n", str_replace("\r\n", "\n", $input));
 

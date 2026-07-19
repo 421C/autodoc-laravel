@@ -2,63 +2,51 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
+use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use PhpParser\Node;
-use PhpParser\Node\Expr\StaticCall;
 
 /**
  * Handles static calls on `Illuminate\Database\Eloquent\Model` class.
  */
 class EloquentModelStaticCall extends StaticCallExtension
 {
-    public function getReturnType(StaticCall $methodCall, Scope $scope): ?Type
+    public function handleSideEffect(StaticCallContext $call): void
     {
-        if (! ($methodCall->name instanceof Node\Identifier)) {
+        if (! BuilderMethodClassifier::throwsModelNotFound($call->methodName)) {
+            return;
+        }
+
+        $className = $call->className;
+
+        if (! $className || ! is_subclass_of($className, Model::class)) {
+            return;
+        }
+
+        (new QueryNavigator($call->scope))->recordFailingFinisherResponse($call->node);
+    }
+
+
+    public function getReturnType(StaticCallContext $call): ?Type
+    {
+        $methodName = $call->methodName;
+
+        if ($methodName === 'toArray' || $methodName === 'attributesToArray') {
+            return $this->getModelAttributesShape($call);
+        }
+
+        if (! BuilderMethodClassifier::supportsModelStaticCall($methodName)) {
             return null;
         }
 
-        if (! ($methodCall->class instanceof Node\Name)) {
-            return null;
-        }
-
-        $supportedMethods = [
-            'count',
-            'insert',
-            'insertOrIgnore',
-            'insertOrThrow',
-            'insertUsing',
-            'insertGetId',
-            'insertUsingGetId',
-            'find',
-            'firstWhere',
-            'first',
-            'firstOrFail',
-            'findOrFail',
-            'firstOrNew',
-            'firstOrCreate',
-            'updateOrCreate',
-            'create',
-            'all',
-            'get',
-            'paginate',
-            'pluck',
-        ];
-
-        $methodName = $methodCall->name->name;
-
-        if (! in_array($methodName, $supportedMethods)) {
-            return null;
-        }
-
-        $className = $scope->getResolvedClassName($methodCall->class);
+        $className = $call->className;
 
         if (! $className) {
             return null;
@@ -67,6 +55,9 @@ class EloquentModelStaticCall extends StaticCallExtension
         if (! is_subclass_of($className, Model::class)) {
             return null;
         }
+
+        $scope = $call->scope;
+        $node = $call->node;
 
         if ($methodName === 'insert') {
             return new BoolType;
@@ -77,8 +68,8 @@ class EloquentModelStaticCall extends StaticCallExtension
         }
 
         if ($methodName === 'all') {
-            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $methodCall) {
-                return (new QueryNavigator($scope))->getRowType($methodCall);
+            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $node) {
+                return (new QueryNavigator($scope))->getRowType($node);
             });
 
             return new ArrayType(
@@ -87,6 +78,29 @@ class EloquentModelStaticCall extends StaticCallExtension
             );
         }
 
-        return (new QueryNavigator($scope))->getResultType($methodCall, $methodName);
+        return (new QueryNavigator($scope))->getResultType($node, $methodName);
+    }
+
+
+    /**
+     * Resolves `parent::toArray()` / `parent::attributesToArray()` inside a
+     * custom `toArray()` body. The call runs with the child's `$this`, so the
+     * analyzed class supplies the attribute shape.
+     */
+    private function getModelAttributesShape(StaticCallContext $call): ?ArrayType
+    {
+        $className = $call->className;
+
+        if (! $className || ! is_a($className, Model::class, true)) {
+            return null;
+        }
+
+        $scopeClassName = $call->scope->className;
+
+        $modelClassName = $scopeClassName && is_subclass_of($scopeClassName, Model::class)
+            ? $scopeClassName
+            : $className;
+
+        return (new EloquentModel)->getModelAttributesArrayType($call->scope, $modelClassName);
     }
 }

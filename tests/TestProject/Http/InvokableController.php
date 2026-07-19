@@ -40,6 +40,9 @@ class InvokableController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function __invoke(Request $request): string

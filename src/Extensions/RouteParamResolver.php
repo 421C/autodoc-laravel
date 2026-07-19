@@ -2,7 +2,7 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\PhpClosure;
+use AutoDoc\Analyzer\PhpCallable;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\NullType;
 use AutoDoc\DataTypes\StringType;
@@ -14,6 +14,7 @@ use AutoDoc\OpenApi\Operation;
 use AutoDoc\OpenApi\Parameter;
 use AutoDoc\Route;
 use Illuminate\Database\Eloquent\Model;
+use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionParameter;
 use UnitEnum;
@@ -28,17 +29,23 @@ class RouteParamResolver extends OperationExtension
         $function = null;
 
         if ($route->className && $route->classMethod) {
-            $function = $scope->getPhpClass($route->className)->getMethod($route->classMethod)->getPhpFunction();
+            $function = $scope->getPhpClass($route->className)->getMethod($route->classMethod);
 
         } else if ($route->closure) {
-            $function = (new PhpClosure($route->closure, $scope))->getPhpFunction();
+            $function = new PhpCallable(scope: $scope, reflection: new ReflectionFunction($route->closure));
         }
 
         if (! $function) {
             return null;
         }
 
-        $reflectionParams = $function->getReflection()->getParameters();
+        $reflection = $function->getReflection();
+
+        if (! $reflection) {
+            return null;
+        }
+
+        $reflectionParams = $reflection->getParameters();
         $phpDocParams = $function->getPhpDoc()?->getParameters() ?? [];
 
         /**
@@ -113,7 +120,8 @@ class RouteParamResolver extends OperationExtension
             $operation->parameters[] = new Parameter(
                 name: $param['name'],
                 in: 'path',
-                schema: $type->toSchema($scope->config),
+                type: $type,
+                config: $scope->config,
                 required: ! $param['optional'],
             );
         }

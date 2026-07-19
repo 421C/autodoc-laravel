@@ -48,6 +48,11 @@ class FormRequestController
             'description' => '',
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function itemsRequestWithExtraParameters(ItemsRequest $request, string $id): void
     {
@@ -104,6 +109,9 @@ class FormRequestController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function itemsRequest(ItemsRequest $request): mixed
@@ -151,6 +159,11 @@ class FormRequestController
             ],
             'description' => '',
             'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function extendedItemsRequest(ExtendedItemsRequest $request): void {}

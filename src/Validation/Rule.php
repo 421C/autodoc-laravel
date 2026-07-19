@@ -2,7 +2,7 @@
 
 namespace AutoDoc\Laravel\Validation;
 
-use AutoDoc\Analyzer\PhpFunctionArgument;
+use AutoDoc\Analyzer\ArgumentList;
 
 
 class Rule
@@ -12,10 +12,6 @@ class Rule
          * @var class-string
          */
         public string $className,
-
-        /**
-         * @var PhpFunctionArgument[]
-         */
-        public array $args,
+        public ?ArgumentList $args = null,
     ) {}
 }

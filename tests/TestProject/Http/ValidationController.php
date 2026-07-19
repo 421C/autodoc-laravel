@@ -64,6 +64,11 @@ class ValidationController
             'description' => '',
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function basicStringRules(Request $request): void
     {
@@ -168,6 +173,9 @@ class ValidationController
                     ],
                 ],
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function nestedArrayRules(): mixed
@@ -270,6 +278,11 @@ class ValidationController
             'description' => '',
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function ruleObjects(Request $request): void
     {
@@ -312,6 +325,14 @@ class ValidationController
                                 'enum' => [
                                     0,
                                     -0.1,
+                                ],
+                            ],
+                            'status' => [
+                                'type' => 'integer',
+                                'description' => '[StateEnum](#/schemas/StateEnum)',
+                                'enum' => [
+                                    1,
+                                    2,
                                 ],
                             ],
                         ],
@@ -357,6 +378,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function enumRules(FormRequest $request): mixed
@@ -394,7 +418,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Wildcard array validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -429,6 +452,11 @@ class ValidationController
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function wildcardArrayValidation(): void
     {
@@ -445,7 +473,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Password rule validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -472,6 +499,11 @@ class ValidationController
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function passwordRule(): void
     {
@@ -486,7 +518,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'URL and IP validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -559,6 +590,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function urlAndIpValidation(): JsonResponse
@@ -579,7 +613,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Rule::when and Rule::requiredIf',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -613,6 +646,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function conditionalRules(): JsonResponse
@@ -638,7 +674,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Numeric and integer string validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -700,6 +735,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function numericValidation(): JsonResponse
@@ -724,7 +762,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Nested required with wildcard',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -755,6 +792,11 @@ class ValidationController
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function nestedRequiredWithWildcard(): void
     {
@@ -770,7 +812,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'PHPDoc type in validation',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -823,6 +864,11 @@ class ValidationController
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function phpdocTypeInValidation(): void
     {
@@ -840,7 +886,6 @@ class ValidationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Enum with nested and filled rules',
-        'description' => '',
         'requestBody' => [
             'description' => '',
             'content' => [
@@ -901,6 +946,9 @@ status description',
                     ],
                 ],
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function enumWithNestedAndFilledRules(Request $request): mixed
@@ -947,6 +995,11 @@ status description',
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function nestedDataWithTopLevelDescription(Request $request): void
     {
@@ -957,5 +1010,21 @@ status description',
             'nested' => 'array',
             'nested.data' => 'required',
         ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function unresolvedRulesStillRecordValidationResponse(Request $request): void
+    {
+        $rules = config('test.validation-rules');
+
+        /** @phpstan-ignore argument.type */
+        $request->validate($rules);
     }
 }

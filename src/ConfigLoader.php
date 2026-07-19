@@ -18,13 +18,22 @@ class ConfigLoader
 
         if (config('autodoc.laravel.autoload_builtin_extensions') ?? true) {
             $configArray['extensions'] = array_unique([
-                /** @phpstan-ignore nullCoalesce.offset */
                 ...($configArray['extensions'] ?? []),
 
+                \AutoDoc\Laravel\Extensions\AbortCall::class,
+                \AutoDoc\Laravel\Extensions\AppCall::class,
+                \AutoDoc\Laravel\Extensions\AuthUserStaticCall::class,
+                \AutoDoc\Laravel\Extensions\AuthUserMethodCall::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
+                \AutoDoc\Laravel\Extensions\ResponseNoContent::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\RequestHeader::class,
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
+                \AutoDoc\Laravel\Extensions\RequestParameter::class,
+                \AutoDoc\Laravel\Extensions\DatabaseTransactionStaticCall::class,
+                \AutoDoc\Laravel\Extensions\CacheRememberStaticCall::class,
+                \AutoDoc\Laravel\Extensions\CacheRememberMethodCall::class,
+                \AutoDoc\Laravel\Extensions\CallbackHelperCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelStaticCall::class,
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,
@@ -37,6 +46,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\ViewResponse::class,
                 \AutoDoc\Laravel\Extensions\LengthAwarePaginatorJson::class,
                 \AutoDoc\Laravel\Extensions\RouteParamResolver::class,
+                \AutoDoc\Laravel\Extensions\EloquentModelSerialization::class,
                 \AutoDoc\Laravel\Extensions\QueryBuilderMethodCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelMethodCall::class,
                 \AutoDoc\Laravel\Extensions\CollectionMethodCall::class,

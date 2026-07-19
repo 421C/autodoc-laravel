@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Extensions;
 use AutoDoc\Analyzer\PhpClass;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\ClassExtension;
+use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -13,12 +14,16 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class CustomFormRequest extends ClassExtension
 {
-    use ValidationRulesParser;
+    use RecordsErrorResponses, ValidationRulesParser;
 
     public function getRequestType(PhpClass $phpClass): ?Type
     {
         if (! is_subclass_of($phpClass->className, FormRequest::class)) {
             return null;
+        }
+
+        if ($phpClass->scope->route) {
+            $this->addValidationErrorResponse($phpClass->scope->route);
         }
 
         if (self::$cache[$phpClass->className] ?? false) {

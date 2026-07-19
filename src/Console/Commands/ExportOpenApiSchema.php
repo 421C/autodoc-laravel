@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class ExportOpenApiSchema extends Command
 {
-    protected $signature = 'autodoc:export {workspace?}';
+    protected $signature = 'autodoc:openapi {workspace?}';
 
     protected $description = 'Export OpenApi 3.1 schema JSON file(s)';
 

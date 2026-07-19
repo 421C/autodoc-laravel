@@ -23,6 +23,8 @@ class UserResourceCollection extends ResourceCollection
 
             /**
              * Number of users returned.
+             *
+             * @phpstan-ignore method.nonObject
              */
             'count' => $this->collection->count(),
         ];

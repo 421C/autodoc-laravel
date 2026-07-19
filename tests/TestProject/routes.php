@@ -2,13 +2,19 @@
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
+use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
+use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
+use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
+use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
 use AutoDoc\Laravel\Tests\TestProject\Http\OrderController;
 use AutoDoc\Laravel\Tests\TestProject\Http\PaginationController;
+use AutoDoc\Laravel\Tests\TestProject\Http\RawQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RequestParamsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ResourceController;
+use AutoDoc\Laravel\Tests\TestProject\Http\ResponseController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RouteParametersController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ValidationController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ViewResponseController;
@@ -28,6 +34,7 @@ Route::post('/test/validation/nested-required-wildcard', [ValidationController::
 Route::post('/test/validation/phpdoc-type', [ValidationController::class, 'phpdocTypeInValidation']);
 Route::post('/test/validation/enum-nested-filled', [ValidationController::class, 'enumWithNestedAndFilledRules']);
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
+Route::post('/test/validation/unresolved-rules', [ValidationController::class, 'unresolvedRulesStillRecordValidationResponse']);
 
 Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
@@ -48,12 +55,21 @@ Route::post('/test/pagination/custom-page-name', [PaginationController::class, '
 Route::post('/test/pagination/dynamic-columns', [PaginationController::class, 'paginationWithDynamicColumns']);
 Route::post('/test/pagination/return-type', [PaginationController::class, 'paginatorFromReturnType']);
 Route::post('/test/pagination/all-columns', [PaginationController::class, 'paginationWithAllColumns']);
+Route::post('/test/pagination/simple', [PaginationController::class, 'simplePagination']);
+Route::post('/test/pagination/cursor', [PaginationController::class, 'cursorPagination']);
 
 Route::post('/test/request-params/header', [RequestParamsController::class, 'headerParameter']);
 Route::get('/test/request-params/multiple-validate', [RequestParamsController::class, 'multipleValidateCalls']);
 Route::post('/test/request-params/query-mutation', [RequestParamsController::class, 'queryParamWithMutation']);
 Route::post('/test/request-params/phpdoc-query', [RequestParamsController::class, 'phpdocQueryParam']);
 Route::post('/test/request-params/authorization-header', [RequestParamsController::class, 'authorizationHeader']);
+Route::post('/test/request-params/typed-helpers', [RequestParamsController::class, 'typedParameterHelpers']);
+Route::post('/test/request-params/dot-notation', [RequestParamsController::class, 'dotNotationParameters']);
+Route::post('/test/request-params/only', [RequestParamsController::class, 'requestOnlySubset']);
+Route::post('/test/request-params/except', [RequestParamsController::class, 'requestExceptSubset']);
+Route::post('/test/request-params/all-after-validation', [RequestParamsController::class, 'requestAllAfterValidation']);
+Route::post('/test/request-params/all-subset', [RequestParamsController::class, 'requestAllSubset']);
+Route::get('/test/request-params/all-after-query-input', [RequestParamsController::class, 'requestAllAfterQueryInput']);
 
 Route::post('/test/eloquent/query-builder-select', [EloquentQueryController::class, 'queryBuilderWithSelect']);
 Route::post('/test/eloquent/select-columns', [EloquentQueryController::class, 'selectWithSpecificColumns']);
@@ -84,8 +100,89 @@ Route::post('/test/eloquent/with-array', [EloquentQueryController::class, 'withA
 Route::post('/test/eloquent/complex-nested', [EloquentQueryController::class, 'complexNestedRelations']);
 Route::post('/test/eloquent/conditional-return', [EloquentQueryController::class, 'conditionalReturnWithRelation']);
 Route::post('/test/eloquent/model-create', [EloquentQueryController::class, 'modelCreate']);
+Route::post('/test/eloquent/model-set-attribute', [EloquentQueryController::class, 'modelSetAttribute']);
+Route::post('/test/eloquent/model-set-attribute-value-types', [EloquentQueryController::class, 'modelSetAttributeValueTypes']);
+Route::post('/test/eloquent/model-set-attribute-columns', [EloquentQueryController::class, 'modelSetAttributeAlongsideColumns']);
+Route::post('/test/eloquent/model-set-attribute-serialized', [EloquentQueryController::class, 'modelSetAttributeSerialized']);
+Route::post('/test/eloquent/model-set-attribute-json-path', [EloquentQueryController::class, 'modelSetAttributeJsonPath']);
+Route::post('/test/eloquent/model-set-attribute-visibility', [EloquentQueryController::class, 'modelSetAttributeVisibility']);
+Route::post('/test/eloquent/model-set-attribute-cast', [EloquentQueryController::class, 'modelSetAttributeCastAttributes']);
+Route::post('/test/eloquent/model-set-attribute-loop-non-literal', [EloquentQueryController::class, 'modelSetAttributeNonLiteralKeyInLoop']);
+Route::post('/test/eloquent/model-set-attribute-loop-conditional', [EloquentQueryController::class, 'modelSetAttributeConditionalInLoop']);
+Route::post('/test/eloquent/model-set-attribute-conditional-branch', [EloquentQueryController::class, 'modelSetAttributeConditionalBranch']);
+Route::post('/test/eloquent/model-set-attribute-array-element', [EloquentQueryController::class, 'modelSetAttributeOnArrayElementReceiver']);
+Route::post('/test/eloquent/model-set-attribute-property-fetch', [EloquentQueryController::class, 'modelSetAttributeOnPropertyFetchReceiver']);
+Route::post('/test/eloquent/model-set-attribute-each-closure', [EloquentQueryController::class, 'modelSetAttributeInEachCallback']);
+Route::post('/test/eloquent/model-set-attribute-each-arrow', [EloquentQueryController::class, 'modelSetAttributeInEachArrowFunction']);
+Route::post('/test/eloquent/model-set-attribute-each-return', [EloquentQueryController::class, 'modelSetAttributeEachReturnValue']);
+Route::post('/test/eloquent/model-direct-assignment', [EloquentQueryController::class, 'modelDirectAssignment']);
+Route::post('/test/eloquent/model-direct-assignment-serialized', [EloquentQueryController::class, 'modelDirectAssignmentSerialized']);
+Route::post('/test/eloquent/model-direct-assignment-visibility', [EloquentQueryController::class, 'modelDirectAssignmentVisibility']);
+Route::post('/test/eloquent/model-direct-assignment-cast', [EloquentQueryController::class, 'modelDirectAssignmentCastAttributes']);
+Route::post('/test/eloquent/model-direct-assignment-array-element', [EloquentQueryController::class, 'modelDirectAssignmentOnArrayElementReceiver']);
+Route::post('/test/eloquent/model-direct-assignment-property-fetch', [EloquentQueryController::class, 'modelDirectAssignmentOnPropertyFetchReceiver']);
+Route::post('/test/eloquent/array-conversion-after-direct-assignment', [EloquentQueryController::class, 'modelArrayConversionAfterDirectAssignment']);
+Route::post('/test/eloquent/custom-to-array-parent', [EloquentQueryController::class, 'modelCustomToArrayParent']);
+Route::post('/test/eloquent/custom-to-array-attributes', [EloquentQueryController::class, 'modelCustomToArrayAttributes']);
+Route::post('/test/eloquent/model-get-attribute', [EloquentQueryController::class, 'modelGetAttribute']);
+Route::post('/test/eloquent/array-conversion-after-set', [EloquentQueryController::class, 'modelArrayConversionAfterSetAttribute']);
+Route::post('/test/eloquent/builder-scalar-finishers', [EloquentQueryController::class, 'builderScalarFinishers']);
+Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::class, 'collectionAggregates']);
+Route::post('/test/eloquent/single-column-finishers', [EloquentQueryController::class, 'singleColumnFinishers']);
+Route::post('/test/eloquent/collection-scalar-key-methods', [EloquentQueryController::class, 'collectionScalarAndKeyMethods']);
+Route::post('/test/eloquent/collection-sole-where', [EloquentQueryController::class, 'collectionSoleAndWhere']);
+Route::post('/test/eloquent/each-reassignment-ignored', [EloquentQueryController::class, 'modelEachCallbackReassignmentIgnored']);
+Route::post('/test/eloquent/each-early-stop', [EloquentQueryController::class, 'modelEachCallbackEarlyStop']);
+Route::post('/test/eloquent/get-attribute-hidden-after-set', [EloquentQueryController::class, 'modelGetAttributeHiddenAfterSet']);
+Route::post('/test/eloquent/direct-assignment-null-cast', [EloquentQueryController::class, 'modelDirectAssignmentNullCast']);
+Route::post('/test/eloquent/set-attribute-null-cast', [EloquentQueryController::class, 'modelSetAttributeNullCast']);
+Route::post('/test/eloquent/set-attribute-accessor', [EloquentQueryController::class, 'modelSetAttributeAccessorAttributes']);
+Route::post('/test/eloquent/set-attribute-null-date', [EloquentQueryController::class, 'modelSetAttributeNullDate']);
+Route::post('/test/eloquent/set-attribute-null-class-caster', [EloquentQueryController::class, 'modelSetAttributeNullClassCaster']);
+Route::post('/test/eloquent/each-early-stop-existing-property', [EloquentQueryController::class, 'modelEachCallbackEarlyStopExistingProperty']);
+Route::post('/test/eloquent/each-return-does-not-mutate-source', [EloquentQueryController::class, 'modelEachReturnValueDoesNotMutateSource']);
+Route::post('/test/eloquent/each-reassignment-same-class', [EloquentQueryController::class, 'modelEachCallbackSameClassReassignmentIgnored']);
+Route::post('/test/eloquent/each-mutation-before-reassignment', [EloquentQueryController::class, 'modelEachCallbackMutationBeforeReassignment']);
+Route::post('/test/eloquent/sole-finisher', [EloquentQueryController::class, 'soleQueryFinisher']);
+
+Route::post('/test/raw-query/map-sum', [RawQueryController::class, 'rawQueryWithMapAndSum']);
+Route::post('/test/raw-query/collection-sum', [RawQueryController::class, 'collectionSum']);
+Route::post('/test/raw-query/scalar-finishers', [RawQueryController::class, 'rawQueryScalarFinishers']);
+Route::post('/test/raw-query/transaction', [RawQueryController::class, 'transaction']);
+
+Route::post('/test/abort/model-guard', [AbortController::class, 'abortWhenModelIsMissing']);
+Route::post('/test/abort/abort-if', [AbortController::class, 'abortIfWithMessage']);
+Route::post('/test/abort/abort-unless', [AbortController::class, 'abortUnlessWithNamedArguments']);
+
+Route::post('/test/cache/remember', [CacheAndHelperController::class, 'cacheRemember']);
+Route::post('/test/cache/helper-remember', [CacheAndHelperController::class, 'cacheHelperRemember']);
+Route::post('/test/cache/remember-forever', [CacheAndHelperController::class, 'cacheRememberForever']);
+Route::post('/test/cache/helper-sear', [CacheAndHelperController::class, 'cacheHelperSear']);
+Route::post('/test/helpers/rescue', [CacheAndHelperController::class, 'rescueHelper']);
+Route::post('/test/helpers/retry', [CacheAndHelperController::class, 'retryHelper']);
+Route::post('/test/helpers/tap', [CacheAndHelperController::class, 'tapHelper']);
+Route::post('/test/helpers/value', [CacheAndHelperController::class, 'valueHelper']);
+Route::post('/test/helpers/with', [CacheAndHelperController::class, 'withHelper']);
+
+Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
+Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);
+Route::post('/test/app-helper/application-method', [AppHelperController::class, 'methodCallOnApplication']);
+
+Route::post('/test/auth/nullable-user', [AuthController::class, 'nullableUser']);
+Route::post('/test/auth/guaranteed-user', [AuthController::class, 'guaranteedUser'])->middleware('auth');
+Route::post('/test/auth/request-user', [AuthController::class, 'requestUser'])->middleware('auth');
+Route::post('/test/auth/explicit-guard-user', [AuthController::class, 'explicitGuardUser']);
+Route::post('/test/auth/middleware-guard-user', [AuthController::class, 'middlewareGuardUser'])->middleware('auth:admin');
+Route::post('/test/auth/user-id', [AuthController::class, 'userId'])->middleware('auth');
+Route::post('/test/auth/multiple-middleware-guards', [AuthController::class, 'multipleMiddlewareGuards'])->middleware('auth:admin,web');
+Route::post('/test/auth/explicit-guard-id-under-different-middleware', [AuthController::class, 'explicitGuardIdUnderDifferentMiddleware'])->middleware('auth:web');
+Route::post('/test/auth/default-guard-id-under-basic-auth', [AuthController::class, 'defaultGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
+Route::post('/test/auth/explicit-guard-id-under-basic-auth', [AuthController::class, 'explicitGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
+
+Route::post('/test/response/no-content', [ResponseController::class, 'noContent']);
+Route::post('/test/response/no-content-custom-status', [ResponseController::class, 'noContentWithCustomStatus']);
 
 Route::patch('/test/orders/{order}', [OrderController::class, 'update']);
 
@@ -96,8 +193,17 @@ Route::get('/test/closure1', (
      * @return object{test: int}
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'email',
+                'required' => true,
+                'schema' => [
+                    'type' => 'string',
+                    'format' => 'email',
+                ],
+            ],
+        ],
         'responses' => [
             200 => [
                 'content' => [
@@ -115,6 +221,9 @@ Route::get('/test/closure1', (
                         ],
                     ],
                 ],
+                'description' => '',
+            ],
+            422 => [
                 'description' => '',
             ],
         ],

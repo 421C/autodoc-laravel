@@ -86,7 +86,6 @@ class OrderController
                                         ],
                                     ],
                                     'required' => [
-                                        'id',
                                         'status',
                                     ],
                                 ],
@@ -147,6 +146,9 @@ class OrderController
                         ],
                     ],
                 ],
+            ],
+            422 => [
+                'description' => '',
             ],
         ],
     ])]

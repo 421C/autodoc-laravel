@@ -192,6 +192,7 @@ class ResourceController
                                 'count' => [
                                     'description' => 'Number of users returned.',
                                     'type' => 'integer',
+                                    'minimum' => 0,
                                 ],
                             ],
                             'required' => [
@@ -268,7 +269,6 @@ class ResourceController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Collection inside array response',
-        'description' => '',
         'responses' => [
             200 => [
                 'content' => [

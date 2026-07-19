@@ -2,40 +2,43 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
+use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
-use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 
 class QueryBuilderMethodCall extends MethodCallExtension
 {
-    public function getReturnType(MethodCall $methodCall, Scope $scope): ?Type
+    public function handleSideEffect(MethodCallContext $call): void
     {
-        $supportedMethods = [
-            'get',
-            'create',
-            'first',
-            'firstWhere',
-            'firstOrFail',
-            'find',
-            'findOrFail',
-            'firstOrNew',
-            'firstOrCreate',
-            'updateOrCreate',
-            'latest',
-            'oldest',
-            'pluck',
-            'paginate',
-        ];
+        if (! BuilderMethodClassifier::throwsModelNotFound($call->methodName)) {
+            return;
+        }
 
-        if (! ($methodCall->name instanceof Node\Identifier)
-            || ! in_array($methodCall->name->name, $supportedMethods)
-        ) {
+        $node = $call->node;
+
+        if (! ($node instanceof MethodCall)) {
+            return;
+        }
+
+        (new QueryNavigator($call->scope))->recordFailingFinisherResponse($node);
+    }
+
+
+    public function getReturnType(MethodCallContext $call): ?Type
+    {
+        if (! BuilderMethodClassifier::supportsResultInference($call->methodName)) {
             return null;
         }
 
-        return (new QueryNavigator($scope))->getResultType($methodCall, $methodCall->name->name);
+        $node = $call->node;
+
+        if (! ($node instanceof MethodCall)) {
+            return null;
+        }
+
+        return (new QueryNavigator($call->scope))->getResultType($node, $call->methodName);
     }
 }

@@ -19,7 +19,6 @@ class PaginationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Basic pagination',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',
@@ -156,7 +155,6 @@ class PaginationController
      */
     #[ExpectedOperationSchema([
         'summary' => 'Pagination with custom page name',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',
@@ -420,8 +418,6 @@ class PaginationController
      * @return LengthAwarePaginator<int, int>
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
         'responses' => [
             200 => [
                 'description' => '',
@@ -535,8 +531,6 @@ class PaginationController
      * @phpstan-ignore missingType.generics
      */
     #[ExpectedOperationSchema([
-        'summary' => '',
-        'description' => '',
         'parameters' => [
             [
                 'in' => 'query',
@@ -691,5 +685,205 @@ class PaginationController
     public function paginationWithAllColumns(): LengthAwarePaginator
     {
         return Planet::query()->paginate(10, ['*', 'x.y'], 'p', null, null);
+    }
+
+
+    /**
+     * Simple pagination
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Simple pagination',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'page',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'current_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'current_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'first_page_url' => [
+                                    'type' => 'string',
+                                ],
+                                'from' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'to' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'current_page',
+                                'current_page_url',
+                                'first_page_url',
+                                'from',
+                                'next_page_url',
+                                'path',
+                                'per_page',
+                                'prev_page_url',
+                                'to',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function simplePagination(): mixed
+    {
+        return Rocket::simplePaginate(100);
+    }
+
+
+    /**
+     * Cursor pagination
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Cursor pagination',
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'cursor',
+                'schema' => [
+                    'type' => 'string',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'path' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'per_page' => [
+                                    'type' => 'integer',
+                                ],
+                                'next_cursor' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'next_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'prev_cursor' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'prev_page_url' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'path',
+                                'per_page',
+                                'next_cursor',
+                                'next_page_url',
+                                'prev_cursor',
+                                'prev_page_url',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function cursorPagination(): mixed
+    {
+        return Rocket::cursorPaginate(100);
     }
 }
