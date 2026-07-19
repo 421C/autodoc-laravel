@@ -51,6 +51,8 @@ Route::post('/test/pagination/custom-page-name', [PaginationController::class, '
 Route::post('/test/pagination/dynamic-columns', [PaginationController::class, 'paginationWithDynamicColumns']);
 Route::post('/test/pagination/return-type', [PaginationController::class, 'paginatorFromReturnType']);
 Route::post('/test/pagination/all-columns', [PaginationController::class, 'paginationWithAllColumns']);
+Route::post('/test/pagination/simple', [PaginationController::class, 'simplePagination']);
+Route::post('/test/pagination/cursor', [PaginationController::class, 'cursorPagination']);
 
 Route::post('/test/request-params/header', [RequestParamsController::class, 'headerParameter']);
 Route::get('/test/request-params/multiple-validate', [RequestParamsController::class, 'multipleValidateCalls']);
@@ -117,6 +119,9 @@ Route::post('/test/eloquent/model-get-attribute', [EloquentQueryController::clas
 Route::post('/test/eloquent/array-conversion-after-set', [EloquentQueryController::class, 'modelArrayConversionAfterSetAttribute']);
 Route::post('/test/eloquent/builder-scalar-finishers', [EloquentQueryController::class, 'builderScalarFinishers']);
 Route::post('/test/eloquent/collection-aggregates', [EloquentQueryController::class, 'collectionAggregates']);
+Route::post('/test/eloquent/single-column-finishers', [EloquentQueryController::class, 'singleColumnFinishers']);
+Route::post('/test/eloquent/collection-scalar-key-methods', [EloquentQueryController::class, 'collectionScalarAndKeyMethods']);
+Route::post('/test/eloquent/collection-sole-where', [EloquentQueryController::class, 'collectionSoleAndWhere']);
 Route::post('/test/eloquent/each-reassignment-ignored', [EloquentQueryController::class, 'modelEachCallbackReassignmentIgnored']);
 Route::post('/test/eloquent/each-early-stop', [EloquentQueryController::class, 'modelEachCallbackEarlyStop']);
 Route::post('/test/eloquent/get-attribute-hidden-after-set', [EloquentQueryController::class, 'modelGetAttributeHiddenAfterSet']);

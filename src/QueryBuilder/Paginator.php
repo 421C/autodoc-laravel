@@ -40,15 +40,17 @@ class Paginator
 
             $paginatorType->typeToDisplay->shape['data'] = new ArrayType(itemType: $this->entryType);
 
-            $paginatorType->typeToDisplay->shape['links'] = new ArrayType(
-                itemType: new ArrayType(
-                    shape: [
-                        'url' => new UnionType([new StringType, new NullType]),
-                        'label' => new StringType,
-                        'active' => new BoolType,
-                    ]
-                )
-            );
+            if (isset($paginatorType->typeToDisplay->shape['links'])) {
+                $paginatorType->typeToDisplay->shape['links'] = new ArrayType(
+                    itemType: new ArrayType(
+                        shape: [
+                            'url' => new UnionType([new StringType, new NullType]),
+                            'label' => new StringType,
+                            'active' => new BoolType,
+                        ]
+                    )
+                );
+            }
         }
 
         return $paginatorType;

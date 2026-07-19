@@ -68,6 +68,10 @@ class CollectionMethodCall extends MethodCallExtension
             'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'get', 'keyBy', 'values', 'sum',
             'count', 'avg', 'average', 'isEmpty', 'isNotEmpty', 'contains', 'implode',
             'unique', 'reverse', 'slice', 'sortDesc', 'each',
+            'min', 'max', 'median', 'join', 'every', 'some', 'doesntContain', 'containsStrict',
+            'sole', 'firstOrFail', 'keys',
+            'where', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull', 'whereBetween', 'whereNotBetween',
+            'sortKeys', 'sortKeysDesc', 'shuffle', 'nth', 'tap',
         ];
 
         if (! in_array($methodName, $supportedMethodNames)) {
@@ -116,17 +120,21 @@ class CollectionMethodCall extends MethodCallExtension
 
         return match ($methodName) {
             'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($call, $varType),
+            'sole', 'firstOrFail' => $varType->itemType ?? new UnknownType,
             'map' => $this->handleMapMethod($call, $varType),
             'mapWithKeys' => $this->handleMapWithKeysMethod($call, $varType),
             'pluck' => $this->handlePluckMethod($call, $varType),
+            'keys' => new ArrayType(className: Collection::class, itemType: $varType->keyType ?? new IntegerType),
             'sum' => new NumberType,
             'count' => new IntegerType(minimum: 0),
-            'avg', 'average' => new UnionType([new NumberType, new NullType]),
-            'isEmpty', 'isNotEmpty', 'contains' => new BoolType,
-            'implode' => new StringType,
+            'avg', 'average', 'min', 'max', 'median' => new UnionType([new NumberType, new NullType]),
+            'isEmpty', 'isNotEmpty', 'contains', 'containsStrict', 'doesntContain', 'every', 'some' => new BoolType,
+            'implode', 'join' => new StringType,
             'each' => $this->handleEachMethod($call, $varType),
             'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy',
-            'unique', 'reverse', 'slice', 'sortDesc' => $varType,
+            'unique', 'reverse', 'slice', 'sortDesc',
+            'where', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull', 'whereBetween', 'whereNotBetween',
+            'sortKeys', 'sortKeysDesc', 'shuffle', 'nth', 'tap' => $varType,
         };
     }
 

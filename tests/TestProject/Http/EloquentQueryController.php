@@ -3874,6 +3874,207 @@ class EloquentQueryController
 
 
     /**
+     * Single-column builder finishers
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Single-column builder finishers',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'value' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'min' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                    'format' => 'float',
+                                ],
+                                'max' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'value',
+                                'min',
+                                'max',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function singleColumnFinishers(): JsonResponse
+    {
+        return response()->json([
+            // `value`/`min`/`max` resolve to their column's type, nullable for the
+            // empty-result case; `min`/`max` also work as direct static calls.
+            'value' => Planet::where('visited', true)->value('name'),
+            'min' => Planet::query()->min('diameter'),
+            'max' => Planet::max('id'),
+        ]);
+    }
+
+
+    /**
+     * Collection scalar and key methods
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Collection scalar and key methods',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'min' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                ],
+                                'max' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                ],
+                                'median' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                ],
+                                'every' => [
+                                    'type' => 'boolean',
+                                ],
+                                'doesntContain' => [
+                                    'type' => 'boolean',
+                                ],
+                                'join' => [
+                                    'type' => 'string',
+                                ],
+                                'keys' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'min',
+                                'max',
+                                'median',
+                                'every',
+                                'doesntContain',
+                                'join',
+                                'keys',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function collectionScalarAndKeyMethods(): JsonResponse
+    {
+        $prices = collect([10, 20, 30]);
+
+        return response()->json([
+            'min' => $prices->min(),
+            'max' => $prices->max(),
+            'median' => $prices->median(),
+            'every' => $prices->every(fn ($price) => $price > 0),
+            'doesntContain' => $prices->doesntContain(5),
+            'join' => $prices->join(', '),
+            'keys' => $prices->keys(),
+        ]);
+    }
+
+
+    /**
+     * Collection sole and firstOrFail keep the item shape
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Collection sole and firstOrFail keep the item shape',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'sole' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                    ],
+                                ],
+                                'firstOrFail' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'sole',
+                                'firstOrFail',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function collectionSoleAndWhere(): JsonResponse
+    {
+        // `where` preserves the collection item shape; `sole`/`firstOrFail`
+        // return that item without the `null` branch that `first` adds.
+        $planets = Planet::select('id', 'name')->get();
+
+        return response()->json([
+            'sole' => $planets->where('visited', true)->sole(),
+            'firstOrFail' => $planets->firstOrFail(),
+        ]);
+    }
+
+
+    /**
      * Collection each() ignores by-value parameter reassignment
      */
     #[ExpectedOperationSchema([

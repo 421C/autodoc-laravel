@@ -19,7 +19,9 @@ use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator as SimplePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node;
@@ -104,8 +106,14 @@ class QueryNavigator
             return new UnionType([$rowType, new NullType]);
         }
 
-        if ($methodName === 'paginate') {
-            return $this->scope->withoutScalarTypeValueMerging(fn () => $this->getPaginatorType($rowType, $methodCall));
+        if (in_array($methodName, ['value', 'min', 'max'], true)) {
+            return $this->getSingleColumnFinisherType($methodCall);
+        }
+
+        if (in_array($methodName, ['paginate', 'simplePaginate', 'cursorPaginate'], true)) {
+            return $this->scope->withoutScalarTypeValueMerging(
+                fn () => $this->getPaginatorType($rowType, $methodCall, $methodName),
+            );
         }
 
         if ($methodName === 'first') {
@@ -270,24 +278,30 @@ class QueryNavigator
         return $rowType->unwrapType($this->scope->config);
     }
 
-    private function getPaginatorType(Type $rowType, MethodCall|StaticCall $methodCall): Type
+    private function getPaginatorType(Type $rowType, MethodCall|StaticCall $methodCall, string $methodName): Type
     {
+        [$paginatorClass, $pageArgName, $defaultParamName, $paramType] = match ($methodName) {
+            'simplePaginate' => [SimplePaginator::class, 'pageName', 'page', new IntegerType],
+            'cursorPaginate' => [CursorPaginator::class, 'cursorName', 'cursor', new StringType],
+            default => [LengthAwarePaginator::class, 'pageName', 'page', new IntegerType],
+        };
+
         $args = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
-        $paginateMethod = $this->scope->getPhpClassInDeeperScope(Builder::class)->getMethod('paginate', $args);
+        $paginateMethod = $this->scope->getPhpClassInDeeperScope(Builder::class)->getMethod($methodName, $args);
 
         if ($this->scope->route) {
-            $pageNameType = $paginateMethod->getArgumentType('pageName')->unwrapType($this->scope->config);
+            $pageNameType = $paginateMethod->getArgumentType($pageArgName)->unwrapType($this->scope->config);
             $pageParamName = null;
 
             if ($pageNameType instanceof StringType && is_string($pageNameType->value)) {
                 $pageParamName = $pageNameType->value;
 
             } else if ($pageNameType instanceof UnknownType) {
-                $pageParamName = 'page';
+                $pageParamName = $defaultParamName;
             }
 
             if ($pageParamName) {
-                $this->scope->route->requestQueryParams[$pageParamName] = new IntegerType;
+                $this->scope->route->requestQueryParams[$pageParamName] = clone $paramType;
             }
         }
 
@@ -308,10 +322,46 @@ class QueryNavigator
         }
 
         return (new Paginator(
-            paginatorPhpClass: $this->scope->getPhpClassInDeeperScope(LengthAwarePaginator::class),
+            paginatorPhpClass: $this->scope->getPhpClassInDeeperScope($paginatorClass),
             entryClass: $this->modelClassName,
             entryType: $rowType,
         ))->resolveType();
+    }
+
+
+    /**
+     * Resolves `value`, `min` and `max` finishers to their single column's type,
+     * unioned with null for the empty-result / no-match case.
+     */
+    private function getSingleColumnFinisherType(MethodCall|StaticCall $methodCall): ?Type
+    {
+        $args = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
+
+        if (! $args->has(0)) {
+            return null;
+        }
+
+        $columnArgType = $args->get(0)->unwrapType($this->scope->config);
+
+        if (! ($columnArgType instanceof StringType)) {
+            return null;
+        }
+
+        $columnTypes = [];
+
+        foreach ($columnArgType->getPossibleValues() ?? [] as $columnString) {
+            $columnType = $this->getColumnType($columnString)[1];
+
+            if ($columnType) {
+                $columnTypes[] = $columnType;
+            }
+        }
+
+        if (! $columnTypes) {
+            return null;
+        }
+
+        return (new UnionType([...$columnTypes, new NullType]))->unwrapType($this->scope->config);
     }
 
     private function handleAddSelect(ArgumentList $arguments): void
