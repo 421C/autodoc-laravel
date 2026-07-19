@@ -4,6 +4,7 @@ use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
+use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
@@ -155,6 +156,17 @@ Route::post('/test/abort/abort-unless', [AbortController::class, 'abortUnlessWit
 Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
 Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);
 Route::post('/test/app-helper/application-method', [AppHelperController::class, 'methodCallOnApplication']);
+
+Route::post('/test/auth/nullable-user', [AuthController::class, 'nullableUser']);
+Route::post('/test/auth/guaranteed-user', [AuthController::class, 'guaranteedUser'])->middleware('auth');
+Route::post('/test/auth/request-user', [AuthController::class, 'requestUser'])->middleware('auth');
+Route::post('/test/auth/explicit-guard-user', [AuthController::class, 'explicitGuardUser']);
+Route::post('/test/auth/middleware-guard-user', [AuthController::class, 'middlewareGuardUser'])->middleware('auth:admin');
+Route::post('/test/auth/user-id', [AuthController::class, 'userId'])->middleware('auth');
+Route::post('/test/auth/multiple-middleware-guards', [AuthController::class, 'multipleMiddlewareGuards'])->middleware('auth:admin,web');
+Route::post('/test/auth/explicit-guard-id-under-different-middleware', [AuthController::class, 'explicitGuardIdUnderDifferentMiddleware'])->middleware('auth:web');
+Route::post('/test/auth/default-guard-id-under-basic-auth', [AuthController::class, 'defaultGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
+Route::post('/test/auth/explicit-guard-id-under-basic-auth', [AuthController::class, 'explicitGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
 

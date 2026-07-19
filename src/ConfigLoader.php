@@ -22,6 +22,8 @@ class ConfigLoader
 
                 \AutoDoc\Laravel\Extensions\AbortCall::class,
                 \AutoDoc\Laravel\Extensions\AppCall::class,
+                \AutoDoc\Laravel\Extensions\AuthUserStaticCall::class,
+                \AutoDoc\Laravel\Extensions\AuthUserMethodCall::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
                 \AutoDoc\Laravel\Extensions\ResponseNoContent::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,

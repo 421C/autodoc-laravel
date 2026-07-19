@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Routing\Route as LaravelRoute;
 use Illuminate\Routing\RouteAction;
 use Illuminate\Support\Facades\Route as LaravelRouteFacade;
+use Throwable;
 
 
 class RouteLoader extends AbstractRouteLoader
@@ -38,6 +39,7 @@ class RouteLoader extends AbstractRouteLoader
                                 classMethod: $controllerMethod,
                                 meta: [
                                     'pathParameters' => $this->extractRouteParameters($route),
+                                    'middleware' => $this->gatherRouteMiddleware($route),
                                 ],
                             );
                         }
@@ -50,12 +52,33 @@ class RouteLoader extends AbstractRouteLoader
                         closure: $route->action['uses'],
                         meta: [
                             'pathParameters' => $this->extractRouteParameters($route),
+                            'middleware' => $this->gatherRouteMiddleware($route),
                         ],
                     );
                 }
             }
         }
     }
+
+    /**
+     * The route's middleware with named groups expanded and aliases resolved to
+     * class names, so extensions can detect auth-guarded routes. Falls back to
+     * the declared middleware when resolution is unavailable.
+     *
+     * @return list<string>
+     */
+    protected function gatherRouteMiddleware(LaravelRoute $route): array
+    {
+        try {
+            $middleware = LaravelRouteFacade::gatherRouteMiddleware($route);
+
+        } catch (Throwable) {
+            $middleware = $route->gatherMiddleware();
+        }
+
+        return array_values(array_unique(array_filter($middleware, 'is_string')));
+    }
+
 
     /**
      * @return list<array{
