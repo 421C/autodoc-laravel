@@ -713,6 +713,9 @@ class PaginationController
                                 'current_page' => [
                                     'type' => 'integer',
                                 ],
+                                'current_page_url' => [
+                                    'type' => 'string',
+                                ],
                                 'data' => [
                                     'type' => 'array',
                                     'items' => [
@@ -770,6 +773,7 @@ class PaginationController
                             ],
                             'required' => [
                                 'current_page',
+                                'current_page_url',
                                 'first_page_url',
                                 'from',
                                 'next_page_url',

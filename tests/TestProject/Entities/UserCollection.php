@@ -16,6 +16,7 @@ class UserCollection extends ResourceCollection
      */
     public function toArray(Request $request): array
     {
+        /** @phpstan-ignore method.nonObject */
         return $this->collection->toArray();
     }
 }
