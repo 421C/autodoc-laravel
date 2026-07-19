@@ -2,6 +2,7 @@
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
+use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
@@ -133,6 +134,10 @@ Route::post('/test/raw-query/map-sum', [RawQueryController::class, 'rawQueryWith
 Route::post('/test/raw-query/collection-sum', [RawQueryController::class, 'collectionSum']);
 Route::post('/test/raw-query/scalar-finishers', [RawQueryController::class, 'rawQueryScalarFinishers']);
 Route::post('/test/raw-query/transaction', [RawQueryController::class, 'transaction']);
+
+Route::post('/test/abort/model-guard', [AbortController::class, 'abortWhenModelIsMissing']);
+Route::post('/test/abort/abort-if', [AbortController::class, 'abortIfWithMessage']);
+Route::post('/test/abort/abort-unless', [AbortController::class, 'abortUnlessWithNamedArguments']);
 
 Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
 Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);
