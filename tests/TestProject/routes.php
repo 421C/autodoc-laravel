@@ -12,6 +12,7 @@ use AutoDoc\Laravel\Tests\TestProject\Http\PaginationController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RawQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RequestParamsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ResourceController;
+use AutoDoc\Laravel\Tests\TestProject\Http\ResponseController;
 use AutoDoc\Laravel\Tests\TestProject\Http\RouteParametersController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ValidationController;
 use AutoDoc\Laravel\Tests\TestProject\Http\ViewResponseController;
@@ -156,6 +157,9 @@ Route::post('/test/app-helper/service-method', [AppHelperController::class, 'met
 Route::post('/test/app-helper/application-method', [AppHelperController::class, 'methodCallOnApplication']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
+
+Route::post('/test/response/no-content', [ResponseController::class, 'noContent']);
+Route::post('/test/response/no-content-custom-status', [ResponseController::class, 'noContentWithCustomStatus']);
 
 Route::patch('/test/orders/{order}', [OrderController::class, 'update']);
 

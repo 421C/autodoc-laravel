@@ -23,6 +23,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\AbortCall::class,
                 \AutoDoc\Laravel\Extensions\AppCall::class,
                 \AutoDoc\Laravel\Extensions\ResponseJson::class,
+                \AutoDoc\Laravel\Extensions\ResponseNoContent::class,
                 \AutoDoc\Laravel\Extensions\RequestValidate::class,
                 \AutoDoc\Laravel\Extensions\RequestHeader::class,
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
