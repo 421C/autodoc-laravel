@@ -5,6 +5,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
+use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
@@ -152,6 +153,16 @@ Route::post('/test/raw-query/transaction', [RawQueryController::class, 'transact
 Route::post('/test/abort/model-guard', [AbortController::class, 'abortWhenModelIsMissing']);
 Route::post('/test/abort/abort-if', [AbortController::class, 'abortIfWithMessage']);
 Route::post('/test/abort/abort-unless', [AbortController::class, 'abortUnlessWithNamedArguments']);
+
+Route::post('/test/cache/remember', [CacheAndHelperController::class, 'cacheRemember']);
+Route::post('/test/cache/helper-remember', [CacheAndHelperController::class, 'cacheHelperRemember']);
+Route::post('/test/cache/remember-forever', [CacheAndHelperController::class, 'cacheRememberForever']);
+Route::post('/test/cache/helper-sear', [CacheAndHelperController::class, 'cacheHelperSear']);
+Route::post('/test/helpers/rescue', [CacheAndHelperController::class, 'rescueHelper']);
+Route::post('/test/helpers/retry', [CacheAndHelperController::class, 'retryHelper']);
+Route::post('/test/helpers/tap', [CacheAndHelperController::class, 'tapHelper']);
+Route::post('/test/helpers/value', [CacheAndHelperController::class, 'valueHelper']);
+Route::post('/test/helpers/with', [CacheAndHelperController::class, 'withHelper']);
 
 Route::post('/test/app-helper/model', [AppHelperController::class, 'modelResolvedFromApp']);
 Route::post('/test/app-helper/service-method', [AppHelperController::class, 'methodCallOnResolvedService']);
