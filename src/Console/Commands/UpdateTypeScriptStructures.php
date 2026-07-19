@@ -8,7 +8,7 @@ use Throwable;
 
 class UpdateTypeScriptStructures extends Command
 {
-    protected $signature = 'autodoc:ts-sync {working_directory?}';
+    protected $signature = 'autodoc:ts {working_directory?}';
 
     protected $description = 'Read `@autodoc` tags in typescript code and update typescript types from PHP structures.';
 
