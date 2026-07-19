@@ -18,6 +18,22 @@ use Illuminate\Support\Collection;
  */
 class EloquentModelStaticCall extends StaticCallExtension
 {
+    public function handleSideEffect(StaticCallContext $call): void
+    {
+        if (! BuilderMethodClassifier::throwsModelNotFound($call->methodName)) {
+            return;
+        }
+
+        $className = $call->className;
+
+        if (! $className || ! is_subclass_of($className, Model::class)) {
+            return;
+        }
+
+        (new QueryNavigator($call->scope))->recordFailingFinisherResponse($call->node);
+    }
+
+
     public function getReturnType(StaticCallContext $call): ?Type
     {
         $methodName = $call->methodName;

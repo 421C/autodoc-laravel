@@ -64,6 +64,11 @@ class ValidationController
             'description' => '',
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function basicStringRules(Request $request): void
     {
@@ -168,6 +173,9 @@ class ValidationController
                     ],
                 ],
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function nestedArrayRules(): mixed
@@ -270,6 +278,11 @@ class ValidationController
             'description' => '',
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function ruleObjects(Request $request): void
     {
@@ -365,6 +378,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function enumRules(FormRequest $request): mixed
@@ -436,6 +452,11 @@ class ValidationController
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function wildcardArrayValidation(): void
     {
@@ -477,6 +498,11 @@ class ValidationController
                 ],
             ],
             'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function passwordRule(): void
@@ -564,6 +590,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function urlAndIpValidation(): JsonResponse
@@ -615,6 +644,9 @@ class ValidationController
                         ],
                     ],
                 ],
+                'description' => '',
+            ],
+            422 => [
                 'description' => '',
             ],
         ],
@@ -703,6 +735,9 @@ class ValidationController
                 ],
                 'description' => '',
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function numericValidation(): JsonResponse
@@ -756,6 +791,11 @@ class ValidationController
                 ],
             ],
             'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function nestedRequiredWithWildcard(): void
@@ -823,6 +863,11 @@ class ValidationController
                 ],
             ],
             'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function phpdocTypeInValidation(): void
@@ -901,6 +946,9 @@ status description',
                     ],
                 ],
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function enumWithNestedAndFilledRules(Request $request): mixed
@@ -947,6 +995,11 @@ status description',
             ],
             'required' => false,
         ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
     ])]
     public function nestedDataWithTopLevelDescription(Request $request): void
     {
@@ -957,5 +1010,21 @@ status description',
             'nested' => 'array',
             'nested.data' => 'required',
         ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function unresolvedRulesStillRecordValidationResponse(Request $request): void
+    {
+        $rules = config('test.validation-rules');
+
+        /** @phpstan-ignore argument.type */
+        $request->validate($rules);
     }
 }

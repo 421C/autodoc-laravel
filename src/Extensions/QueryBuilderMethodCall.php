@@ -11,6 +11,22 @@ use PhpParser\Node\Expr\MethodCall;
 
 class QueryBuilderMethodCall extends MethodCallExtension
 {
+    public function handleSideEffect(MethodCallContext $call): void
+    {
+        if (! BuilderMethodClassifier::throwsModelNotFound($call->methodName)) {
+            return;
+        }
+
+        $node = $call->node;
+
+        if (! ($node instanceof MethodCall)) {
+            return;
+        }
+
+        (new QueryNavigator($call->scope))->recordFailingFinisherResponse($node);
+    }
+
+
     public function getReturnType(MethodCallContext $call): ?Type
     {
         if (! BuilderMethodClassifier::supportsResultInference($call->methodName)) {

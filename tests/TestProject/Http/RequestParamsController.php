@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
+use Illuminate\Http\Request;
 
 /**
  * Tests for request parameters: headers, query params.
@@ -109,6 +110,11 @@ class RequestParamsController
                         'type' => 'string',
                     ],
                 ],
+            ],
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -407,5 +413,248 @@ class RequestParamsController
         request()->integer('user.age');
         request()->boolean('items.*.active');
         request()->array(['address.city', 'address.zip']);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'name' => [
+                                'type' => 'string',
+                            ],
+                            'email' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'email' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function requestOnlySubset(Request $request): mixed
+    {
+        return $request->only(['name', 'email']);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'secret' => [
+                                'type' => 'string',
+                            ],
+                            'internal_note' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function requestExceptSubset(Request $request): mixed
+    {
+        return $request->except('secret', 'internal_note');
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'title' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                        'required' => [
+                            'title',
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'required' => [
+                                'title',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function requestAllAfterValidation(Request $request): mixed
+    {
+        $request->validate([
+            'title' => 'required|string',
+        ]);
+
+        return $request->all();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'name' => [
+                                'type' => 'string',
+                            ],
+                            'email' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'description' => '',
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'array' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                ],
+                                'variadic' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'email' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'array',
+                                'variadic',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function requestAllSubset(Request $request): mixed
+    {
+        return [
+            'array' => $request->all(['name']),
+            'variadic' => $request->all('email'),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'page',
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'page' => [
+                                    'type' => 'integer',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function requestAllAfterQueryInput(Request $request): mixed
+    {
+        $request->integer('page');
+
+        return $request->all();
     }
 }

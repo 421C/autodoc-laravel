@@ -147,6 +147,9 @@ class OrderController
                     ],
                 ],
             ],
+            422 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function update(Request $request, Order $order): JsonResponse

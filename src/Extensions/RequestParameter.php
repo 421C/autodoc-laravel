@@ -38,17 +38,47 @@ class RequestParameter extends MethodCallExtension
         'input',
         'integer',
         'str',
+        'only',
+        'except',
+        'all',
     ];
 
-    /**
-     * Only array/collect key-list calls need a Laravel-specific return shape.
-     */
+    private const KEY_LIST_METHODS = [
+        'array',
+        'collect',
+        'only',
+        'except',
+        'all',
+    ];
+
+    private const SHAPED_KEY_LIST_METHODS = [
+        'array',
+        'collect',
+        'only',
+        'all',
+    ];
+
+    private const VARIADIC_KEY_LIST_METHODS = [
+        'only',
+        'except',
+        'all',
+    ];
+
+
     public function getReturnType(MethodCallContext $call): ?Type
     {
         $methodName = $this->getMatchedMethodName($call);
 
-        if (in_array($methodName, ['array', 'collect'], true)) {
-            return $this->getArrayOrCollectReturnType($methodName, $call);
+        if ($methodName === null) {
+            return null;
+        }
+
+        if ($methodName === 'all' && count($call->argTypes) === 0) {
+            return $this->getAllReturnType($call);
+        }
+
+        if (in_array($methodName, self::SHAPED_KEY_LIST_METHODS, true)) {
+            return $this->getKeyListReturnType($methodName, $call);
         }
 
         return null;
@@ -57,7 +87,9 @@ class RequestParameter extends MethodCallExtension
 
     public function handleSideEffect(MethodCallContext $call): void
     {
-        if (! $call->scope->route) {
+        $route = $call->scope->route;
+
+        if (! $route) {
             return;
         }
 
@@ -73,9 +105,9 @@ class RequestParameter extends MethodCallExtension
             return;
         }
 
-        if ($call->scope->route->hasMethod('get')) {
+        if ($route->hasMethod('get')) {
             foreach ($requestParameters as $key => $paramType) {
-                $call->scope->route->requestQueryParams[$key] ??= $paramType;
+                $route->requestQueryParams[$key] ??= $paramType;
             }
 
             return;
@@ -84,7 +116,7 @@ class RequestParameter extends MethodCallExtension
         $paramsInRequestBody = [];
 
         foreach ($requestParameters as $key => $paramType) {
-            if (! array_key_exists($key, $call->scope->route->requestQueryParams)) {
+            if (! array_key_exists($key, $route->requestQueryParams)) {
                 $paramsInRequestBody[$key] = $paramType;
             }
         }
@@ -104,11 +136,15 @@ class RequestParameter extends MethodCallExtension
      */
     private function getRequestParametersFromMethod(string $methodName, MethodCallContext $call): array
     {
-        if (in_array($methodName, ['array', 'collect'], true)) {
-            $selectedFields = $this->getFieldsSelectedByArrayOrCollect($call);
+        if (in_array($methodName, self::KEY_LIST_METHODS, true)) {
+            $selectedFields = $this->getKeyListFields($methodName, $call);
 
             if ($selectedFields !== []) {
                 return $selectedFields;
+            }
+
+            if (in_array($methodName, self::VARIADIC_KEY_LIST_METHODS, true)) {
+                return [];
             }
         }
 
@@ -137,12 +173,9 @@ class RequestParameter extends MethodCallExtension
     }
 
 
-    /**
-     * The key-list overload returns an input subset, not one field's array value.
-     */
-    private function getArrayOrCollectReturnType(string $methodName, MethodCallContext $call): ?Type
+    private function getKeyListReturnType(string $methodName, MethodCallContext $call): ?Type
     {
-        $selectedFields = $this->getFieldsSelectedByArrayOrCollect($call);
+        $selectedFields = $this->getKeyListFields($methodName, $call);
 
         if ($selectedFields === []) {
             return null;
@@ -155,21 +188,67 @@ class RequestParameter extends MethodCallExtension
     }
 
 
+    private function getAllReturnType(MethodCallContext $call): Type
+    {
+        $route = $call->scope->route;
+
+        if (! $route) {
+            return new ArrayType(itemType: new UnknownType);
+        }
+
+        $knownFields = $route->requestQueryParams;
+        $requestBody = $route->getRequestBodyType($call->scope);
+
+        if ($requestBody instanceof ObjectType) {
+            $knownFields = array_replace($knownFields, $requestBody->properties);
+
+        } else if ($requestBody instanceof ArrayType) {
+            $knownFields = array_replace($knownFields, $requestBody->shape);
+        }
+
+        if ($knownFields !== []) {
+            return new ArrayType(shape: $knownFields);
+        }
+
+        return new ArrayType(itemType: new UnknownType);
+    }
+
+
     /**
-     * Literal key lists let array/collect expose the shape of only($keys).
+     * `only`/`except`/`all` accept either a single array of keys or variadic
+     * string keys; `array`/`collect` only take the array form.
      *
      * @return array<string, Type>
      */
-    private function getFieldsSelectedByArrayOrCollect(MethodCallContext $call): array
+    private function getKeyListFields(string $methodName, MethodCallContext $call): array
     {
-        $keyListType = $call->argTypes->has(0)
-            ? $call->argTypes->get(0)->unwrapType($call->scope->config)
-            : null;
-
-        if (! ($keyListType instanceof ArrayType)) {
+        if (! $call->argTypes->has(0)) {
             return [];
         }
 
+        $firstArgType = $call->argTypes->get(0)->unwrapType($call->scope->config);
+
+        if ($firstArgType instanceof ArrayType) {
+            return $this->getFieldsFromKeyListType($firstArgType, $call);
+        }
+
+        if (! in_array($methodName, self::VARIADIC_KEY_LIST_METHODS, true)) {
+            return [];
+        }
+
+        $fieldNames = [];
+
+        for ($index = 0; $index < count($call->argTypes); $index++) {
+            $this->appendStringValuesFromType($call->argTypes->get($index), $call, $fieldNames);
+        }
+
+        return $this->getFieldsFromNames($fieldNames);
+    }
+
+
+    /** @return array<string, Type> */
+    private function getFieldsFromKeyListType(ArrayType $keyListType, MethodCallContext $call): array
+    {
         $fieldNames = [];
 
         foreach ($keyListType->shape as $fieldNameType) {
@@ -180,6 +259,16 @@ class RequestParameter extends MethodCallExtension
             $this->appendStringValuesFromType($keyListType->itemType, $call, $fieldNames);
         }
 
+        return $this->getFieldsFromNames($fieldNames);
+    }
+
+
+    /**
+     * @param list<string> $fieldNames
+     * @return array<string, Type>
+     */
+    private function getFieldsFromNames(array $fieldNames): array
+    {
         $fields = [];
 
         foreach (array_unique($fieldNames) as $fieldName) {

@@ -590,6 +590,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function firstAndFirstOrFailWithQueryBuilder(): mixed
@@ -725,6 +728,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -1838,6 +1844,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function complexNestedRelations(): SpaceStation
@@ -1994,6 +2003,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttribute(): mixed
@@ -2044,6 +2056,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -2099,6 +2114,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -2177,6 +2195,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeSerialized(): mixed
@@ -2243,6 +2264,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeJsonPath(): mixed
@@ -2284,6 +2308,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -2357,6 +2384,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeCastAttributes(): mixed
@@ -2425,6 +2455,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -2509,6 +2542,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeConditionalInLoop(): mixed
@@ -2587,6 +2623,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeConditionalBranch(): mixed
@@ -2659,6 +2698,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeOnArrayElementReceiver(): mixed
@@ -2728,6 +2770,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -2994,6 +3039,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignment(): mixed
@@ -3075,6 +3123,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignmentSerialized(): mixed
@@ -3118,6 +3169,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -3195,6 +3249,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignmentCastAttributes(): mixed
@@ -3271,6 +3328,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignmentOnArrayElementReceiver(): mixed
@@ -3342,6 +3402,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignmentOnPropertyFetchReceiver(): mixed
@@ -3409,6 +3472,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -3488,6 +3554,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelCustomToArrayParent(): mixed
@@ -3555,6 +3624,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -3630,6 +3702,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelGetAttribute(): mixed
@@ -3701,6 +3776,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -4248,6 +4326,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelGetAttributeHiddenAfterSet(): mixed
@@ -4316,6 +4397,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelDirectAssignmentNullCast(): mixed
@@ -4382,6 +4466,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -4458,6 +4545,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelSetAttributeAccessorAttributes(): mixed
@@ -4522,6 +4612,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -4593,6 +4686,9 @@ class EloquentQueryController
                         ],
                     ],
                 ],
+            ],
+            404 => [
+                'description' => '',
             ],
         ],
     ])]
@@ -4960,5 +5056,65 @@ class EloquentQueryController
         });
 
         return $planets;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function soleQueryFinisher(): mixed
+    {
+        return Planet::query()->where('visited', true)->sole();
     }
 }

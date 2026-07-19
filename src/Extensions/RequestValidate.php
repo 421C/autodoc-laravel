@@ -8,6 +8,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
+use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
 use AutoDoc\Laravel\Validation\ValidationRulesParser;
 
 /**
@@ -15,17 +16,25 @@ use AutoDoc\Laravel\Validation\ValidationRulesParser;
  */
 class RequestValidate extends MethodCallExtension
 {
-    use ChecksRequestReceiver, ValidationRulesParser;
+    use ChecksRequestReceiver, RecordsErrorResponses, ValidationRulesParser;
 
     public function handleSideEffect(MethodCallContext $call): void
     {
-        if ($this->isRequestValidateMethod($call)) {
-            $requestType = $this->parseValidateMethodCallArguments($call);
-
-            if ($requestType !== null) {
-                $call->setRequestType($requestType);
-            }
+        if (! $this->isRequestValidateMethod($call)) {
+            return;
         }
+
+        if ($call->scope->route) {
+            $this->addValidationErrorResponse($call->scope->route);
+        }
+
+        $requestType = $this->parseValidateMethodCallArguments($call);
+
+        if ($requestType === null) {
+            return;
+        }
+
+        $call->setRequestType($requestType);
     }
 
 

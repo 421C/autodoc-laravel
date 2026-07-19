@@ -31,6 +31,7 @@ Route::post('/test/validation/nested-required-wildcard', [ValidationController::
 Route::post('/test/validation/phpdoc-type', [ValidationController::class, 'phpdocTypeInValidation']);
 Route::post('/test/validation/enum-nested-filled', [ValidationController::class, 'enumWithNestedAndFilledRules']);
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
+Route::post('/test/validation/unresolved-rules', [ValidationController::class, 'unresolvedRulesStillRecordValidationResponse']);
 
 Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
@@ -61,6 +62,11 @@ Route::post('/test/request-params/phpdoc-query', [RequestParamsController::class
 Route::post('/test/request-params/authorization-header', [RequestParamsController::class, 'authorizationHeader']);
 Route::post('/test/request-params/typed-helpers', [RequestParamsController::class, 'typedParameterHelpers']);
 Route::post('/test/request-params/dot-notation', [RequestParamsController::class, 'dotNotationParameters']);
+Route::post('/test/request-params/only', [RequestParamsController::class, 'requestOnlySubset']);
+Route::post('/test/request-params/except', [RequestParamsController::class, 'requestExceptSubset']);
+Route::post('/test/request-params/all-after-validation', [RequestParamsController::class, 'requestAllAfterValidation']);
+Route::post('/test/request-params/all-subset', [RequestParamsController::class, 'requestAllSubset']);
+Route::get('/test/request-params/all-after-query-input', [RequestParamsController::class, 'requestAllAfterQueryInput']);
 
 Route::post('/test/eloquent/query-builder-select', [EloquentQueryController::class, 'queryBuilderWithSelect']);
 Route::post('/test/eloquent/select-columns', [EloquentQueryController::class, 'selectWithSpecificColumns']);
@@ -134,6 +140,7 @@ Route::post('/test/eloquent/each-early-stop-existing-property', [EloquentQueryCo
 Route::post('/test/eloquent/each-return-does-not-mutate-source', [EloquentQueryController::class, 'modelEachReturnValueDoesNotMutateSource']);
 Route::post('/test/eloquent/each-reassignment-same-class', [EloquentQueryController::class, 'modelEachCallbackSameClassReassignmentIgnored']);
 Route::post('/test/eloquent/each-mutation-before-reassignment', [EloquentQueryController::class, 'modelEachCallbackMutationBeforeReassignment']);
+Route::post('/test/eloquent/sole-finisher', [EloquentQueryController::class, 'soleQueryFinisher']);
 
 Route::post('/test/raw-query/map-sum', [RawQueryController::class, 'rawQueryWithMapAndSum']);
 Route::post('/test/raw-query/collection-sum', [RawQueryController::class, 'collectionSum']);
@@ -187,6 +194,9 @@ Route::get('/test/closure1', (
                         ],
                     ],
                 ],
+                'description' => '',
+            ],
+            422 => [
                 'description' => '',
             ],
         ],

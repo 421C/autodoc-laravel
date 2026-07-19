@@ -17,6 +17,7 @@ use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
+use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\CursorPaginator;
@@ -31,7 +32,7 @@ use PhpParser\Node\Expr\StaticCall;
 
 class QueryNavigator
 {
-    use DotNotationParser;
+    use DotNotationParser, RecordsErrorResponses;
 
     public function __construct(
         private Scope $scope,
@@ -120,7 +121,7 @@ class QueryNavigator
             return new UnionType([$rowType, new NullType]);
         }
 
-        if ($methodName === 'firstOrFail') {
+        if ($methodName === 'firstOrFail' || $methodName === 'sole') {
             return $rowType;
         }
 
@@ -180,6 +181,31 @@ class QueryNavigator
         }
 
         return null;
+    }
+
+
+    /**
+     * Records the 404 failure response for a `findOrFail`/`firstOrFail`/`sole`
+     * finisher, but only when the chain resolves to an Eloquent model (a raw
+     * `DB` chain or an unresolved subject throws different, non-404 exceptions).
+     */
+    public function recordFailingFinisherResponse(Node\Expr $queryNode): void
+    {
+        $route = $this->scope->route;
+
+        if (! $route) {
+            return;
+        }
+
+        if (! $this->analyzeChain($queryNode)) {
+            return;
+        }
+
+        if (! $this->modelClassName || $this->isRawDatabaseQuery) {
+            return;
+        }
+
+        $this->addModelNotFoundResponse($route);
     }
 
 

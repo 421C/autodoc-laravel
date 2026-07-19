@@ -17,6 +17,7 @@ class BuilderMethodClassifier
             'firstornew',
             'firstorcreate',
             'updateorcreate',
+            'sole',
             'pluck',
             'paginate',
             'simplepaginate',
@@ -49,6 +50,21 @@ class BuilderMethodClassifier
             'insertgetid',
             'insertusinggetid',
             'all' => true,
+            default => false,
+        };
+    }
+
+
+    /**
+     * Finishers that throw `ModelNotFoundException` (rendered as HTTP 404) when
+     * the Eloquent query yields no matching row.
+     */
+    public static function throwsModelNotFound(string $methodName): bool
+    {
+        return match (strtolower($methodName)) {
+            'findorfail',
+            'firstorfail',
+            'sole' => true,
             default => false,
         };
     }
@@ -95,7 +111,6 @@ class BuilderMethodClassifier
             'decrementeach',
             'rawvalue',
             'solevalue',
-            'sole',
             'tosql',
             'torawsql',
             'implode',
