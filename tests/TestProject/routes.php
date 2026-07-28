@@ -113,6 +113,8 @@ Route::post('/test/eloquent/model-set-attribute-conditional-branch', [EloquentQu
 Route::post('/test/eloquent/model-set-attribute-array-element', [EloquentQueryController::class, 'modelSetAttributeOnArrayElementReceiver']);
 Route::post('/test/eloquent/model-set-attribute-property-fetch', [EloquentQueryController::class, 'modelSetAttributeOnPropertyFetchReceiver']);
 Route::post('/test/eloquent/model-set-attribute-each-closure', [EloquentQueryController::class, 'modelSetAttributeInEachCallback']);
+Route::post('/test/eloquent/model-relation-set-attribute-each-closure', [EloquentQueryController::class, 'modelRelationSetAttributeInEachCallback']);
+Route::post('/test/eloquent/model-relation-nullsafe-set-attribute-return', [EloquentQueryController::class, 'modelRelationNullsafeSetAttributeReturn']);
 Route::post('/test/eloquent/model-set-attribute-each-arrow', [EloquentQueryController::class, 'modelSetAttributeInEachArrowFunction']);
 Route::post('/test/eloquent/model-set-attribute-each-return', [EloquentQueryController::class, 'modelSetAttributeEachReturnValue']);
 Route::post('/test/eloquent/model-direct-assignment', [EloquentQueryController::class, 'modelDirectAssignment']);

@@ -2861,6 +2861,199 @@ class EloquentQueryController
     }
 
 
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'created_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'description' => [
+                                        'type' => 'string',
+                                    ],
+                                    'id' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'string',
+                                                'const' => '',
+                                            ],
+                                            [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                    'name' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                    ],
+                                    'planet' => [
+                                        'type' => [
+                                            'object',
+                                            'null',
+                                        ],
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'has_met_aliens' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
+                                    ],
+                                    'size' => [
+                                        'type' => 'string',
+                                    ],
+                                    'updated_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'description',
+                                    'size',
+                                    'created_at',
+                                    'updated_at',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelRelationSetAttributeInEachCallback(): mixed
+    {
+        $stations = SpaceStation::with('planet')->get();
+
+        if (rand(0, 1)) {
+            $stations->each(function ($station) {
+                $station->planet?->setAttribute('has_met_aliens', false);
+            });
+        }
+
+        return $stations;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => [
+                                'object',
+                                'null',
+                            ],
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'has_met_aliens' => [
+                                    'type' => 'boolean',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'has_met_aliens',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function modelRelationNullsafeSetAttributeReturn(): mixed
+    {
+        $station = SpaceStation::with('planet')->firstOrFail();
+
+        return $station->planet?->setAttribute('has_met_aliens', false);
+    }
+
+
     /**
      * Model setAttribute inside a Collection each() arrow function
      */

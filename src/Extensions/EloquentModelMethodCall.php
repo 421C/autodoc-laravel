@@ -3,14 +3,19 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\DataTypes\ArrayType;
+use AutoDoc\DataTypes\NullType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
+use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use Illuminate\Database\Eloquent\Model;
+use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\NullsafePropertyFetch;
+use PhpParser\Node\Expr\PropertyFetch;
 use ReflectionMethod;
 
 /**
@@ -32,7 +37,7 @@ class EloquentModelMethodCall extends MethodCallExtension
     {
         $modelType = $this->getModelType($call);
 
-        if (! $modelType) {
+        if ($modelType === null) {
             return;
         }
 
@@ -40,6 +45,16 @@ class EloquentModelMethodCall extends MethodCallExtension
 
         if ($attribute !== null) {
             [$name, $type] = $attribute;
+
+            if ($this->mutateNullablePropertyReceiver($call, $modelType, $name, $type)) {
+                return;
+            }
+
+            if ($call->node instanceof NullsafeMethodCall
+                && $this->typeIncludesNull($call->getVarType())
+            ) {
+                return;
+            }
 
             $call->mutateExpression($call->node->var, [$name => clone $type]);
         }
@@ -59,16 +74,25 @@ class EloquentModelMethodCall extends MethodCallExtension
 
         $modelType = $this->getModelType($call);
 
-        if (! $modelType) {
+        if ($modelType === null) {
             return null;
         }
 
-        return match ($call->methodName) {
+        $returnType = match ($call->methodName) {
             'setAttribute' => $this->getSetAttributeReturnType($call, $modelType),
             'getAttribute' => $this->getGetAttributeReturnType($call, $modelType),
             'attributesToArray' => $this->resolveAttributesArrayType($call, $modelType),
             default => $this->getToArrayReturnType($call, $modelType),
         };
+
+        if ($returnType !== null
+            && $call->node instanceof NullsafeMethodCall
+            && $this->typeIncludesNull($call->getVarType())
+        ) {
+            return new UnionType([$returnType, new NullType])->unwrapType($call->scope->config);
+        }
+
+        return $returnType;
     }
 
 
@@ -240,15 +264,95 @@ class EloquentModelMethodCall extends MethodCallExtension
 
     private function getModelType(MethodCallContext $call): ?ObjectType
     {
-        $varType = $call->getVarType();
+        return $this->resolveModelObjectType($call->getVarType());
+    }
 
-        if (! ($varType instanceof ObjectType)
-            || ! $varType->className
-            || ! is_subclass_of($varType->className, Model::class)
-        ) {
-            return null;
+
+    /**
+     * Nullable relation receivers expose one model alongside null, so reject
+     * unions that do not resolve to exactly one model type.
+     */
+    private function resolveModelObjectType(Type $type): ?ObjectType
+    {
+        $variants = $type instanceof UnionType ? $type->types : [$type];
+        $modelType = null;
+
+        foreach ($variants as $variant) {
+            if ($variant instanceof NullType) {
+                continue;
+            }
+
+            if (! ($variant instanceof ObjectType)
+                || ! $variant->className
+                || ! is_subclass_of($variant->className, Model::class)
+            ) {
+                return null;
+            }
+
+            if ($modelType !== null) {
+                return null;
+            }
+
+            $modelType = $variant;
         }
 
-        return $varType;
+        return $modelType;
+    }
+
+
+    private function typeIncludesNull(Type $type): bool
+    {
+        if ($type instanceof NullType) {
+            return true;
+        }
+
+        return $type instanceof UnionType
+            && array_any($type->types, $this->typeIncludesNull(...));
+    }
+
+
+    /**
+     * Replaces a nullable relation on its parent so recording the mutation
+     * does not discard the null variant.
+     */
+    private function mutateNullablePropertyReceiver(
+        MethodCallContext $call,
+        ObjectType $modelType,
+        string $attributeName,
+        Type $attributeType,
+    ): bool {
+        if (! ($call->node instanceof NullsafeMethodCall)
+            || ! $this->typeIncludesNull($call->getVarType())
+            || ! ($call->node->var instanceof PropertyFetch
+                || $call->node->var instanceof NullsafePropertyFetch)
+        ) {
+            return false;
+        }
+
+        $propertyName = $call->scope->getRawValueFromNode($call->node->var->name);
+
+        if (! is_string($propertyName)) {
+            return false;
+        }
+
+        $mutatedModelType = clone $modelType;
+        $mutatedModelType->properties[$attributeName] = clone $attributeType;
+        $receiverType = $call->getVarType();
+        $receiverVariants = $receiverType instanceof UnionType ? $receiverType->types : [$receiverType];
+
+        $updatedReceiverVariants = array_map(
+            fn (Type $variant): Type => $variant === $modelType ? $mutatedModelType : $variant,
+            $receiverVariants,
+        );
+
+        $updatedReceiverType = new UnionType($updatedReceiverVariants)
+            ->unwrapType($call->scope->config)
+            ->setRequired($receiverType->required);
+
+        $call->mutateExpression($call->node->var->var, [
+            $propertyName => $updatedReceiverType,
+        ]);
+
+        return true;
     }
 }
