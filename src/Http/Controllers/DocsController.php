@@ -13,14 +13,21 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DocsController extends Controller
 {
+    private const string ASSETS_PATH = 'assets/';
+
     /**
      * Single front controller for the docs route. From one wildcard it serves
      * the HTML page, the vendored viewer assets and the workspace OpenAPI JSON.
      */
     public function handle(string $path = ''): Response|BinaryFileResponse
     {
-        $config = (new ConfigLoader)->load();
         $normalizedPath = trim($path, '/');
+
+        if (str_starts_with($normalizedPath, self::ASSETS_PATH)) {
+            return $this->toResponse(DocViewer::serveAsset(substr($normalizedPath, strlen(self::ASSETS_PATH))));
+        }
+
+        $config = (new ConfigLoader)->load();
 
         $workspace = $this->resolveWorkspace($config);
 
