@@ -2,6 +2,7 @@
 
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
+use AutoDoc\Laravel\Tests\TestProject\Models\OfflineAttributedRecord;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 
 /**
@@ -13,5 +14,11 @@ class OfflineModeController
     public function showPlanet(): Planet
     {
         return Planet::firstOrFail();
+    }
+
+
+    public function showAttributedRecord(): OfflineAttributedRecord
+    {
+        return OfflineAttributedRecord::firstOrFail();
     }
 }
