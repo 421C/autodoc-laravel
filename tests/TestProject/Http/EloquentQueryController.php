@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Models\AnnotatedPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\AttributedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\CastedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\ClassifiedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\LabeledPlanet;
@@ -5309,5 +5310,108 @@ class EloquentQueryController
     public function soleQueryFinisher(): mixed
     {
         return Planet::query()->where('visited', true)->sole();
+    }
+
+    /**
+     * Model configured through Eloquent attributes
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model configured through Eloquent attributes',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'string',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'display_name' => [
+                                    'type' => 'string',
+                                    'const' => 'Planet',
+                                ],
+                                'phpdoc_visible' => [
+                                    'type' => 'integer',
+                                ],
+                                'kind' => [
+                                    'type' => 'string',
+                                    'const' => 'planet',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'display_name',
+                                'kind',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function attributedModelSerialization(): mixed
+    {
+        // Laravel's own configuration attributes feed the analyzed model: #[Table]
+        // drives the string primary key cast, #[Appends] adds the accessor, and
+        // #[Hidden]/#[Visible] partition serialized attributes. PHPDoc @property
+        // tags are partitioned by those same rules, so `parent::toArray()` keeps
+        // only `phpdoc_visible` and drops `phpdoc_secret`/`phpdoc_omitted`.
+        return AttributedPlanet::firstOrFail();
+    }
+
+
+    /**
+     * Model PHPDoc property excluded from serialization is still readable
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model PHPDoc property excluded from serialization is still readable',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'secret' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'omitted' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'secret',
+                                'omitted',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function attributedModelPhpDocHiddenRead(): mixed
+    {
+        // $hidden/$visible affect serialization, not direct access: PHPDoc
+        // properties kept out of the serialized shape stay readable.
+        $planet = AttributedPlanet::firstOrFail();
+
+        return [
+            'secret' => $planet->phpdoc_secret,
+            'omitted' => $planet->phpdoc_omitted,
+        ];
     }
 }

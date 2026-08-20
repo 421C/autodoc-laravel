@@ -211,6 +211,12 @@ class EloquentModel extends ClassExtension
             $model->getCasts(),
         );
 
+        $primaryKeyName = $model->getKeyName();
+
+        if ($offlineMode && $primaryKeyName !== '' && ! isset($modelCasts[$primaryKeyName])) {
+            $modelCasts[$primaryKeyName] = $model->getKeyType();
+        }
+
         foreach ($columns as $column) {
             /**
              * @var string
@@ -270,7 +276,22 @@ class EloquentModel extends ClassExtension
             }
         }
 
-        $objectType->properties = $phpClass->handlePhpDocPropertyTags($objectType->properties);
+        $modelProperties = $phpClass->handlePhpDocPropertyTags(array_merge(
+            $objectType->properties,
+            $objectType->hiddenProperties,
+        ));
+
+        $objectType->properties = [];
+        $objectType->hiddenProperties = [];
+
+        foreach ($modelProperties as $propertyName => $propertyType) {
+            if ($this->isModelAttributeHidden($model, $propertyName)) {
+                $objectType->hiddenProperties[$propertyName] = $propertyType;
+
+            } else {
+                $objectType->properties[$propertyName] = $propertyType;
+            }
+        }
 
         return $objectType;
     }

@@ -296,3 +296,5 @@ Route::get('/test/closure3/{uuid}/{name}/{version}', (
         ],
     ])] function (string $uuid, string $name, int $version) {}
 ))->whereUuid('uuid')->whereAlphaNumeric('name');
+Route::post('/test/eloquent/attributed-model', [EloquentQueryController::class, 'attributedModelSerialization']);
+Route::post('/test/eloquent/attributed-model-phpdoc-read', [EloquentQueryController::class, 'attributedModelPhpDocHiddenRead']);

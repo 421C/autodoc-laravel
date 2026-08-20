@@ -58,6 +58,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
     protected function defineRoutes($router)
     {
         Route::get('/test/offline/planet', [TestProject\Http\OfflineModeController::class, 'showPlanet']);
+        Route::get('/test/offline/attributed-record', [TestProject\Http\OfflineModeController::class, 'showAttributedRecord']);
     }
 
     protected function setUp(): void
@@ -81,25 +82,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
     #[Test]
     public function modelShapesAreBuiltWithoutDatabaseAccess(): void
     {
-        $config = (new ConfigLoader)->load();
-
-        $workspace = Workspace::getDefault($config);
-
-        $this->assertNotNull($workspace);
-
-        /** @var ?Schema */
-        $schema = json_decode($workspace->getJson() ?: '', true);
-
-        $this->assertNotNull($schema);
-
-        /** @var array<string, mixed> */
-        $operation = $schema['paths']['/test/offline/planet']['get'] ?? [];
-
-        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
-
-        $this->assertSame('object', $responseSchema['type'] ?? null);
-
-        $properties = $this->digArray($responseSchema, ['properties']);
+        $properties = $this->getResponseProperties('/test/offline/planet');
 
         // Attributes Eloquent reports in-memory (casts + dates) survive offline
         // without any database access.
@@ -116,6 +99,51 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
         // with no DB introspection they must be absent.
         $this->assertArrayNotHasKey('name', $properties);
         $this->assertArrayNotHasKey('diameter', $properties);
+    }
+
+
+    #[Test]
+    public function attributeConfiguredPrimaryKeyResolvesWithoutDatabaseAccess(): void
+    {
+        $properties = $this->getResponseProperties('/test/offline/attributed-record');
+
+        // A non-incrementing custom primary key is absent from Eloquent's own
+        // casts, so offline mode must derive it from the key type instead.
+        $this->assertSame('string', $this->digArray($properties, ['uuid'])['type'] ?? null);
+
+        // #[WithoutTimestamps] leaves no date attributes, and there are no
+        // columns offline, so the timestamp attributes must be absent.
+        $this->assertArrayNotHasKey('created_at', $properties);
+        $this->assertArrayNotHasKey('updated_at', $properties);
+    }
+
+
+    /**
+     * Generated 200 response properties of the given GET operation.
+     *
+     * @return array<string, mixed>
+     */
+    private function getResponseProperties(string $uri): array
+    {
+        $config = (new ConfigLoader)->load();
+
+        $workspace = Workspace::getDefault($config);
+
+        $this->assertNotNull($workspace);
+
+        /** @var ?Schema */
+        $schema = json_decode($workspace->getJson() ?: '', true);
+
+        $this->assertNotNull($schema);
+
+        /** @var array<string, mixed> */
+        $operation = $schema['paths'][$uri]['get'] ?? [];
+
+        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+
+        $this->assertSame('object', $responseSchema['type'] ?? null);
+
+        return $this->digArray($responseSchema, ['properties']);
     }
 
     /**
