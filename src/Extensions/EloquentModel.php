@@ -244,6 +244,7 @@ class EloquentModel extends ClassExtension
             }
         }
 
+        /** @phpstan-ignore if.alwaysFalse */
         if ($offlineMode) {
             foreach ($modelCasts as $propertyName => $cast) {
                 if (isset($objectType->properties[$propertyName]) || isset($objectType->hiddenProperties[$propertyName])) {

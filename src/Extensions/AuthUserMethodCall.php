@@ -149,7 +149,7 @@ class AuthUserMethodCall extends MethodCallExtension
     }
 
 
-    private function guardSelectionFromArgument(Node\Arg|Node\VariadicPlaceholder|null $arg, Scope $scope): AuthGuardSelection
+    private function guardSelectionFromArgument(Node\Arg|Node\ArgPlaceholder|Node\VariadicPlaceholder|null $arg, Scope $scope): AuthGuardSelection
     {
         if ($arg === null) {
             return AuthGuardSelection::implicit();
