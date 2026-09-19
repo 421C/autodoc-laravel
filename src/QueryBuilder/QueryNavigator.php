@@ -18,6 +18,7 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
+use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\CursorPaginator;
@@ -27,12 +28,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 
 
 class QueryNavigator
 {
-    use DotNotationParser, RecordsErrorResponses;
+    use DotNotationParser, RecordsErrorResponses, ResolvesModelTypes;
 
     public function __construct(
         private Scope $scope,
@@ -66,6 +68,14 @@ class QueryNavigator
 
     private ?Type $collectionKeyType = null;
 
+    /**
+     * A nullsafe link in the chain short-circuits every following call.
+     */
+    private bool $chainShortCircuitsToNull = false;
+
+    /** @var array<int, Type> */
+    private array $resolvedReceiverTypes = [];
+
 
     public function getCollectionKeyType(): Type
     {
@@ -74,6 +84,18 @@ class QueryNavigator
 
 
     public function getResultType(MethodCall|StaticCall $methodCall, string $methodName): ?Type
+    {
+        $resultType = $this->resolveResultType($methodCall, $methodName);
+
+        if ($resultType && $this->chainShortCircuitsToNull && ! $this->typeIncludesNull($resultType)) {
+            return new UnionType([$resultType, new NullType]);
+        }
+
+        return $resultType;
+    }
+
+
+    private function resolveResultType(MethodCall|StaticCall $methodCall, string $methodName): ?Type
     {
         if (! $this->analyzeChain($methodCall)) {
             return null;
@@ -538,9 +560,21 @@ class QueryNavigator
      */
     private function extractBuilderMethodsAndModel(Node\Expr $expr, array $visitedPositions = []): void
     {
-        if ($expr instanceof MethodCall || $expr instanceof StaticCall) {
-            if ($expr instanceof MethodCall) {
+        if ($expr instanceof MethodCall || $expr instanceof NullsafeMethodCall || $expr instanceof StaticCall) {
+            if ($expr instanceof MethodCall || $expr instanceof NullsafeMethodCall) {
                 $this->extractBuilderMethodsAndModel($expr->var, $visitedPositions);
+
+                if ($expr instanceof NullsafeMethodCall) {
+                    $receiverType = $this->resolveReceiverType($expr->var);
+
+                    if ($receiverType && $this->typeIncludesNull($receiverType)) {
+                        $this->chainShortCircuitsToNull = true;
+                    }
+                }
+
+                if ($this->rootChainInRelation($expr)) {
+                    return;
+                }
 
             } else {
                 if ($expr->class instanceof Node\Expr) {
@@ -595,6 +629,75 @@ class QueryNavigator
                 }
             }
         }
+    }
+
+
+    private function rootChainInRelation(MethodCall|NullsafeMethodCall $expr): bool
+    {
+        if ($this->isRawDatabaseQuery) {
+            return false;
+        }
+
+        $methodName = $this->scope->getRawValueFromNode($expr->name);
+
+        if (! is_string($methodName)) {
+            return false;
+        }
+
+        $modelClassName = $this->modelClassName ?? $this->resolveReceiverModelClassName($expr->var);
+
+        if (! $modelClassName) {
+            return false;
+        }
+
+        $modelPhpClass = $this->scope->getPhpClassInDeeperScope($modelClassName);
+
+        if (! $modelPhpClass->getReflection()->hasMethod($methodName)) {
+            return false;
+        }
+
+        $relatedModelClassName = (new Relation(
+            modelPhpClass: $modelPhpClass,
+            name: $methodName,
+        ))->getRelatedModelClassName();
+
+        if (! $relatedModelClassName) {
+            return false;
+        }
+
+        $this->modelClassName = $relatedModelClassName;
+        $this->builderMethods = [];
+        $this->columnSetVariants = [];
+        $this->relationArguments = [];
+
+        return true;
+    }
+
+
+    /**
+     * @return ?class-string<Model>
+     */
+    private function resolveReceiverModelClassName(Node\Expr $expr): ?string
+    {
+        $receiverType = $this->resolveReceiverType($expr);
+
+        return $receiverType ? $this->resolveModelClassName($receiverType) : null;
+    }
+
+
+    private function resolveReceiverType(Node\Expr $expr): ?Type
+    {
+        if (! ($expr instanceof Node\Expr\Variable
+            || $expr instanceof Node\Expr\PropertyFetch
+            || $expr instanceof Node\Expr\NullsafePropertyFetch
+            || $expr instanceof Node\Expr\ArrayDimFetch)
+        ) {
+            return null;
+        }
+
+        return $this->resolvedReceiverTypes[spl_object_id($expr)] ??= $this->scope->withoutSideEffects(
+            fn () => $this->scope->resolveType($expr)->unwrapType($this->scope->config),
+        );
     }
 
 

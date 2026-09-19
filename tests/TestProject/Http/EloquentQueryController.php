@@ -5414,4 +5414,108 @@ class EloquentQueryController
             'omitted' => $planet->phpdoc_omitted,
         ];
     }
+
+
+    /**
+     * Query chain rooted in a relation method
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Query chain rooted in a relation method',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'planet',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'count' => [
+                                    'type' => 'integer',
+                                    'minimum' => 0,
+                                ],
+                                'exists' => [
+                                    'type' => 'boolean',
+                                ],
+                                'names' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'first' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                    ],
+                                ],
+                                'fromAssignedModel' => [
+                                    'type' => 'integer',
+                                    'minimum' => 0,
+                                ],
+                                'throughNullableRelation' => [
+                                    'type' => 'integer',
+                                ],
+                                'nullsafeOnNullableRelation' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                    'minimum' => 0,
+                                ],
+                            ],
+                            'required' => [
+                                'count',
+                                'exists',
+                                'names',
+                                'first',
+                                'fromAssignedModel',
+                                'throughNullableRelation',
+                                'nullsafeOnNullableRelation',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function relationRootedQuery(Planet $planet): mixed
+    {
+        $station = SpaceStation::findOrFail(1);
+        $targetPlanet = Rocket::firstOrFail()->targetPlanet;
+
+        return [
+            'count' => $planet->rockets()->count(),
+            'exists' => $planet->rockets()->where('name', 'Falcon')->exists(),
+            'names' => $planet->rockets()->pluck('name'),
+            'first' => $planet->rockets()->first(),
+            'fromAssignedModel' => $station->rockets()->count(),
+            'throughNullableRelation' => $targetPlanet ? $targetPlanet->rockets()->count() : 0,
+            'nullsafeOnNullableRelation' => $targetPlanet?->rockets()->count(),
+        ];
+    }
 }
