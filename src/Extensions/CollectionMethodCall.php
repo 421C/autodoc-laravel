@@ -18,6 +18,7 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use PhpParser\Node\Expr\Variable;
 
 /**
@@ -39,10 +40,7 @@ class CollectionMethodCall extends MethodCallExtension
 
         $collectionType = $call->getVarType();
 
-        if (! ($collectionType instanceof ArrayType)
-            || ! $collectionType->className
-            || ! is_a($collectionType->className, Collection::class, true)
-        ) {
+        if (! $this->isLaravelCollection($collectionType)) {
             return;
         }
 
@@ -80,16 +78,12 @@ class CollectionMethodCall extends MethodCallExtension
 
         $varType = $call->getVarType();
 
-        $isLaravelCollection = fn (Type $type): bool => $type instanceof ArrayType
-            && $type->className
-            && is_a($type->className, Collection::class, true);
-
-        if (! $isLaravelCollection($varType)) {
+        if (! $this->isLaravelCollection($varType)) {
             $foundCollection = false;
 
             if ($varType instanceof UnionType) {
                 foreach ($varType->types as $typeInUnion) {
-                    if ($isLaravelCollection($typeInUnion)) {
+                    if ($this->isLaravelCollection($typeInUnion)) {
                         $varType = $typeInUnion;
                         $foundCollection = true;
                         break;
@@ -136,6 +130,20 @@ class CollectionMethodCall extends MethodCallExtension
             'where', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull', 'whereBetween', 'whereNotBetween',
             'sortKeys', 'sortKeysDesc', 'shuffle', 'nth', 'tap' => $varType,
         };
+    }
+
+
+    /**
+     * `LazyCollection` shares the `Enumerable` surface but not the `Collection`
+     * class, so a `cursor()`/`lazy()` result is handled here too.
+     *
+     * @phpstan-assert-if-true ArrayType $type
+     */
+    private function isLaravelCollection(Type $type): bool
+    {
+        return $type instanceof ArrayType
+            && $type->className !== null
+            && is_a($type->className, Enumerable::class, true);
     }
 
 
