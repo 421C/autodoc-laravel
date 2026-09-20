@@ -10,10 +10,12 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
-use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ParsesSqlAliases;
 
 final class QueryRowShape
 {
+    use ParsesSqlAliases;
+
     public function __construct(
         private Scope $scope,
         private QueryChain $chain,
@@ -23,13 +25,11 @@ final class QueryRowShape
 
     private readonly EagerLoad $eagerLoad;
 
+    private ?FromClause $fromClause = null;
+
     private ?ObjectType $baseRowType = null;
 
     private bool $sourceIsResolved = false;
-
-    private ?string $sourceTableName = null;
-
-    private ?string $sourceTableAlias = null;
 
     /** @var ?array<string, Type> */
     private ?array $selectedColumns = null;
@@ -225,78 +225,17 @@ final class QueryRowShape
 
         $this->sourceIsResolved = true;
 
-        $modelClassName = $this->chain->modelClassName;
-
-        if ($modelClassName) {
-            $this->sourceTableName = ModelResolver::resolve($modelClassName)?->getTable();
-
-            return $this->baseRowType = clone $this->scope->getPhpClassInDeeperScope($modelClassName)->resolveType();
-        }
-
-        return $this->baseRowType = $this->resolveTableRowType();
+        return $this->baseRowType = $this->fromClause()->resolveRowType();
     }
 
 
-    private function resolveTableRowType(): ?ObjectType
+    private function fromClause(): FromClause
     {
-        $connectionName = null;
-        $tableName = null;
-
-        foreach ($this->chain->methods as $method) {
-            if (self::widensOrHidesTheRow($method->name)) {
-                return null;
-            }
-
-            if ($method->name === 'connection') {
-                $connectionName = $this->getStringArgument($method->args);
-            }
-
-            if ($method->name === 'table' || $method->name === 'from') {
-                $tableName = $this->getStringArgument($method->args);
-            }
-        }
-
-        if ($tableName === null) {
-            return null;
-        }
-
-        [$tableName, $alias] = $this->splitAlias($tableName);
-
-        $this->sourceTableName = $tableName;
-        $this->sourceTableAlias = $alias;
-
-        return TableSchema::resolveRowType($tableName, $connectionName);
+        return $this->fromClause ??= new FromClause(
+            scope: $this->scope,
+            chain: $this->chain,
+        );
     }
-
-
-    private static function widensOrHidesTheRow(string $methodName): bool
-    {
-        $methodName = strtolower($methodName);
-
-        return str_contains($methodName, 'join')
-            || str_starts_with($methodName, 'union')
-            || $methodName === 'fromsub'
-            || $methodName === 'fromraw';
-    }
-
-
-    private function getStringArgument(ArgumentList $args): ?string
-    {
-        if (! $args->has(0)) {
-            return null;
-        }
-
-        $argType = $args->get(0)->unwrapType($this->scope->config);
-
-        if (! ($argType instanceof StringType)) {
-            return null;
-        }
-
-        $values = $argType->getPossibleValues() ?? [];
-
-        return count($values) === 1 ? $values[0] : null;
-    }
-
 
 
     private function resolvePluckedColumnType(ArgumentList $arguments): ?Type
@@ -437,30 +376,13 @@ final class QueryRowShape
 
     private function getColumnType(?string $table, string $column): Type
     {
-        if ($table !== null && $table !== $this->sourceTableName && $table !== $this->sourceTableAlias) {
-            return new UnknownType;
-        }
+        $columnType = $this->fromClause()->columnType($table, $column);
 
-        $columnType = $this->getBaseRowType()?->properties[$column]
-            ?? $this->selectedColumns[$column]
-            ?? null;
+        if (! $columnType && $table === null) {
+            $columnType = $this->selectedColumns[$column] ?? null;
+        }
 
         return $columnType ? clone $columnType : new UnknownType;
-    }
-
-
-    /**
-     * @return array{string, ?string}
-     */
-    private function splitAlias(string $columnExpression): array
-    {
-        $parts = preg_split('/\s+as\s+/i', $columnExpression, 2);
-
-        if ($parts && count($parts) === 2) {
-            return [trim($parts[0]), trim($parts[1])];
-        }
-
-        return [trim($columnExpression), null];
     }
 
 
