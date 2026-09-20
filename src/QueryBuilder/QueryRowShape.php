@@ -49,7 +49,7 @@ final class QueryRowShape
             return null;
         }
 
-        $this->applyModelDefaults();
+        $this->applyModelDefaults($baseRowType);
 
         foreach ($this->chain->methods as $method) {
             if ($method->name === 'select') {
@@ -70,6 +70,18 @@ final class QueryRowShape
 
             if ($method->name === 'with') {
                 $this->eagerLoad->addArguments($method->args);
+            }
+
+            if ($method->name === 'withOnly') {
+                $this->eagerLoad->replaceArguments($method->args);
+            }
+
+            if ($method->name === 'withWhereHas') {
+                $this->eagerLoad->addRelationArgument($method->args);
+            }
+
+            if ($method->name === 'without') {
+                $this->eagerLoad->removeArguments($method->args);
             }
 
             $aggregateColumns = $this->getRelationAggregateColumns($method);
@@ -195,12 +207,16 @@ final class QueryRowShape
      * they apply before anything the chain does. A later `select()` replaces
      * the columns and drops the counts, while the relations survive it.
      */
-    private function applyModelDefaults(): void
+    private function applyModelDefaults(ObjectType $baseRowType): void
     {
         $modelClassName = $this->chain->modelClassName;
 
         if ($modelClassName === null || $this->chain->isRawDatabaseQuery) {
             return;
+        }
+
+        foreach (array_keys(EagerLoad::defaultRelationTypes($this->scope, $modelClassName)) as $defaultRelationName) {
+            unset($baseRowType->properties[$defaultRelationName]);
         }
 
         $this->eagerLoad->addRelationNames(ModelResolver::defaultEagerLoads($modelClassName));

@@ -8110,8 +8110,8 @@ class EloquentQueryController
                                             'visited',
                                             'created_at',
                                             'updated_at',
-                                            'rockets',
                                             'rockets_count',
+                                            'rockets',
                                         ],
                                     ],
                                 ],
@@ -8264,6 +8264,354 @@ class EloquentQueryController
             'everyColumn' => EagerPlanet::query()->get(),
             'columnSubset' => EagerPlanet::query()->select('id')->get(),
             'selfReferencing' => LoopingPlanet::query()->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'constrainedExistence' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'space_stations' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'anyOf' => [
+                                                                [
+                                                                    'type' => 'string',
+                                                                    'const' => '',
+                                                                ],
+                                                                [
+                                                                    'type' => 'integer',
+                                                                ],
+                                                            ],
+                                                        ],
+                                                        'name' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'space_stations',
+                                        ],
+                                    ],
+                                ],
+                                'explicitCountOperator' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'beaconable_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'beaconable_type' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'created_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'label' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'planet_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'updated_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'label',
+                                                        'planet_id',
+                                                        'beaconable_type',
+                                                        'beaconable_id',
+                                                        'created_at',
+                                                        'updated_at',
+                                                    ],
+                                                ],
+                                            ],
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'beacons',
+                                        ],
+                                    ],
+                                ],
+                                'removedDefault' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rockets_count',
+                                        ],
+                                    ],
+                                ],
+                                'replacedDefault' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'space_stations' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'description' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'created_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                        'id' => [
+                                                            'anyOf' => [
+                                                                [
+                                                                    'type' => 'string',
+                                                                    'const' => '',
+                                                                ],
+                                                                [
+                                                                    'type' => 'integer',
+                                                                ],
+                                                            ],
+                                                        ],
+                                                        'name' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                        ],
+                                                        'size' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'updated_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                        'description',
+                                                        'size',
+                                                        'created_at',
+                                                        'updated_at',
+                                                    ],
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rockets_count',
+                                            'space_stations',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'replacedDefault',
+                                'removedDefault',
+                                'constrainedExistence',
+                                'explicitCountOperator',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function eagerLoadSetChanges(): mixed
+    {
+        return [
+            'replacedDefault' => EagerPlanet::query()->withOnly('spaceStations')->get(),
+            'removedDefault' => EagerPlanet::query()->without('rockets')->get(),
+            'constrainedExistence' => Planet::query()
+                ->withWhereHas('spaceStations:id,name', fn ($query) => $query->where('size', 'big'))
+                ->get(),
+            'explicitCountOperator' => Planet::query()->withWhereHas('beacons', null, '>=', 2)->get(),
         ];
     }
 

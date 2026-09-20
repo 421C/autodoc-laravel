@@ -177,7 +177,7 @@ class EloquentModelMethodCall extends MethodCallExtension
     private function getOnlyReturnType(MethodCallContext $call, ObjectType $modelType): ?ArrayType
     {
         $className = $modelType->className;
-        $keyNames = $this->resolveKeyListNames($call, allowVariadic: true);
+        $keyNames = $this->resolveKeyListNames($call->argTypes, $call->scope->config, allowVariadic: true);
 
         if ($keyNames === [] || $className === null || ! $this->modelAttributesAreResolved($call, $className)) {
             return null;
@@ -216,7 +216,7 @@ class EloquentModelMethodCall extends MethodCallExtension
             return null;
         }
 
-        $excludedKeyNames = $this->resolveKeyListNames($call, allowVariadic: true);
+        $excludedKeyNames = $this->resolveKeyListNames($call->argTypes, $call->scope->config, allowVariadic: true);
 
         if ($excludedKeyNames === []) {
             return null;

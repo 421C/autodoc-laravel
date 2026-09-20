@@ -12,6 +12,7 @@ use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ParsesKeyListArguments;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class EagerLoad
 {
-    use DotNotationParser;
+    use DotNotationParser, ParsesKeyListArguments;
 
     public function __construct(
         private Scope $scope,
@@ -28,6 +29,58 @@ final class EagerLoad
 
     /** @var array<string, Type> */
     private array $arguments = [];
+
+
+    public function addRelationArgument(ArgumentList $arguments): void
+    {
+        $index = $arguments->indexForParameter('relation', 0);
+
+        if ($index === null) {
+            return;
+        }
+
+        $relationArgument = $arguments->get($index);
+
+        $this->normalizeArgumentArray(
+            $this->scope->withPartialArraysResolvingAsShapes(
+                fn () => new ArrayType(shape: [$relationArgument->unwrapType($this->scope->config)]),
+            ),
+            $this->arguments,
+        );
+    }
+
+
+    public function replaceArguments(ArgumentList $arguments): void
+    {
+        $this->arguments = [];
+
+        $this->addArguments($arguments);
+    }
+
+
+    public function removeArguments(ArgumentList $arguments): void
+    {
+        $removedNames = $this->resolveKeyListNames($arguments, $this->scope->config, allowVariadic: true);
+
+        foreach (array_keys($this->arguments) as $relationArgument) {
+            [$relationName] = self::splitRelationColumns($relationArgument);
+
+            if (in_array($relationName, $removedNames, strict: true)) {
+                unset($this->arguments[$relationArgument]);
+            }
+        }
+    }
+
+
+    /**
+     * @return array{string, list<string>}
+     */
+    public static function splitRelationColumns(string $relationArgument): array
+    {
+        $parts = explode(':', $relationArgument, 2);
+
+        return [$parts[0], isset($parts[1]) ? explode(',', $parts[1]) : []];
+    }
 
 
     public function addArguments(ArgumentList $arguments): void
@@ -192,12 +245,12 @@ final class EagerLoad
      */
     private function makeRelationObject(string $key, Type $relationArgumentType, PhpClass $modelPhpClass): Relation
     {
-        $parts = explode(':', $key, 2);
+        [$relationName, $columns] = self::splitRelationColumns($key);
 
         $relation = new Relation(
             modelPhpClass: $modelPhpClass,
-            name: $parts[0],
-            columns: isset($parts[1]) ? explode(',', $parts[1]) : [],
+            name: $relationName,
+            columns: $columns,
             relations: [],
         );
 
