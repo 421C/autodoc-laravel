@@ -7993,6 +7993,87 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'ansiQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'backtickQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'row count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                            'row count',
+                                        ],
+                                    ],
+                                ],
+                                'bracketQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'row count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                            'row count',
+                                        ],
+                                    ],
+                                ],
+                                'bracketQuotedSeparators' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'kept as is' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'kept as is',
+                                        ],
+                                    ],
+                                ],
                                 'constructedExpression' => [
                                     'type' => 'array',
                                     'items' => [
@@ -8122,6 +8203,10 @@ class EloquentQueryController
                                 'plainColumnsInRawSelect',
                                 'unaliasedExpressionIsOmitted',
                                 'subQueryAlias',
+                                'bracketQuotedIdentifiers',
+                                'bracketQuotedSeparators',
+                                'backtickQuotedIdentifiers',
+                                'ansiQuotedIdentifiers',
                                 'nothingNameableLeavesRowUnknown',
                                 'unreadableExpressionLeavesRowUnknown',
                             ],
@@ -8152,6 +8237,10 @@ class EloquentQueryController
                 ->select('id')
                 ->selectSub(Rocket::query()->selectRaw('count(*)'), 'rocket_count')
                 ->get(),
+            'bracketQuotedIdentifiers' => Planet::query()->selectRaw('[name] as [label], [planets].[diameter], count(*) as [row count]')->get(),
+            'bracketQuotedSeparators' => Planet::query()->selectRaw('[dropped, renamed] as [kept as is]')->get(),
+            'backtickQuotedIdentifiers' => Planet::query()->selectRaw('`name` as `label`, `planets`.`diameter`, count(*) as `row count`')->get(),
+            'ansiQuotedIdentifiers' => Planet::query()->selectRaw('"name" as "label", "planets"."diameter"')->get(),
             'nothingNameableLeavesRowUnknown' => Planet::query()->selectRaw('count(*)')->get(),
             'unreadableExpressionLeavesRowUnknown' => Planet::query()->select($request->string('columns')->toString())->get(),
         ];

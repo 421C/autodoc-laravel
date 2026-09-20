@@ -46,21 +46,68 @@ trait ParsesSqlExpressions
      */
     protected static function splitTopLevelCommas(string $expressionList): ?array
     {
-        $commas = self::findTopLevelMatches($expressionList, ',');
+        return self::splitOnTopLevelMatches($expressionList, ',');
+    }
 
-        if ($commas === null) {
+
+    /** @var array<string, string> */
+    private const IDENTIFIER_DELIMITERS = [
+        '`' => '`',
+        '"' => '"',
+        '[' => ']',
+    ];
+
+
+    protected static function unwrapIdentifier(string $identifier): string
+    {
+        $identifier = trim($identifier);
+
+        if (strlen($identifier) < 2) {
+            return $identifier;
+        }
+
+        $closingDelimiter = self::IDENTIFIER_DELIMITERS[$identifier[0]] ?? null;
+
+        if ($closingDelimiter === null || ! str_ends_with($identifier, $closingDelimiter)) {
+            return $identifier;
+        }
+
+        return str_replace($closingDelimiter . $closingDelimiter, $closingDelimiter, substr($identifier, 1, -1));
+    }
+
+
+    protected static function unwrapIdentifierPath(string $expression): string
+    {
+        $segments = self::splitOnTopLevelMatches($expression, '\.');
+
+        if ($segments === null) {
+            return $expression;
+        }
+
+        return implode('.', array_map(self::unwrapIdentifier(...), $segments));
+    }
+
+
+    /**
+     * @return ?list<string> null when quotes, brackets or parentheses do not balance
+     */
+    private static function splitOnTopLevelMatches(string $expression, string $pattern): ?array
+    {
+        $separators = self::findTopLevelMatches($expression, $pattern);
+
+        if ($separators === null) {
             return null;
         }
 
         $expressions = [];
         $start = 0;
 
-        foreach ($commas as [$offset, $length]) {
-            $expressions[] = substr($expressionList, $start, $offset - $start);
+        foreach ($separators as [$offset, $length]) {
+            $expressions[] = substr($expression, $start, $offset - $start);
             $start = $offset + $length;
         }
 
-        $expressions[] = substr($expressionList, $start);
+        $expressions[] = substr($expression, $start);
 
         return $expressions;
     }
@@ -68,7 +115,7 @@ trait ParsesSqlExpressions
 
     /**
      * @return ?list<array{int, int}> offset and length of each match, null when
-     *                                quotes or parentheses do not balance
+     *                                quotes, brackets or parentheses do not balance
      */
     private static function findTopLevelMatches(string $sql, string $pattern): ?array
     {
@@ -88,6 +135,21 @@ trait ParsesSqlExpressions
         for ($offset = 0; $offset < $length; $offset++) {
             $character = $sql[$offset];
 
+            if ($quote === ']') {
+                if ($character !== ']') {
+                    continue;
+                }
+
+                if (($sql[$offset + 1] ?? '') === ']') {
+                    $offset++;
+
+                } else {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
             if ($quote !== null) {
                 if ($character === '\\') {
                     $offset++;
@@ -101,6 +163,12 @@ trait ParsesSqlExpressions
 
             if ($character === "'" || $character === '"' || $character === '`') {
                 $quote = $character;
+
+                continue;
+            }
+
+            if ($character === '[') {
+                $quote = ']';
 
                 continue;
             }

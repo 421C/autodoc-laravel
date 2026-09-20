@@ -41,13 +41,16 @@ final class RawSelectExpression
                 continue;
             }
 
+            $expression = self::unwrapIdentifierPath($expression);
+            $alias = $alias === null ? null : self::unwrapIdentifier($alias);
+
             [$functionName, $functionArgument] = self::splitFunctionCall($expression);
 
             $parsed[] = new self(
                 expression: $expression,
                 alias: $alias === '' ? null : $alias,
                 functionName: $functionName,
-                functionArgument: $functionArgument,
+                functionArgument: $functionArgument === null ? null : self::unwrapIdentifierPath($functionArgument),
             );
         }
 
