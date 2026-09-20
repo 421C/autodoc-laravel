@@ -83,6 +83,8 @@ Route::post('/test/eloquent/chained-methods', [EloquentQueryController::class, '
 Route::post('/test/eloquent/accessors', [EloquentQueryController::class, 'modelWithAccessorsAndMutatedProperties']);
 Route::post('/test/eloquent/first-query', [EloquentQueryController::class, 'firstAndFirstOrFailWithQueryBuilder']);
 Route::post('/test/eloquent/first-static', [EloquentQueryController::class, 'firstAndFirstOrFailStatic']);
+Route::post('/test/eloquent/callback-fallback-finishers', [EloquentQueryController::class, 'finishersWithCallbackFallback']);
+Route::post('/test/eloquent/find-many-lazy-finishers', [EloquentQueryController::class, 'findManyAndLazyFinishers']);
 Route::post('/test/eloquent/collection-literal', [EloquentQueryController::class, 'collectionMethodsOnLiteralArray']);
 Route::post('/test/eloquent/count-pluck', [EloquentQueryController::class, 'countAndPluck']);
 Route::post('/test/eloquent/select-first', [EloquentQueryController::class, 'selectWithFirst']);

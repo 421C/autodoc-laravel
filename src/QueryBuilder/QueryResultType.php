@@ -14,17 +14,20 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Laravel\Helpers\ResolvesCallbackReturnType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator as SimplePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 
 final class QueryResultType
 {
+    use ResolvesCallbackReturnType;
     use ResolvesModelTypes;
 
     public function __construct(
@@ -61,6 +64,12 @@ final class QueryResultType
             );
         }
 
+        $baseFinisher = BuilderMethodClassifier::finisherBehindCallbackFallback($methodName);
+
+        if ($baseFinisher) {
+            return $this->getCallbackFallbackFinisherType($methodCall, $baseFinisher);
+        }
+
         $rowType = $this->scope->withoutScalarTypeValueMerging(fn () => $this->rowShape->resolveRowType());
 
         if (! $rowType) {
@@ -75,6 +84,10 @@ final class QueryResultType
             );
         }
 
+        if (BuilderMethodClassifier::streamsRowsLazily($methodName)) {
+            return new ArrayType(itemType: $rowType, className: LazyCollection::class);
+        }
+
         if (in_array($methodName, ['create', 'firstOrNew', 'firstOrCreate', 'updateOrCreate'])) {
             return $rowType;
         }
@@ -84,6 +97,13 @@ final class QueryResultType
         }
 
         $methodArgs = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
+
+        if ($methodName === 'findMany') {
+            return new ArrayType(
+                itemType: $this->applyColumnsArgument($rowType, $methodArgs, $methodName),
+                className: Collection::class,
+            );
+        }
 
         if ($methodName === 'first') {
             return new UnionType([$this->applyColumnsArgument($rowType, $methodArgs, $methodName), new NullType]);
@@ -115,10 +135,84 @@ final class QueryResultType
     }
 
 
+    /**
+     * Laravel returns the base finisher's result unless it found nothing, in
+     * which case the callback's value takes the place of its `null`.
+     */
+    private function getCallbackFallbackFinisherType(MethodCall|StaticCall $methodCall, string $baseFinisher): ?Type
+    {
+        $baseFinisherType = $this->resolveFinisherType($methodCall, $baseFinisher);
+
+        if (! $baseFinisherType) {
+            return null;
+        }
+
+        $callbackReturnType = $this->resolveCallbackArgumentReturnType($methodCall);
+
+        if (! $callbackReturnType) {
+            return $baseFinisherType;
+        }
+
+        return $this->replaceNullVariant($baseFinisherType, $callbackReturnType);
+    }
+
+
+    /**
+     * Both `firstOr()` and `findOr()` accept the callback either in its own
+     * parameter or in the preceding `$columns` one.
+     */
+    private function resolveCallbackArgumentReturnType(MethodCall|StaticCall $methodCall): ?Type
+    {
+        $methodArgs = ArgumentList::fromArgNodes($methodCall->args, $this->scope);
+
+        for ($index = 0; $index < count($methodArgs); $index++) {
+            $callbackReturnType = $this->resolveCallbackReturnType(
+                argTypes: $methodArgs,
+                callbackIndex: $index,
+                scope: $this->scope,
+                callerNode: $methodCall,
+            );
+
+            if ($callbackReturnType) {
+                return $callbackReturnType;
+            }
+        }
+
+        return null;
+    }
+
+
+    private function replaceNullVariant(Type $baseType, Type $replacementType): Type
+    {
+        if ($baseType instanceof NullType) {
+            return $replacementType;
+        }
+
+        if (! ($baseType instanceof UnionType)) {
+            return $baseType;
+        }
+
+        $variantsWithoutNull = array_values(array_filter(
+            $baseType->types,
+            fn (Type $variant) => ! ($variant instanceof NullType),
+        ));
+
+        if (count($variantsWithoutNull) === count($baseType->types)) {
+            return $baseType;
+        }
+
+        return (new UnionType([...$variantsWithoutNull, $replacementType]))->unwrapType($this->scope->config);
+    }
+
+
     private function getUnshapedRowResultType(string $methodName): ?Type
     {
         if ($methodName === 'get') {
             return new ArrayType(itemType: new ObjectType, className: Collection::class);
+        }
+
+        if (BuilderMethodClassifier::streamsRowsLazily($methodName)) {
+            return new ArrayType(itemType: new ObjectType, className: LazyCollection::class);
         }
 
         if ($methodName === 'pluck') {

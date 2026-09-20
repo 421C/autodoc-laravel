@@ -20,7 +20,14 @@ class BuilderMethodClassifier
             'firstorcreate',
             'updateorcreate',
             'sole',
+            'firstor',
+            'findor',
+            'findmany',
             'pluck',
+            'cursor',
+            'lazy',
+            'lazybyid',
+            'lazybyiddesc',
             'paginate',
             'simplepaginate',
             'cursorpaginate',
@@ -103,6 +110,28 @@ class BuilderMethodClassifier
     }
 
 
+    public static function finisherBehindCallbackFallback(string $methodName): ?string
+    {
+        return match (strtolower($methodName)) {
+            'firstor' => 'first',
+            'findor' => 'find',
+            default => null,
+        };
+    }
+
+
+    public static function streamsRowsLazily(string $methodName): bool
+    {
+        return match (strtolower($methodName)) {
+            'cursor',
+            'lazy',
+            'lazybyid',
+            'lazybyiddesc' => true,
+            default => false,
+        };
+    }
+
+
     public static function terminatesBuilderChain(string $methodName): bool
     {
         if (self::supportsResultInference($methodName)) {
@@ -111,11 +140,6 @@ class BuilderMethodClassifier
 
         return match (strtolower($methodName)) {
             'all',
-            'findor',
-            'cursor',
-            'lazy',
-            'lazybyid',
-            'lazybyiddesc',
             'chunk',
             'chunkmap',
             'chunkbyid',
