@@ -19,18 +19,14 @@ use AutoDoc\DataTypes\UnresolvedClassType;
 use AutoDoc\Exceptions\AutoDocException;
 use AutoDoc\Extensions\ClassExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
+use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\QueryBuilder\Relation;
+use AutoDoc\Laravel\QueryBuilder\TableSchema;
+use Exception;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
-use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use ReflectionMethod;
 use ReflectionNamedType;
 use Throwable;
@@ -51,7 +47,7 @@ class EloquentModel extends ClassExtension
         /** @var PhpClass<Model> $phpClass */
 
         if (isset(EloquentModel::$cache[$phpClass->className])) {
-            return EloquentModel::$cache[$phpClass->className];
+            return $this->copyModelType(EloquentModel::$cache[$phpClass->className]);
         }
 
         $modelType = $this->getModelObjectType($phpClass);
@@ -60,7 +56,18 @@ class EloquentModel extends ClassExtension
 
         EloquentModel::$cache[$phpClass->className] = $modelType;
 
-        return clone $modelType;
+        return $this->copyModelType($modelType);
+    }
+
+
+    private function copyModelType(ObjectType $modelType): ObjectType
+    {
+        $copy = clone $modelType;
+
+        $copy->properties = array_map(fn (Type $type) => clone $type, $copy->properties);
+        $copy->hiddenProperties = array_map(fn (Type $type) => clone $type, $copy->hiddenProperties);
+
+        return $copy;
     }
 
 
@@ -83,8 +90,6 @@ class EloquentModel extends ClassExtension
             ?? $this->getRelationType($phpClass, $propertyName);
 
         if (! $propertyType) {
-            // Resolve accessor-only attributes; otherwise decline (null) so core
-            // resolution can fall through to setAttribute()'s mutated properties.
             $accessorType = $this->getAccessorType($phpClass, $propertyName, new UnknownType);
 
             return $accessorType ? clone $accessorType : null;
@@ -160,11 +165,6 @@ class EloquentModel extends ClassExtension
     }
 
 
-    /**
-     * Visible attributes shape (columns and appends) for serialization
-     * callers like `parent::toArray()` resolution. Skips custom `toArray()`
-     * analysis, which may itself be the caller.
-     */
     public function getModelAttributesArrayType(Scope $scope, string $modelClassName): ?ArrayType
     {
         if (! is_subclass_of($modelClassName, Model::class)) {
@@ -189,7 +189,7 @@ class EloquentModel extends ClassExtension
         $offlineMode = config('autodoc.laravel.offline_mode') ?? false;
 
         try {
-            $model = app()->make($phpClass->className);
+            $model = ModelResolver::resolve($phpClass->className) ?? throw new Exception('Model could not be instantiated');
 
             $columns = $offlineMode
                 ? []
@@ -227,7 +227,7 @@ class EloquentModel extends ClassExtension
                 $propertyType = $this->getTypeFromCast($modelCasts[$propertyName], $phpClass, $column['type_name']);
 
             } else {
-                $propertyType = $this->getTypeFromColumnTypeName($column['type_name']);
+                $propertyType = TableSchema::typeFromColumnTypeName($column['type_name']);
             }
 
             if ($column['nullable']) {
@@ -263,16 +263,14 @@ class EloquentModel extends ClassExtension
         }
 
         foreach ($model->getAppends() as $appendedAttributeName) {
-            if (is_string($appendedAttributeName)) {
-                $attributeType = $objectType->properties[$appendedAttributeName] ?? $objectType->hiddenProperties[$appendedAttributeName] ?? new UnknownType;
-                $attributeType = $this->getModelAttributeType($phpClass, $appendedAttributeName, $attributeType);
+            $attributeType = $objectType->properties[$appendedAttributeName] ?? $objectType->hiddenProperties[$appendedAttributeName] ?? new UnknownType;
+            $attributeType = $this->getModelAttributeType($phpClass, $appendedAttributeName, $attributeType);
 
-                if ($this->isModelAttributeHidden($model, $appendedAttributeName)) {
-                    $objectType->hiddenProperties[$appendedAttributeName] = $attributeType;
+            if ($this->isModelAttributeHidden($model, $appendedAttributeName)) {
+                $objectType->hiddenProperties[$appendedAttributeName] = $attributeType;
 
-                } else {
-                    $objectType->properties[$appendedAttributeName] = $attributeType->setRequired(true);
-                }
+            } else {
+                $objectType->properties[$appendedAttributeName] = $attributeType->setRequired(true);
             }
         }
 
@@ -337,7 +335,7 @@ class EloquentModel extends ClassExtension
                 $propertyType = new UnresolvedClassType(className: $cast, scope: $phpClass->scope);
 
             } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes', true)) {
-                $propertyType = $this->getTypeFromColumnTypeName($typeName);
+                $propertyType = TableSchema::typeFromColumnTypeName($typeName);
 
             } else if (is_a($cast, 'Illuminate\Contracts\Database\Eloquent\CastsAttributes', true)) {
                 $propertyType = $phpClass->scope->getPhpClassInDeeperScope($cast)->getMethod('get')->getReturnType();
@@ -348,75 +346,6 @@ class EloquentModel extends ClassExtension
     }
 
 
-    private function getTypeFromColumnTypeName(string $typeName): Type
-    {
-        $typeName = strtolower($typeName);
-        $typeName = preg_replace('/\([^)]*\)/', '', $typeName) ?? $typeName;
-        $typeName = trim(preg_replace('/\s+/', ' ', $typeName) ?? $typeName);
-
-        return match ($typeName) {
-            'bit',
-            'bigint',
-            'bigserial',
-            'int',
-            'int2',
-            'int4',
-            'int8',
-            'integer',
-            'mediumint',
-            'serial',
-            'smallint',
-            'smallserial',
-            'tinyint',
-            'year' => new IntegerType,
-
-            'decimal',
-            'double',
-            'double precision',
-            'float',
-            'float4',
-            'float8',
-            'money',
-            'numeric',
-            'real' => new FloatType,
-
-            'binary',
-            'blob',
-            'bpchar',
-            'char',
-            'character',
-            'character varying',
-            'cidr',
-            'citext',
-            'inet',
-            'json',
-            'jsonb',
-            'macaddr',
-            'macaddr8',
-            'nchar',
-            'nvarchar',
-            'string',
-            'text',
-            'uniqueidentifier',
-            'uuid',
-            'varbinary',
-            'varchar',
-            'xml' => new StringType,
-
-            'datetime',
-            'timestamp',
-            'timestamp without time zone',
-            'timestamp with time zone',
-            'timestamptz' => new StringType(format: 'date-time'),
-            'date' => new StringType(format: 'date'),
-            'time',
-            'time without time zone',
-            'time with time zone',
-            'timetz' => new StringType(format: 'time'),
-            'bool', 'boolean' => new BoolType,
-            default => new UnknownType,
-        };
-    }
 
 
     /**
@@ -424,53 +353,24 @@ class EloquentModel extends ClassExtension
      */
     private function getRelationType(PhpClass $phpClass, string $relationName): ?Type
     {
-        if ($phpClass->getReflection()->hasMethod($relationName)) {
-            $phpDocReturnType = $phpClass->getMethod($relationName)->getTypeFromPhpDocReturnTag();
-
-            if ($phpDocReturnType && $phpDocReturnType->typeNode instanceof GenericTypeNode) {
-                $returnTypeClassName = $phpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);
-
-                if (isset($phpDocReturnType->typeNode->genericTypes[0])
-                    && $phpDocReturnType->typeNode->genericTypes[0] instanceof IdentifierTypeNode
-                ) {
-                    $firstGenericTypeName = $phpDocReturnType->typeNode->genericTypes[0]->name;
-
-                    if ($returnTypeClassName === HasOne::class || $returnTypeClassName === BelongsTo::class || $returnTypeClassName === HasOneThrough::class) {
-                        $associatedModelClassName = $phpClass->scope->getResolvedClassName($firstGenericTypeName);
-
-                        if ($associatedModelClassName) {
-                            return new UnionType([
-                                $phpClass->scope->getPhpClassInDeeperScope($associatedModelClassName)->resolveType(),
-                                new NullType,
-                            ]);
-                        }
-
-                    } else if ($returnTypeClassName === HasMany::class || $returnTypeClassName === BelongsToMany::class || $returnTypeClassName === HasManyThrough::class) {
-                        $associatedModelClassName = $phpClass->scope->getResolvedClassName($firstGenericTypeName);
-
-                        if ($associatedModelClassName) {
-                            return new ArrayType(
-                                itemType: $phpClass->scope->getPhpClassInDeeperScope($associatedModelClassName)->resolveType(),
-                                className: Collection::class,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
+        return new Relation(modelPhpClass: $phpClass, name: $relationName)->resolveType();
     }
 
 
     public static function clearCache(): void
     {
         EloquentModel::$cache = [];
+
+        Relation::clearCache();
+
+        ModelResolver::clearCache();
+
+        TableSchema::clearCache();
     }
 
 
     /**
-     * @var array<class-string<Model>, Type>
+     * @var array<class-string<Model>, ObjectType>
      */
     private static array $cache = [];
 }

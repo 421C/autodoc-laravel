@@ -12,8 +12,6 @@ use AutoDoc\DataTypes\UnresolvedClassType;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
-use Throwable;
 
 final class AuthUserTypeResolver
 {
@@ -122,14 +120,9 @@ final class AuthUserTypeResolver
 
     private function userModelKeyType(string $modelClassName): Type
     {
-        try {
-            $model = app()->make($modelClassName);
+        $model = ModelResolver::resolve($modelClassName);
 
-        } catch (Throwable) {
-            $model = null;
-        }
-
-        if ($model instanceof Model) {
+        if ($model) {
             return $model->getKeyType() === 'int' ? new IntegerType : new StringType;
         }
 

@@ -12,6 +12,8 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
+use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Eloquent\Model;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\NullsafePropertyFetch;
@@ -23,7 +25,7 @@ use ReflectionMethod;
  */
 class EloquentModelMethodCall extends MethodCallExtension
 {
-    use InspectsModelAttributes;
+    use InspectsModelAttributes, ResolvesModelTypes;
 
     public function handleSideEffect(MethodCallContext $call): void
     {
@@ -214,7 +216,7 @@ class EloquentModelMethodCall extends MethodCallExtension
             return null;
         }
 
-        $model = $modelType->className ? $this->makeModel($modelType->className) : null;
+        $model = $modelType->className ? ModelResolver::resolve($modelType->className) : null;
         $valueType = clone $call->argTypes->get($valueIndex)->unwrapType($call->scope->config);
 
         if ($model) {
@@ -265,49 +267,6 @@ class EloquentModelMethodCall extends MethodCallExtension
     private function getModelType(MethodCallContext $call): ?ObjectType
     {
         return $this->resolveModelObjectType($call->getVarType());
-    }
-
-
-    /**
-     * Nullable relation receivers expose one model alongside null, so reject
-     * unions that do not resolve to exactly one model type.
-     */
-    private function resolveModelObjectType(Type $type): ?ObjectType
-    {
-        $variants = $type instanceof UnionType ? $type->types : [$type];
-        $modelType = null;
-
-        foreach ($variants as $variant) {
-            if ($variant instanceof NullType) {
-                continue;
-            }
-
-            if (! ($variant instanceof ObjectType)
-                || ! $variant->className
-                || ! is_subclass_of($variant->className, Model::class)
-            ) {
-                return null;
-            }
-
-            if ($modelType !== null) {
-                return null;
-            }
-
-            $modelType = $variant;
-        }
-
-        return $modelType;
-    }
-
-
-    private function typeIncludesNull(Type $type): bool
-    {
-        if ($type instanceof NullType) {
-            return true;
-        }
-
-        return $type instanceof UnionType
-            && array_any($type->types, $this->typeIncludesNull(...));
     }
 
 

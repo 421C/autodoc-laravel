@@ -31,6 +31,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\RequestQuery::class,
                 \AutoDoc\Laravel\Extensions\RequestParameter::class,
                 \AutoDoc\Laravel\Extensions\DatabaseTransactionStaticCall::class,
+                \AutoDoc\Laravel\Extensions\DatabaseQueryStaticCall::class,
                 \AutoDoc\Laravel\Extensions\CacheRememberStaticCall::class,
                 \AutoDoc\Laravel\Extensions\CacheRememberMethodCall::class,
                 \AutoDoc\Laravel\Extensions\CallbackHelperCall::class,
