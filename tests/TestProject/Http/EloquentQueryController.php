@@ -7878,10 +7878,58 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'prefixedStarSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'rocket_name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rocket_name',
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'joined',
                                 'leftJoinedWithPrefixedSelect',
+                                'prefixedStarSelect',
                             ],
                         ],
                     ],
@@ -7897,6 +7945,61 @@ class EloquentQueryController
                 ->leftJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')
                 ->select('planets.id', 'rockets.launch_date')
                 ->get(),
+            'prefixedStarSelect' => Planet::query()
+                ->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->select('planets.*', 'rockets.name as rocket_name')
+                ->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'plucked' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
+                                'singleValue' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                    'format' => 'float',
+                                ],
+                                'notSerialized' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'plucked',
+                                'singleValue',
+                                'notSerialized',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function hiddenColumnReads(): mixed
+    {
+        return [
+            'plucked' => ClassifiedPlanet::pluck('diameter'),
+            'singleValue' => ClassifiedPlanet::value('diameter'),
+            'notSerialized' => ClassifiedPlanet::select('diameter')->get(),
         ];
     }
 

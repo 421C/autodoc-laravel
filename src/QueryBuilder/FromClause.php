@@ -78,21 +78,29 @@ final class FromClause
     }
 
 
-    public function columnType(?string $tablePrefix, string $columnName): ?Type
+    public function tableRowType(?string $tablePrefix): ?ObjectType
     {
         if ($tablePrefix === null) {
-            return $this->resolveRowType()?->properties[$columnName] ?? null;
+            return $this->resolveRowType();
         }
 
         $this->resolve();
 
         foreach ($this->tables as $table) {
             if ($table->matchesPrefix($tablePrefix)) {
-                return $table->rowType()?->properties[$columnName] ?? null;
+                return $table->rowType();
             }
         }
 
         return null;
+    }
+
+
+    public function columnType(?string $tablePrefix, string $columnName): ?Type
+    {
+        $rowType = $this->tableRowType($tablePrefix);
+
+        return $rowType?->properties[$columnName] ?? $rowType?->hiddenProperties[$columnName] ?? null;
     }
 
 

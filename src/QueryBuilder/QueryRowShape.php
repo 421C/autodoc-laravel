@@ -120,13 +120,19 @@ final class QueryRowShape
      */
     public function applyColumns(ObjectType $objectType, array $columns, array $eagerLoadedRelations): ObjectType
     {
-        if (isset($columns['*'])) {
-            unset($columns['*']);
+        $expandedColumns = [];
 
-            $columns = array_merge($objectType->properties, $columns);
+        foreach ($columns as $name => $columnType) {
+            if (self::isStarSelection($name)) {
+                $expandedColumns = array_merge($expandedColumns, $this->expandStarSelection($name, $objectType));
+
+                continue;
+            }
+
+            $expandedColumns[$name] = $columnType;
         }
 
-        $objectType->properties = array_merge($columns, $eagerLoadedRelations);
+        $objectType->properties = array_merge($expandedColumns, $eagerLoadedRelations);
 
         return $objectType;
     }
@@ -184,6 +190,28 @@ final class QueryRowShape
     private function selectAllColumnsUnlessAlreadySelected(): void
     {
         $this->selectColumnsUnlessAlreadySelected(['*' => new UnknownType]);
+    }
+
+
+    private static function isStarSelection(string $name): bool
+    {
+        return $name === '*' || str_ends_with($name, '.*');
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private function expandStarSelection(string $name, ObjectType $rowType): array
+    {
+        if ($name === '*') {
+            return $rowType->properties;
+        }
+
+        [$table] = self::splitTablePrefix($name);
+        $tableRowType = $this->fromClause()->tableRowType($table);
+
+        return $tableRowType ? $tableRowType->properties : [];
     }
 
 
@@ -519,6 +547,11 @@ final class QueryRowShape
         }
 
         [$table, $column] = $this->splitTablePrefix($column);
+
+        if ($column === '*' && $alias === null) {
+            return [$table === null ? '*' : $table . '.*', new UnknownType];
+        }
+
         $name = $alias ?? $column;
 
         if ($name === '') {

@@ -8,6 +8,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Connection;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -323,7 +324,8 @@ final class QueryChainExtractor
         }
 
         if (! $modelClassName) {
-            return method_exists(Connection::class, $methodName);
+            return method_exists(Connection::class, $methodName)
+                || method_exists(DatabaseManager::class, $methodName);
         }
 
         return method_exists($modelClassName, $methodName)

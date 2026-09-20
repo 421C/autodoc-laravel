@@ -53,6 +53,7 @@ class UnknownBuilderMethodTest extends \Orchestra\Testbench\TestCase
         Route::get('/test/unknown-methods/local-scope', [TestProject\Http\UnknownBuilderMethodController::class, 'localScope']);
         Route::get('/test/unknown-methods/model-static', [TestProject\Http\UnknownBuilderMethodController::class, 'modelStaticMethod']);
         Route::get('/test/unknown-methods/unknown', [TestProject\Http\UnknownBuilderMethodController::class, 'unknownMethod']);
+        Route::get('/test/unknown-methods/database-connection', [TestProject\Http\UnknownBuilderMethodController::class, 'databaseConnection']);
     }
 
     protected function setUp(): void
@@ -84,6 +85,16 @@ class UnknownBuilderMethodTest extends \Orchestra\Testbench\TestCase
     public function aModelStaticMethodDoesNotAbandonTheChain(): void
     {
         $itemProperties = $this->getResponseItemProperties('/test/unknown-methods/model-static');
+
+        $this->assertArrayHasKey('name', $itemProperties);
+        $this->assertArrayHasKey('diameter', $itemProperties);
+    }
+
+
+    #[Test]
+    public function aDatabaseManagerMethodDoesNotAbandonTheChain(): void
+    {
+        $itemProperties = $this->getResponseItemProperties('/test/unknown-methods/database-connection');
 
         $this->assertArrayHasKey('name', $itemProperties);
         $this->assertArrayHasKey('diameter', $itemProperties);
