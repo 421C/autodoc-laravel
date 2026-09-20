@@ -30,6 +30,18 @@ trait ParsesSqlExpressions
 
 
     /**
+     * @return array{?string, string}
+     */
+    protected static function splitTablePrefix(string $column): array
+    {
+        $segments = explode('.', $column);
+        $name = (string) array_pop($segments);
+
+        return [array_pop($segments), $name];
+    }
+
+
+    /**
      * @return ?list<string> null when quotes or parentheses do not balance
      */
     protected static function splitTopLevelCommas(string $expressionList): ?array

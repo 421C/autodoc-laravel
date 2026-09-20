@@ -8157,5 +8157,273 @@ class EloquentQueryController
         ];
     }
 
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'label' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'label',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'appendedAttribute' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'appendable_planets' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'summary' => [
+                                                        'type' => 'string',
+                                                        'const' => 'S',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'summary',
+                                                ],
+                                            ],
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'appendable_planets',
+                                    ],
+                                ],
+                                'everyColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'description' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'id' => [
+                                                        'anyOf' => [
+                                                            [
+                                                                'type' => 'string',
+                                                                'const' => '',
+                                                            ],
+                                                            [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'description',
+                                                    'size',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'nestedColumnList' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'description' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'id' => [
+                                                        'anyOf' => [
+                                                            [
+                                                                'type' => 'string',
+                                                                'const' => '',
+                                                            ],
+                                                            [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                    'planet' => [
+                                                        'type' => [
+                                                            'object',
+                                                            'null',
+                                                        ],
+                                                        'properties' => [
+                                                            'name' => [
+                                                                'type' => 'string',
+                                                            ],
+                                                        ],
+                                                        'required' => [
+                                                            'name',
+                                                        ],
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'description',
+                                                    'size',
+                                                    'created_at',
+                                                    'updated_at',
+                                                    'planet',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'qualifiedColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'everyColumn',
+                                'qualifiedColumn',
+                                'aliasedColumn',
+                                'nestedColumnList',
+                                'appendedAttribute',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function eagerLoadColumnExpressions(): mixed
+    {
+        return [
+            'everyColumn' => Planet::select('id')->with('spaceStations:*')->firstOrFail(),
+            'qualifiedColumn' => Planet::select('id')->with('spaceStations:space_stations.name')->firstOrFail(),
+            'aliasedColumn' => Planet::select('id')->with('spaceStations:name as label')->firstOrFail(),
+            'nestedColumnList' => Planet::select('id')->with('spaceStations.planet:name')->firstOrFail(),
+            'appendedAttribute' => Planet::select('id')->with('appendablePlanets:id')->firstOrFail(),
+        ];
+    }
 }
 

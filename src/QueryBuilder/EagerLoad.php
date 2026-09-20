@@ -130,10 +130,30 @@ final class EagerLoad
                 }
             }
 
-            foreach ($keyVariants as $dotNotationString) {
-                $this->dotNotationToNestedArrayType($normalizedShape, $this->splitDotNotation($dotNotationString), $valueType);
+            foreach ($keyVariants as $relationArgument) {
+                $this->dotNotationToNestedArrayType($normalizedShape, $this->splitRelationPath($relationArgument), $valueType);
             }
         }
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    private function splitRelationPath(string $relationArgument): array
+    {
+        $parts = explode(':', $relationArgument, 2);
+        $segments = $this->splitDotNotation($parts[0]);
+
+        if (! isset($parts[1])) {
+            return $segments;
+        }
+
+        $relationName = (string) array_pop($segments);
+
+        $segments[] = $relationName . ':' . $parts[1];
+
+        return $segments;
     }
 
 

@@ -9,6 +9,8 @@ use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ParsesSqlExpressions;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +31,8 @@ use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 
 class Relation
 {
+    use ParsesSqlExpressions;
+
     /**
      * @var array<string, class-string>
      */
@@ -258,7 +262,7 @@ class Relation
         $objectType = clone $this->modelPhpClass->scope->getPhpClassInDeeperScope($relatedModelClassName)->resolveType();
 
         if ($this->columns) {
-            $objectType->properties = array_filter($objectType->properties, fn ($propertyName) => in_array($propertyName, $this->columns), ARRAY_FILTER_USE_KEY);
+            $objectType->properties = $this->selectProperties($objectType->properties, $relatedModelClassName);
         }
 
         foreach ($this->relations as $name => $relation) {
@@ -266,6 +270,84 @@ class Relation
         }
 
         return $objectType;
+    }
+
+
+    /**
+     * @param array<string, Type> $modelProperties
+     * @return array<string, Type>
+     */
+    private function selectProperties(array $modelProperties, string $relatedModelClassName): array
+    {
+        $selected = [];
+
+        foreach ($this->columns as $columnExpression) {
+            [$expression, $alias] = self::splitAlias($columnExpression);
+
+            if ($expression === '') {
+                continue;
+            }
+
+            if ($alias !== null && $alias !== '') {
+                $selected[$alias] = $this->getTypeOfColumnRenamedByAlias($expression, $relatedModelClassName);
+
+                continue;
+            }
+
+            [, $column] = self::splitTablePrefix($expression);
+
+            if ($column === '*') {
+                $selected = array_merge($selected, $modelProperties);
+
+            } else if (isset($modelProperties[$column])) {
+                $selected[$column] = $modelProperties[$column];
+            }
+        }
+
+        foreach ($this->getAppendedAttributeNames($relatedModelClassName) as $appendedAttributeName) {
+            if (isset($modelProperties[$appendedAttributeName])) {
+                $selected[$appendedAttributeName] = $modelProperties[$appendedAttributeName];
+            }
+        }
+
+        return $selected;
+    }
+
+
+    private function getTypeOfColumnRenamedByAlias(string $expression, string $relatedModelClassName): Type
+    {
+        $columnType = null;
+
+        if (RawSelectExpression::isPlainColumn($expression) && ! str_contains($expression, '->')) {
+            [, $column] = self::splitTablePrefix($expression);
+
+            $columnType = $this->getColumnTypeFromTableSchema($column, $relatedModelClassName);
+        }
+
+        return ($columnType ? clone $columnType : new UnknownType)->setRequired(true);
+    }
+
+
+    private function getColumnTypeFromTableSchema(string $column, string $relatedModelClassName): ?Type
+    {
+        $relatedModel = ModelResolver::resolve($relatedModelClassName);
+
+        if (! $relatedModel) {
+            return null;
+        }
+
+        $tableRowType = TableSchema::resolveRowType($relatedModel->getTable(), $relatedModel->getConnectionName());
+
+        return $tableRowType?->properties[$column] ?? null;
+    }
+
+
+    /**
+     * @return string[]
+     */
+    private function getAppendedAttributeNames(string $relatedModelClassName): array
+    {
+        return ModelResolver::resolve($relatedModelClassName)?->getAppends() ?? [];
     }
 
 

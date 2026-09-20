@@ -541,18 +541,6 @@ final class QueryRowShape
     }
 
 
-    /**
-     * @return array{?string, string}
-     */
-    private function splitTablePrefix(string $column): array
-    {
-        $segments = explode('.', $column);
-        $name = (string) array_pop($segments);
-
-        return [array_pop($segments), $name];
-    }
-
-
     private function jsonPathLeaf(string $column): string
     {
         $segments = explode('->', $column);

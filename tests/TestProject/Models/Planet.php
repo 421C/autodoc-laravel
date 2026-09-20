@@ -58,4 +58,13 @@ class Planet extends Model
     {
         return $this->hasMany(Rocket::class);
     }
+
+
+    /**
+     * @return HasMany<AppendablePlanet, $this>
+     */
+    public function appendablePlanets(): HasMany
+    {
+        return $this->hasMany(AppendablePlanet::class, 'id');
+    }
 }
