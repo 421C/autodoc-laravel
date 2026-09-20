@@ -305,3 +305,7 @@ Route::get('/test/eloquent/column-selection-parsing', [EloquentQueryController::
 Route::get('/test/eloquent/relation-aggregates', [EloquentQueryController::class, 'relationAggregates']);
 Route::get('/test/eloquent/relation-aggregate-column-types', [EloquentQueryController::class, 'relationAggregateColumnTypes']);
 Route::get('/test/raw/table-row-shapes', [RawQueryController::class, 'tableRowShapes']);
+Route::get('/test/eloquent/load-relation-on-model', [EloquentQueryController::class, 'loadRelationOnModel']);
+Route::get('/test/eloquent/load-nested-relation-with-columns', [EloquentQueryController::class, 'loadNestedRelationWithColumns']);
+Route::get('/test/eloquent/load-aggregates-on-model', [EloquentQueryController::class, 'loadAggregatesOnModel']);
+Route::get('/test/eloquent/load-relation-on-collection', [EloquentQueryController::class, 'loadRelationOnCollection']);

@@ -140,14 +140,14 @@ class Relation
     public function resolveType(): ?Type
     {
         return match ($this->getKind()) {
-            RelationKind::One => new UnionType([$this->getRelatedModelObjectType(), new NullType]),
+            RelationKind::One => new UnionType([$this->getRelatedModelObjectType(), new NullType])->setRequired(true),
 
             RelationKind::Many => new ArrayType(
                 itemType: $this->getRelatedModelObjectType(),
                 className: Collection::class,
-            ),
+            )->setRequired(true),
 
-            RelationKind::Polymorphic => new UnionType([new ObjectType, new NullType]),
+            RelationKind::Polymorphic => new UnionType([new ObjectType, new NullType])->setRequired(true),
 
             null => null,
         };
