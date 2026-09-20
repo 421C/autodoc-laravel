@@ -27,4 +27,10 @@ class OfflineModeController
     {
         return DB::table('planets')->get();
     }
+
+
+    public function joinedModelQuery(): mixed
+    {
+        return Planet::query()->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')->get();
+    }
 }

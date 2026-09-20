@@ -315,3 +315,4 @@ Route::get('/test/eloquent/model-key-and-persistence', [EloquentQueryController:
 Route::get('/test/eloquent/model-instance-copies', [EloquentQueryController::class, 'modelInstanceCopies']);
 Route::get('/test/eloquent/model-attribute-subsets', [EloquentQueryController::class, 'modelAttributeSubsets']);
 Route::get('/test/eloquent/model-visibility-changes', [EloquentQueryController::class, 'modelVisibilityChanges']);
+Route::get('/test/eloquent/joined-model-rows', [EloquentQueryController::class, 'joinedModelRows']);

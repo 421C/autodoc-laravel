@@ -399,6 +399,145 @@ class RawQueryController
                                     'type' => 'array',
                                     'items' => [
                                         'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                                'leftJoined' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => [
+                                                    'integer',
+                                                    'null',
+                                                ],
+                                            ],
+                                            'launch_date' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => [
+                                                    'integer',
+                                                    'null',
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                                'joinedWithPrefixedSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rocket_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'launch_date',
+                                            'rocket_id',
+                                        ],
+                                    ],
+                                ],
+                                'joinedSubquery' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
                                     ],
                                 ],
                                 'keyedPluck' => [
@@ -628,6 +767,9 @@ class RawQueryController
                                 'keyedPluck',
                                 'paginated',
                                 'joined',
+                                'leftJoined',
+                                'joinedWithPrefixedSelect',
+                                'joinedSubquery',
                                 'namedConnection',
                                 'fromSubquery',
                                 'conditional',
@@ -654,7 +796,16 @@ class RawQueryController
             'value' => DB::table('planets')->value('name'),
             'keyedPluck' => DB::table('planets')->pluck('diameter', 'name'),
             'paginated' => DB::table('planets')->paginate(15),
-            'joined' => DB::table('planets')->join('rockets', 'rockets.planet_id', '=', 'planets.id')->get(),
+            'joined' => DB::table('planets')->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')->get(),
+            'leftJoined' => DB::table('planets')->leftJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')->get(),
+            'joinedWithPrefixedSelect' => DB::table('planets as p')
+                ->join('rockets as r', 'r.target_planet_id', '=', 'p.id')
+                ->select('p.name', 'r.launch_date', 'r.id as rocket_id')
+                ->get(),
+            'joinedSubquery' => DB::table('planets')
+                ->joinSub(DB::table('rockets'), 'r', 'r.target_planet_id', '=', 'planets.id')
+                ->select('planets.name')
+                ->get(),
             'namedConnection' => DB::connection('testing')->table('planets')->select('name')->get(),
             'fromSubquery' => DB::query()->fromSub(DB::table('planets'), 'p')->get(),
             'conditional' => $conditional->get(),

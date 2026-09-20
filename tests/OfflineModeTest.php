@@ -60,6 +60,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
         Route::get('/test/offline/planet', [TestProject\Http\OfflineModeController::class, 'showPlanet']);
         Route::get('/test/offline/attributed-record', [TestProject\Http\OfflineModeController::class, 'showAttributedRecord']);
         Route::get('/test/offline/raw-table', [TestProject\Http\OfflineModeController::class, 'rawTableQuery']);
+        Route::get('/test/offline/joined-model', [TestProject\Http\OfflineModeController::class, 'joinedModelQuery']);
     }
 
     protected function setUp(): void
@@ -144,6 +145,34 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
 
         $this->assertSame('array', $responseSchema['type'] ?? null);
         $this->assertArrayNotHasKey('properties', $this->digArray($responseSchema, ['items']));
+    }
+
+
+    #[Test]
+    public function aJoinedTableContributesNothingWithoutDatabaseAccess(): void
+    {
+        $config = (new ConfigLoader)->load();
+
+        $workspace = Workspace::getDefault($config);
+
+        $this->assertNotNull($workspace);
+
+        /** @var ?Schema */
+        $schema = json_decode($workspace->getJson() ?: '', true);
+
+        $this->assertNotNull($schema);
+
+        /** @var array<string, mixed> */
+        $operation = $schema['paths']['/test/offline/joined-model']['get'] ?? [];
+
+        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+
+        $properties = $this->digArray($responseSchema, ['items', 'properties']);
+
+        $this->assertSame('boolean', $this->digArray($properties, ['visited'])['type'] ?? null);
+
+        $this->assertArrayNotHasKey('launch_date', $properties);
+        $this->assertArrayNotHasKey('target_planet_id', $properties);
     }
 
 

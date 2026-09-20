@@ -7787,4 +7787,110 @@ class EloquentQueryController
             'appendsReplaced' => AppendablePlanet::firstOrFail()->setAppends([]),
         ];
     }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'joined' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                                'leftJoinedWithPrefixedSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'launch_date',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'joined',
+                                'leftJoinedWithPrefixedSelect',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function joinedModelRows(): mixed
+    {
+        return [
+            'joined' => Planet::query()->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')->get(),
+            'leftJoinedWithPrefixedSelect' => Planet::query()
+                ->leftJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->select('planets.id', 'rockets.launch_date')
+                ->get(),
+        ];
+    }
 }
