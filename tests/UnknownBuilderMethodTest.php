@@ -2,23 +2,17 @@
 
 namespace AutoDoc\Laravel\Tests;
 
-use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Laravel\Extensions\EloquentModel;
 use AutoDoc\Laravel\Providers\AutoDocServiceProvider;
 use AutoDoc\Laravel\Tests\TestProject\TestRouteProvider;
-use AutoDoc\Workspace;
+use AutoDoc\Laravel\Tests\Traits\ReadsGeneratedSchema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 
-/**
- * @phpstan-type Schema array{
- *     paths: array<string, array<string, array<string, mixed>>>,
- * }
- */
 class UnknownBuilderMethodTest extends \Orchestra\Testbench\TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, ReadsGeneratedSchema;
 
     /**
      * @param  \Illuminate\Foundation\Application  $app
@@ -126,49 +120,5 @@ class UnknownBuilderMethodTest extends \Orchestra\Testbench\TestCase
         $this->assertSame('array', $responseSchema['type'] ?? null);
 
         return $this->digArray($responseSchema, ['items', 'properties']);
-    }
-
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function getResponseSchema(string $uri): array
-    {
-        $config = (new ConfigLoader)->load();
-
-        $workspace = Workspace::getDefault($config);
-
-        $this->assertNotNull($workspace);
-
-        /** @var ?Schema */
-        $schema = json_decode($workspace->getJson() ?: '', true);
-
-        $this->assertNotNull($schema);
-
-        /** @var array<string, mixed> */
-        $operation = $schema['paths'][$uri]['get'] ?? [];
-
-        return $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
-    }
-
-
-    /**
-     * @param array<string, mixed> $array
-     * @param array<int, string|int> $keys
-     * @return array<string, mixed>
-     */
-    private function digArray(array $array, array $keys): array
-    {
-        $value = $array;
-
-        foreach ($keys as $key) {
-            if (! is_array($value) || ! array_key_exists($key, $value)) {
-                return [];
-            }
-
-            $value = $value[$key];
-        }
-
-        return is_array($value) ? $value : [];
     }
 }
