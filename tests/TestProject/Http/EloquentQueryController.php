@@ -15,8 +15,10 @@ use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
 use AutoDoc\Laravel\Tests\TestProject\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use stdClass;
 
 /**
@@ -6441,6 +6443,9 @@ class EloquentQueryController
                                                 'type' => 'string',
                                             ],
                                         ],
+                                        'required' => [
+                                            'name',
+                                        ],
                                     ],
                                 ],
                                 'jsonPath' => [
@@ -6457,6 +6462,7 @@ class EloquentQueryController
                                         ],
                                         'required' => [
                                             'name',
+                                            'model',
                                         ],
                                     ],
                                 ],
@@ -7893,4 +7899,263 @@ class EloquentQueryController
                 ->get(),
         ];
     }
+
+
+    /**
+     * Raw select expressions
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Raw select expressions',
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'columns' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aggregateAlias' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'total',
+                                        ],
+                                    ],
+                                ],
+                                'aggregatesAddedToSelection' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'biggest' => [
+                                                'type' => [
+                                                    'number',
+                                                    'null',
+                                                ],
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'typical' => [
+                                                'type' => [
+                                                    'number',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'total',
+                                            'biggest',
+                                            'typical',
+                                        ],
+                                    ],
+                                ],
+                                'aliasInsideQuotedLiteral' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                        ],
+                                    ],
+                                ],
+                                'constructedExpression' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'slug' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'slug',
+                                        ],
+                                    ],
+                                ],
+                                'minOfDateColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'earliest' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'earliest',
+                                    ],
+                                ],
+                                'nothingNameableLeavesRowUnknown' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                                'plainColumnsInRawSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'rawExpressionObject' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'total',
+                                        ],
+                                    ],
+                                ],
+                                'subQueryAlias' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'rocket_count' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'rocket_count',
+                                        ],
+                                    ],
+                                ],
+                                'unaliasedExpressionIsOmitted' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                        ],
+                                    ],
+                                ],
+                                'unreadableExpressionLeavesRowUnknown' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'aggregateAlias',
+                                'aggregatesAddedToSelection',
+                                'minOfDateColumn',
+                                'rawExpressionObject',
+                                'constructedExpression',
+                                'aliasInsideQuotedLiteral',
+                                'plainColumnsInRawSelect',
+                                'unaliasedExpressionIsOmitted',
+                                'subQueryAlias',
+                                'nothingNameableLeavesRowUnknown',
+                                'unreadableExpressionLeavesRowUnknown',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function rawSelectExpressions(Request $request): mixed
+    {
+        return [
+            'aggregateAlias' => Planet::query()->selectRaw('count(*) as total')->get(),
+            'aggregatesAddedToSelection' => Planet::query()
+                ->select('id')
+                ->selectRaw('count(*) as total, max(diameter) as biggest, avg(diameter) as typical')
+                ->get(),
+            'minOfDateColumn' => Planet::query()->select('id')->selectRaw('min(created_at) as earliest')->first(),
+            'rawExpressionObject' => Planet::query()->select(DB::raw('count(*) as total'))->get(),
+            'constructedExpression' => Planet::query()
+                ->select('id')
+                ->addSelect(new Expression('lower(name) as slug'))
+                ->get(),
+            'aliasInsideQuotedLiteral' => Planet::query()->selectRaw("concat(name, ' as ', name) as label")->get(),
+            'plainColumnsInRawSelect' => Planet::query()->selectRaw('id, planets.diameter')->get(),
+            'unaliasedExpressionIsOmitted' => Planet::query()->select('id')->selectRaw('count(*)')->get(),
+            'subQueryAlias' => Planet::query()
+                ->select('id')
+                ->selectSub(Rocket::query()->selectRaw('count(*)'), 'rocket_count')
+                ->get(),
+            'nothingNameableLeavesRowUnknown' => Planet::query()->selectRaw('count(*)')->get(),
+            'unreadableExpressionLeavesRowUnknown' => Planet::query()->select($request->string('columns')->toString())->get(),
+        ];
+    }
+
 }
+

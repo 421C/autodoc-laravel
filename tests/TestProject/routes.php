@@ -316,3 +316,5 @@ Route::get('/test/eloquent/model-instance-copies', [EloquentQueryController::cla
 Route::get('/test/eloquent/model-attribute-subsets', [EloquentQueryController::class, 'modelAttributeSubsets']);
 Route::get('/test/eloquent/model-visibility-changes', [EloquentQueryController::class, 'modelVisibilityChanges']);
 Route::get('/test/eloquent/joined-model-rows', [EloquentQueryController::class, 'joinedModelRows']);
+Route::post('/test/eloquent/raw-select-expressions', [EloquentQueryController::class, 'rawSelectExpressions']);
+Route::post('/test/raw/select-raw', [RawQueryController::class, 'rawSelectOnTableQuery']);

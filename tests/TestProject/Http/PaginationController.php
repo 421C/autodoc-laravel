@@ -594,6 +594,7 @@ class PaginationController
                                             'visited',
                                             'created_at',
                                             'updated_at',
+                                            'y',
                                         ],
                                     ],
                                 ],

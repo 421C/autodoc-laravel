@@ -8,12 +8,12 @@ use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Laravel\Helpers\ModelResolver;
-use AutoDoc\Laravel\Helpers\ParsesSqlAliases;
+use AutoDoc\Laravel\Helpers\ParsesSqlExpressions;
 use Illuminate\Database\Eloquent\Model;
 
 final class FromClause
 {
-    use ParsesSqlAliases;
+    use ParsesSqlExpressions;
 
     public function __construct(
         private Scope $scope,
@@ -174,7 +174,7 @@ final class FromClause
             return null;
         }
 
-        [$tableName, $alias] = $this->splitAlias($tableExpression);
+        [$tableName, $alias] = self::splitAlias($tableExpression);
 
         return QueryTable::fromSchema(
             tableName: $tableName,
