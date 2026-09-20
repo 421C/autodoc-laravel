@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Models\AnnotatedPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\AppendablePlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Beacon;
 use AutoDoc\Laravel\Tests\TestProject\Models\AttributedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\CastedPlanet;
@@ -7175,6 +7176,199 @@ class EloquentQueryController
             'remaining' => $planet->except(['diameter']),
             'hiddenColumn' => User::firstOrFail()->only(['name', 'password']),
             'withoutAppends' => AttributedPlanet::firstOrFail()->except(['name']),
+        ];
+    }
+
+
+    /**
+     * Model visibility changes
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model visibility changes',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'mutatedVariable' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'email_verified_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'password' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'email_verified_at',
+                                        'password',
+                                    ],
+                                ],
+                                'replacedVisible' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'email' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'email',
+                                    ],
+                                ],
+                                'replacedHidden' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'email_verified_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'password' => [
+                                            'type' => 'string',
+                                        ],
+                                        'remember_token' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'email_verified_at',
+                                        'password',
+                                        'remember_token',
+                                    ],
+                                ],
+                                'appended' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'summary' => [
+                                            'type' => 'string',
+                                            'const' => 'S',
+                                        ],
+                                        'badge' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                        'summary',
+                                        'badge',
+                                    ],
+                                ],
+                                'appendsReplaced' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'mutatedVariable',
+                                'replacedVisible',
+                                'replacedHidden',
+                                'appended',
+                                'appendsReplaced',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function modelVisibilityChanges(): mixed
+    {
+        $user = User::firstOrFail();
+        $user->makeVisible('password');
+        $user->makeHidden(['email', 'created_at', 'updated_at']);
+
+        return [
+            'mutatedVariable' => $user,
+            'replacedVisible' => User::firstOrFail()->setVisible(['id', 'email', 'password']),
+            'replacedHidden' => User::firstOrFail()->setHidden(['id', 'name', 'email', 'created_at', 'updated_at']),
+            'appended' => AppendablePlanet::firstOrFail()->append('badge'),
+            'appendsReplaced' => AppendablePlanet::firstOrFail()->setAppends([]),
         ];
     }
 }

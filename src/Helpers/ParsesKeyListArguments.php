@@ -43,6 +43,20 @@ trait ParsesKeyListArguments
     }
 
 
+    protected function hasEmptyKeyListArgument(MethodCallContext $call): bool
+    {
+        if (! $call->argTypes->has(0)) {
+            return false;
+        }
+
+        $firstArgType = $call->argTypes->get(0)->unwrapType($call->scope->config);
+
+        return $firstArgType instanceof ArrayType
+            && $firstArgType->shape === []
+            && $firstArgType->itemType === null;
+    }
+
+
     /**
      * @return list<string>
      */

@@ -312,3 +312,4 @@ Route::get('/test/eloquent/load-relation-on-collection', [EloquentQueryControlle
 Route::get('/test/eloquent/model-key-and-persistence', [EloquentQueryController::class, 'modelKeyAndPersistenceResults']);
 Route::get('/test/eloquent/model-instance-copies', [EloquentQueryController::class, 'modelInstanceCopies']);
 Route::get('/test/eloquent/model-attribute-subsets', [EloquentQueryController::class, 'modelAttributeSubsets']);
+Route::get('/test/eloquent/model-visibility-changes', [EloquentQueryController::class, 'modelVisibilityChanges']);

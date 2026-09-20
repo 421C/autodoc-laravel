@@ -14,11 +14,14 @@ use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ModelVisibility;
 use AutoDoc\Laravel\Helpers\MutatesModelReceiver;
 use AutoDoc\Laravel\Helpers\ParsesKeyListArguments;
 use AutoDoc\Laravel\QueryBuilder\Relation;
 use Illuminate\Database\Eloquent\Model;
+use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\Variable;
 use ReflectionMethod;
 
 /**
@@ -28,10 +31,53 @@ class EloquentModelMethodCall extends MethodCallExtension
 {
     use InspectsModelAttributes, MutatesModelReceiver, ParsesKeyListArguments;
 
+    private const METHODS = [
+        'setAttribute',
+        'getAttribute',
+        'getKey',
+        'only',
+        'except',
+        'attributesToArray',
+        'toArray',
+        ...ModelVisibility::METHODS,
+    ];
+
+
     public function handleSideEffect(MethodCallContext $call): void
     {
         if ($call->methodName === 'setAttribute') {
             $this->handleSetAttribute($call);
+
+            return;
+        }
+
+        if (in_array($call->methodName, ModelVisibility::METHODS, true)) {
+            $this->handleVisibilityChange($call);
+        }
+    }
+
+
+    private function handleVisibilityChange(MethodCallContext $call): void
+    {
+        $node = $call->node;
+
+        if (! ($node instanceof MethodCall)
+            || ! ($node->var instanceof Variable)
+            || ! is_string($node->var->name)
+        ) {
+            return;
+        }
+
+        $modelType = $this->getModelType($call);
+
+        if ($modelType === null) {
+            return;
+        }
+
+        $repartitionedType = ModelVisibility::apply($call, $modelType);
+
+        if ($repartitionedType !== null) {
+            $call->setVarType($node->var->name, $repartitionedType);
         }
     }
 
@@ -56,15 +102,7 @@ class EloquentModelMethodCall extends MethodCallExtension
 
     public function getReturnType(MethodCallContext $call): ?Type
     {
-        if (! in_array($call->methodName, [
-            'setAttribute',
-            'getAttribute',
-            'getKey',
-            'only',
-            'except',
-            'attributesToArray',
-            'toArray',
-        ])) {
+        if (! in_array($call->methodName, self::METHODS, true)) {
             return null;
         }
 
@@ -81,7 +119,8 @@ class EloquentModelMethodCall extends MethodCallExtension
             'only' => $this->getOnlyReturnType($call, $modelType),
             'except' => $this->getExceptReturnType($call, $modelType),
             'attributesToArray' => $this->resolveAttributesArrayType($call, $modelType),
-            default => $this->getToArrayReturnType($call, $modelType),
+            'toArray' => $this->getToArrayReturnType($call, $modelType),
+            default => ModelVisibility::apply($call, $modelType) ?? clone $modelType,
         };
 
         if ($returnType !== null
@@ -278,11 +317,7 @@ class EloquentModelMethodCall extends MethodCallExtension
         }
 
         if ($modelType->properties !== []) {
-            return new ArrayType(shape: $this->normalizeSerializedModelProperties(
-                scope: $call->scope,
-                modelClassName: $modelType->className,
-                properties: $modelType->properties,
-            ));
+            return new ArrayType(shape: $this->normalizeSerializedModelProperties($call->scope, $modelType));
         }
 
         return (new EloquentModel)->getModelAttributesArrayType($call->scope, $modelType->className);

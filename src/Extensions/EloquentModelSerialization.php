@@ -90,11 +90,7 @@ class EloquentModelSerialization extends OperationExtension
 
         } else if ($type instanceof ObjectType) {
             if ($type->className !== null && is_subclass_of($type->className, Model::class)) {
-                $type->properties = $this->normalizeSerializedModelProperties(
-                    scope: $scope,
-                    modelClassName: $type->className,
-                    properties: $type->properties,
-                );
+                $type->properties = $this->normalizeSerializedModelProperties($scope, $type);
             }
 
             foreach ($type->properties as $propertyName => $propertyType) {
