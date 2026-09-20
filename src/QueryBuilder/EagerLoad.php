@@ -11,6 +11,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -50,6 +51,35 @@ final class EagerLoad
         });
 
         $this->normalizeArgumentArray($argumentListArrayType, $this->arguments);
+    }
+
+
+    /**
+     * @param list<string> $relationNames
+     */
+    public function addRelationNames(array $relationNames): void
+    {
+        foreach ($relationNames as $relationName) {
+            $this->dotNotationToNestedArrayType(
+                $this->arguments,
+                $this->splitRelationPath($relationName),
+                new UnknownType,
+            );
+        }
+    }
+
+
+    /**
+     * @param class-string<Model> $modelClassName
+     * @return array<string, Type>
+     */
+    public static function defaultRelationTypes(Scope $scope, string $modelClassName): array
+    {
+        $eagerLoad = new self($scope);
+
+        $eagerLoad->addRelationNames(ModelResolver::defaultEagerLoads($modelClassName));
+
+        return $eagerLoad->resolveRelationTypes($modelClassName);
     }
 
 

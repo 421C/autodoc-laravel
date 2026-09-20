@@ -13,6 +13,7 @@ use AutoDoc\DataTypes\NumberType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -79,6 +80,31 @@ final class RelationAggregate
             ),
             self::resolveRelationExpressions($args, $function, $scope),
         );
+    }
+
+
+    /**
+     * The columns a model's own `$withCount` list adds to every query of it.
+     *
+     * @param PhpClass<Model> $modelPhpClass
+     * @return array<string, Type>
+     */
+    public static function defaultCountColumns(PhpClass $modelPhpClass): array
+    {
+        $columns = [];
+
+        foreach (ModelResolver::defaultEagerLoadCounts($modelPhpClass->className) as $relationExpression) {
+            $aggregate = new self(
+                modelPhpClass: $modelPhpClass,
+                relationExpression: $relationExpression,
+                function: 'count',
+                column: '*',
+            );
+
+            $columns[$aggregate->alias] = $aggregate->resolveType();
+        }
+
+        return $columns;
     }
 
 

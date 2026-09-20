@@ -13,6 +13,7 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\Laravel\Helpers\ParsesSqlExpressions;
 
 final class QueryRowShape
@@ -47,6 +48,8 @@ final class QueryRowShape
         if (! $baseRowType) {
             return null;
         }
+
+        $this->applyModelDefaults();
 
         foreach ($this->chain->methods as $method) {
             if ($method->name === 'select') {
@@ -184,6 +187,32 @@ final class QueryRowShape
         $modelClassName = $this->chain->modelClassName;
 
         return $modelClassName ? $this->eagerLoad->resolveRelationTypes($modelClassName) : [];
+    }
+
+
+    /**
+     * Laravel seeds `$with` and `$withCount` when the builder is created, so
+     * they apply before anything the chain does. A later `select()` replaces
+     * the columns and drops the counts, while the relations survive it.
+     */
+    private function applyModelDefaults(): void
+    {
+        $modelClassName = $this->chain->modelClassName;
+
+        if ($modelClassName === null || $this->chain->isRawDatabaseQuery) {
+            return;
+        }
+
+        $this->eagerLoad->addRelationNames(ModelResolver::defaultEagerLoads($modelClassName));
+
+        $countColumns = RelationAggregate::defaultCountColumns(
+            $this->scope->getPhpClassInDeeperScope($modelClassName),
+        );
+
+        if ($countColumns) {
+            $this->selectAllColumnsUnlessAlreadySelected();
+            $this->addSelectedColumns($countColumns);
+        }
     }
 
 

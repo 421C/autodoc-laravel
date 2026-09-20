@@ -20,7 +20,9 @@ use AutoDoc\Exceptions\AutoDocException;
 use AutoDoc\Extensions\ClassExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\QueryBuilder\EagerLoad;
 use AutoDoc\Laravel\QueryBuilder\Relation;
+use AutoDoc\Laravel\QueryBuilder\RelationAggregate;
 use AutoDoc\Laravel\QueryBuilder\TableSchema;
 use Exception;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -291,7 +293,51 @@ class EloquentModel extends ClassExtension
             }
         }
 
+        $this->addDefaultEagerLoads($objectType, $phpClass, $model);
+
         return $objectType;
+    }
+
+
+    /**
+     * A model's `$with` and `$withCount` apply to every query of it, so their
+     * relations and counts are part of the shape it serializes to.
+     *
+     * Two models naming each other would resolve forever, so a class already
+     * being resolved contributes its own columns without its defaults.
+     *
+     * @param PhpClass<Model> $phpClass
+     */
+    private function addDefaultEagerLoads(ObjectType $objectType, PhpClass $phpClass, Model $model): void
+    {
+        if (isset(EloquentModel::$resolvingDefaultEagerLoads[$phpClass->className])) {
+            return;
+        }
+
+        EloquentModel::$resolvingDefaultEagerLoads[$phpClass->className] = true;
+
+        try {
+            $defaults = array_merge(
+                EagerLoad::defaultRelationTypes($phpClass->scope, $phpClass->className),
+                RelationAggregate::defaultCountColumns($phpClass),
+            );
+
+        } finally {
+            unset(EloquentModel::$resolvingDefaultEagerLoads[$phpClass->className]);
+        }
+
+        foreach ($defaults as $propertyName => $propertyType) {
+            if (isset($objectType->properties[$propertyName]) || isset($objectType->hiddenProperties[$propertyName])) {
+                continue;
+            }
+
+            if ($this->isModelAttributeHidden($model, $propertyName)) {
+                $objectType->hiddenProperties[$propertyName] = $propertyType;
+
+            } else {
+                $objectType->properties[$propertyName] = $propertyType->setRequired(true);
+            }
+        }
     }
 
 
@@ -373,4 +419,9 @@ class EloquentModel extends ClassExtension
      * @var array<class-string<Model>, ObjectType>
      */
     private static array $cache = [];
+
+    /**
+     * @var array<class-string<Model>, true>
+     */
+    private static array $resolvingDefaultEagerLoads = [];
 }

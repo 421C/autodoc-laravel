@@ -317,6 +317,7 @@ Route::get('/test/eloquent/model-attribute-subsets', [EloquentQueryController::c
 Route::get('/test/eloquent/model-visibility-changes', [EloquentQueryController::class, 'modelVisibilityChanges']);
 Route::get('/test/eloquent/joined-model-rows', [EloquentQueryController::class, 'joinedModelRows']);
 Route::get('/test/eloquent/hidden-column-reads', [EloquentQueryController::class, 'hiddenColumnReads']);
+Route::get('/test/eloquent/model-default-eager-loads', [EloquentQueryController::class, 'modelDefaultEagerLoads']);
 Route::post('/test/eloquent/raw-select-expressions', [EloquentQueryController::class, 'rawSelectExpressions']);
 Route::post('/test/eloquent/eager-load-column-expressions', [EloquentQueryController::class, 'eagerLoadColumnExpressions']);
 Route::post('/test/raw/select-raw', [RawQueryController::class, 'rawSelectOnTableQuery']);
