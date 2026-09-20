@@ -12,6 +12,7 @@ use AutoDoc\Laravel\Tests\TestProject\Models\LabeledPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
+use AutoDoc\Laravel\Tests\TestProject\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -6995,6 +6996,185 @@ class EloquentQueryController
             'fresh' => $planet->fresh(),
             'refreshed' => $planet->refresh(),
             'copy' => $planet->replicate(),
+        ];
+    }
+
+
+    /**
+     * Model attribute subsets
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model attribute subsets',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'picked' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                        'unlisted' => [
+                                            'type' => 'null',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'visited',
+                                        'unlisted',
+                                    ],
+                                ],
+                                'pickedVariadic' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                        'diameter',
+                                    ],
+                                ],
+                                'remaining' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'hiddenColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'password' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                        'password',
+                                    ],
+                                ],
+                                'withoutAppends' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'string',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'phpdoc_visible' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'phpdoc_secret' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'phpdoc_omitted' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'phpdoc_visible',
+                                        'diameter',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                        'phpdoc_secret',
+                                        'phpdoc_omitted',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'picked',
+                                'pickedVariadic',
+                                'remaining',
+                                'hiddenColumn',
+                                'withoutAppends',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function modelAttributeSubsets(): mixed
+    {
+        $planet = Planet::firstOrFail();
+        $planet->load('rockets');
+
+        return [
+            'picked' => $planet->only(['id', 'visited', 'unlisted']),
+            'pickedVariadic' => $planet->only('name', 'diameter'),
+            'remaining' => $planet->except(['diameter']),
+            'hiddenColumn' => User::firstOrFail()->only(['name', 'password']),
+            'withoutAppends' => AttributedPlanet::firstOrFail()->except(['name']),
         ];
     }
 }
