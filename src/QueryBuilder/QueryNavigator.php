@@ -47,34 +47,6 @@ class QueryNavigator
     }
 
 
-    public function getRowType(Node\Expr $queryNode): ?Type
-    {
-        $rowTypes = [];
-
-        foreach ($this->extractChains($queryNode) as $chain) {
-            if (! $chain->modelClassName) {
-                return null;
-            }
-
-            $rowType = (new QueryRowShape($this->scope, $chain))->resolveRowType();
-
-            if (! $rowType) {
-                return null;
-            }
-
-            $rowTypes[] = $rowType;
-        }
-
-        if (! $rowTypes) {
-            return null;
-        }
-
-        return count($rowTypes) === 1
-            ? $rowTypes[0]
-            : new UnionType($rowTypes)->unwrapType($this->scope->config);
-    }
-
-
     public function recordFailingFinisherResponse(Node\Expr $queryNode): void
     {
         $route = $this->scope->route;

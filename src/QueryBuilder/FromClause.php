@@ -28,6 +28,22 @@ final class FromClause
         'leftJoinWhere',
         'rightJoin',
         'rightJoinWhere',
+        'straightJoin',
+        'straightJoinWhere',
+    ];
+
+    private const ROW_HIDING_METHODS = [
+        'joinSub',
+        'joinLateral',
+        'leftJoinSub',
+        'leftJoinLateral',
+        'rightJoinSub',
+        'crossJoinSub',
+        'straightJoinSub',
+        'union',
+        'unionAll',
+        'fromSub',
+        'fromRaw',
     ];
 
     /**
@@ -202,16 +218,7 @@ final class FromClause
 
     private static function hidesTheRow(string $methodName): bool
     {
-        if (in_array($methodName, self::JOIN_METHODS, strict: true)) {
-            return false;
-        }
-
-        $methodName = strtolower($methodName);
-
-        return str_contains($methodName, 'join')
-            || str_starts_with($methodName, 'union')
-            || $methodName === 'fromsub'
-            || $methodName === 'fromraw';
+        return in_array($methodName, self::ROW_HIDING_METHODS, strict: true);
     }
 
 

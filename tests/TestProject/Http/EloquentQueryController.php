@@ -8616,6 +8616,189 @@ class EloquentQueryController
     }
 
 
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'localScopeNamedLikeAJoin' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                                'selectWithoutArguments' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
+                                    ],
+                                ],
+                                'straightJoined' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'selectWithoutArguments',
+                                'straightJoined',
+                                'localScopeNamedLikeAJoin',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function selectDefaultsAndJoinMethods(): mixed
+    {
+        return [
+            'selectWithoutArguments' => Planet::query()->select()->get(),
+            'straightJoined' => Planet::query()
+                ->straightJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->get(),
+            'localScopeNamedLikeAJoin' => Planet::query()
+                ->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->orderedByJoinDate()
+                ->get(),
+        ];
+    }
+
+
     /**
      * Raw select expressions
      */

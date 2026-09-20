@@ -53,7 +53,9 @@ final class QueryRowShape
 
         foreach ($this->chain->methods as $method) {
             if ($method->name === 'select') {
-                $this->selectedColumns = $this->getColumnsFromArguments($method->args);
+                $this->selectedColumns = $method->args->has(0)
+                    ? $this->getColumnsFromArguments($method->args)
+                    : self::starSelection();
             }
 
             if ($method->name === 'addSelect') {
@@ -234,7 +236,16 @@ final class QueryRowShape
 
     private function selectAllColumnsUnlessAlreadySelected(): void
     {
-        $this->selectColumnsUnlessAlreadySelected(['*' => new UnknownType]);
+        $this->selectColumnsUnlessAlreadySelected(self::starSelection());
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private static function starSelection(): array
+    {
+        return ['*' => new UnknownType];
     }
 
 
