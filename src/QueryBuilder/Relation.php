@@ -122,6 +122,21 @@ class Relation
     }
 
 
+    public function getRelatedColumnType(string $column): ?Type
+    {
+        $relatedModelClassName = $this->getRelatedModelClassName();
+
+        if (! $relatedModelClassName) {
+            return null;
+        }
+
+        $relatedModelType = $this->modelPhpClass->scope->getPhpClassInDeeperScope($relatedModelClassName)->resolveType();
+        $columnType = $relatedModelType->properties[$column] ?? $relatedModelType->hiddenProperties[$column] ?? null;
+
+        return $columnType ? clone $columnType : null;
+    }
+
+
     public function resolveType(): ?Type
     {
         return match ($this->getKind()) {

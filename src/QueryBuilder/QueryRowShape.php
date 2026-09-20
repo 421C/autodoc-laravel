@@ -55,11 +55,18 @@ final class QueryRowShape
             }
 
             if ($method->name === 'addSelect') {
-                $this->selectedColumns = array_merge($this->selectedColumns ?? [], $this->getColumnsFromArguments($method->args));
+                $this->addSelectedColumns($this->getColumnsFromArguments($method->args));
             }
 
             if ($method->name === 'with') {
                 $this->addEagerLoadedRelationArguments($method->args);
+            }
+
+            $aggregateColumns = $this->getRelationAggregateColumns($method);
+
+            if ($aggregateColumns !== null) {
+                $this->selectAllColumnsUnlessAlreadySelected();
+                $this->addSelectedColumns($aggregateColumns);
             }
 
             if ($method->name === 'pluck') {
@@ -189,6 +196,52 @@ final class QueryRowShape
         }
 
         return $relationTypes;
+    }
+
+
+    private function selectAllColumnsUnlessAlreadySelected(): void
+    {
+        $this->selectColumnsUnlessAlreadySelected(['*' => new UnknownType]);
+    }
+
+
+    /**
+     * @param array<string, Type> $columns
+     */
+    private function addSelectedColumns(array $columns): void
+    {
+        $this->selectedColumns = array_merge($this->selectedColumns ?? [], $columns);
+    }
+
+
+    /**
+     * @return ?array<string, Type>
+     */
+    private function getRelationAggregateColumns(QueryChainMethod $method): ?array
+    {
+        $modelClassName = $this->chain->modelClassName;
+
+        if ($modelClassName === null || $this->chain->isRawDatabaseQuery) {
+            return null;
+        }
+
+        $aggregates = RelationAggregate::parse(
+            method: $method,
+            modelClassName: $modelClassName,
+            scope: $this->scope,
+        );
+
+        if ($aggregates === null) {
+            return null;
+        }
+
+        $columns = [];
+
+        foreach ($aggregates as $aggregate) {
+            $columns[$aggregate->alias] = $aggregate->resolveType();
+        }
+
+        return $columns;
     }
 
 
@@ -482,7 +535,9 @@ final class QueryRowShape
             return new UnknownType;
         }
 
-        $columnType = $this->getBaseRowType()?->properties[$column] ?? null;
+        $columnType = $this->getBaseRowType()?->properties[$column]
+            ?? $this->selectedColumns[$column]
+            ?? null;
 
         return $columnType ? clone $columnType : new UnknownType;
     }
