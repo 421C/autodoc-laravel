@@ -58,7 +58,7 @@ return [
         /**
          * Format automatically generated descriptions. Specify a string in `sprintf` format or null.
          */
-        'format_generated_descriptions' => '<p style="color: var(--color-text-muted); font-size: 11px;">%s</p>',
+        'format_generated_descriptions' => '<p style="color: var(--color-text-muted);">%s</p>',
 
         /**
          * When enabled, will load all autodoc-laravel built-in extensions.
