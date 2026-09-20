@@ -32,11 +32,12 @@ trait InspectsModelAttributes
     }
 
 
-    /**
-     * Whether Laravel transforms values assigned to this attribute in
-     * `setAttribute()`: casts, date attributes, and set mutators (classic
-     * `set{Studly}Attribute` or `Attribute`-style).
-     */
+    protected function modelKeyType(Model $model): Type
+    {
+        return $model->getKeyType() === 'int' ? new IntegerType : new StringType;
+    }
+
+
     protected function isAttributeValueTransformed(Model $model, string $key): bool
     {
         return $model->hasCast($key)
@@ -45,11 +46,6 @@ trait InspectsModelAttributes
     }
 
 
-    /**
-     * Whether Laravel transforms this attribute when reading it in
-     * `attributesToArray()`: classic `get{Studly}Attribute` accessors or
-     * `Attribute`-style attribute methods.
-     */
     protected function isAttributeTransformedOnRead(Model $model, string $key): bool
     {
         return method_exists($model, 'get' . Str::studly($key) . 'Attribute')
@@ -123,18 +119,18 @@ trait InspectsModelAttributes
 
 
     /**
-     * Applies Laravel serialization semantics (`getArrayableItems()`) to a
-     * model variable's resolved properties: `$hidden`/`$visible` exclusions
-     * are dropped, and attributes whose values Laravel transforms on write
-     * (casts, dates, set mutators) or on read (get accessors) keep the
-     * class-level attribute type instead of a recorded assigned value type.
+     * Mirrors `getArrayableItems()`. `hiddenProperties` is the receiver's own
+     * hidden set, so the class `$hidden`/`$visible` rule only decides keys the
+     * class does not declare.
      *
-     * @param array<string, Type> $properties
      * @return array<string, Type>
      */
-    protected function normalizeSerializedModelProperties(Scope $scope, string $modelClassName, array $properties): array
+    protected function normalizeSerializedModelProperties(Scope $scope, ObjectType $modelType): array
     {
-        if (! is_subclass_of($modelClassName, Model::class)) {
+        $modelClassName = $modelType->className;
+        $properties = $modelType->properties;
+
+        if ($modelClassName === null || ! is_subclass_of($modelClassName, Model::class)) {
             return $properties;
         }
 
@@ -147,7 +143,10 @@ trait InspectsModelAttributes
         $classLevelModelType = null;
 
         foreach ($properties as $key => $propertyType) {
-            if ($this->isModelAttributeHidden($model, $key)) {
+            if (isset($modelType->hiddenProperties[$key])
+                || ($this->isModelAttributeHidden($model, $key)
+                    && ! $this->classDeclaresAttribute($scope, $modelClassName, $key))
+            ) {
                 unset($properties[$key]);
 
                 continue;
@@ -176,5 +175,17 @@ trait InspectsModelAttributes
         }
 
         return $properties;
+    }
+
+
+    /**
+     * @param class-string<Model> $modelClassName
+     */
+    private function classDeclaresAttribute(Scope $scope, string $modelClassName, string $key): bool
+    {
+        $classLevelModelType = (new EloquentModel)->getReturnType($scope->getPhpClassInDeeperScope($modelClassName));
+
+        return $classLevelModelType instanceof ObjectType
+            && (isset($classLevelModelType->properties[$key]) || isset($classLevelModelType->hiddenProperties[$key]));
     }
 }

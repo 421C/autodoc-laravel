@@ -38,7 +38,7 @@
         ],
         "test": [
             "Composer\\Config::disableProcessTimeout",
-            "./vendor/bin/phpunit tests"
+            "@php -d memory_limit=512M ./vendor/bin/phpunit tests"
         ]
     },
     "extra": {

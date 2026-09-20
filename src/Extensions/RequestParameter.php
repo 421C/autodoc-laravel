@@ -10,12 +10,12 @@ use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
-use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\ChecksRequestReceiver;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
+use AutoDoc\Laravel\Helpers\ParsesKeyListArguments;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 
@@ -24,7 +24,7 @@ use Illuminate\Support\Stringable;
  */
 class RequestParameter extends MethodCallExtension
 {
-    use ChecksRequestReceiver, DotNotationParser;
+    use ChecksRequestReceiver, DotNotationParser, ParsesKeyListArguments;
 
     private const METHODS = [
         'boolean',
@@ -215,90 +215,22 @@ class RequestParameter extends MethodCallExtension
 
 
     /**
-     * `only`/`except`/`all` accept either a single array of keys or variadic
-     * string keys; `array`/`collect` only take the array form.
-     *
      * @return array<string, Type>
      */
     private function getKeyListFields(string $methodName, MethodCallContext $call): array
     {
-        if (! $call->argTypes->has(0)) {
-            return [];
-        }
+        $fieldNames = $this->resolveKeyListNames(
+            call: $call,
+            allowVariadic: in_array($methodName, self::VARIADIC_KEY_LIST_METHODS, true),
+        );
 
-        $firstArgType = $call->argTypes->get(0)->unwrapType($call->scope->config);
-
-        if ($firstArgType instanceof ArrayType) {
-            return $this->getFieldsFromKeyListType($firstArgType, $call);
-        }
-
-        if (! in_array($methodName, self::VARIADIC_KEY_LIST_METHODS, true)) {
-            return [];
-        }
-
-        $fieldNames = [];
-
-        for ($index = 0; $index < count($call->argTypes); $index++) {
-            $this->appendStringValuesFromType($call->argTypes->get($index), $call, $fieldNames);
-        }
-
-        return $this->getFieldsFromNames($fieldNames);
-    }
-
-
-    /** @return array<string, Type> */
-    private function getFieldsFromKeyListType(ArrayType $keyListType, MethodCallContext $call): array
-    {
-        $fieldNames = [];
-
-        foreach ($keyListType->shape as $fieldNameType) {
-            $this->appendStringValuesFromType($fieldNameType, $call, $fieldNames);
-        }
-
-        if ($keyListType->itemType) {
-            $this->appendStringValuesFromType($keyListType->itemType, $call, $fieldNames);
-        }
-
-        return $this->getFieldsFromNames($fieldNames);
-    }
-
-
-    /**
-     * @param list<string> $fieldNames
-     * @return array<string, Type>
-     */
-    private function getFieldsFromNames(array $fieldNames): array
-    {
         $fields = [];
 
-        foreach (array_unique($fieldNames) as $fieldName) {
+        foreach ($fieldNames as $fieldName) {
             $this->dotNotationToNestedArrayType($fields, $this->splitDotNotation($fieldName), new UnknownType);
         }
 
         return $fields;
-    }
-
-
-    /**
-     * Unions can preserve literal field names from variable key lists.
-     *
-     * @param list<string> $fieldNames
-     */
-    private function appendStringValuesFromType(Type $type, MethodCallContext $call, array &$fieldNames): void
-    {
-        $type = $type->unwrapType($call->scope->config);
-
-        if ($type instanceof StringType) {
-            array_push($fieldNames, ...($type->getPossibleValues() ?? []));
-
-            return;
-        }
-
-        if ($type instanceof UnionType) {
-            foreach ($type->types as $typeInUnion) {
-                $this->appendStringValuesFromType($typeInUnion, $call, $fieldNames);
-            }
-        }
     }
 
 

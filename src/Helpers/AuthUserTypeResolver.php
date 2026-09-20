@@ -15,6 +15,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 final class AuthUserTypeResolver
 {
+    use InspectsModelAttributes;
+
     public function resolveUserType(Scope $scope, AuthGuardSelection $selection): ?Type
     {
         $modelClassNames = $this->resolveUserModelClassNames($selection, $scope);
@@ -122,11 +124,9 @@ final class AuthUserTypeResolver
     {
         $model = ModelResolver::resolve($modelClassName);
 
-        if ($model) {
-            return $model->getKeyType() === 'int' ? new IntegerType : new StringType;
-        }
-
-        return new UnionType([new IntegerType, new StringType]);
+        return $model
+            ? $this->modelKeyType($model)
+            : new UnionType([new IntegerType, new StringType]);
     }
 
 
