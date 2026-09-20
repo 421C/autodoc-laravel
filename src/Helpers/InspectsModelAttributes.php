@@ -32,6 +32,12 @@ trait InspectsModelAttributes
     }
 
 
+    protected function modelKeyType(Model $model): Type
+    {
+        return $model->getKeyType() === 'int' ? new IntegerType : new StringType;
+    }
+
+
     /**
      * Whether Laravel transforms values assigned to this attribute in
      * `setAttribute()`: casts, date attributes, and set mutators (classic

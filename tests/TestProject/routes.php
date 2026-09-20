@@ -309,3 +309,5 @@ Route::get('/test/eloquent/load-relation-on-model', [EloquentQueryController::cl
 Route::get('/test/eloquent/load-nested-relation-with-columns', [EloquentQueryController::class, 'loadNestedRelationWithColumns']);
 Route::get('/test/eloquent/load-aggregates-on-model', [EloquentQueryController::class, 'loadAggregatesOnModel']);
 Route::get('/test/eloquent/load-relation-on-collection', [EloquentQueryController::class, 'loadRelationOnCollection']);
+Route::get('/test/eloquent/model-key-and-persistence', [EloquentQueryController::class, 'modelKeyAndPersistenceResults']);
+Route::get('/test/eloquent/model-instance-copies', [EloquentQueryController::class, 'modelInstanceCopies']);

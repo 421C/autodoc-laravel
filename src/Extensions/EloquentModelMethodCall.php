@@ -56,6 +56,7 @@ class EloquentModelMethodCall extends MethodCallExtension
         if (! in_array($call->methodName, [
             'setAttribute',
             'getAttribute',
+            'getKey',
             'attributesToArray',
             'toArray',
         ])) {
@@ -71,6 +72,7 @@ class EloquentModelMethodCall extends MethodCallExtension
         $returnType = match ($call->methodName) {
             'setAttribute' => $this->getSetAttributeReturnType($call, $modelType),
             'getAttribute' => $this->getGetAttributeReturnType($call, $modelType),
+            'getKey' => $this->getKeyReturnType($call, $modelType),
             'attributesToArray' => $this->resolveAttributesArrayType($call, $modelType),
             default => $this->getToArrayReturnType($call, $modelType),
         };
@@ -101,17 +103,37 @@ class EloquentModelMethodCall extends MethodCallExtension
     }
 
 
-    /**
-     * Resolves `getAttribute($key)` like the property read `$model->$key`: the
-     * model's own attribute types (columns, casts, accessors, relations) first,
-     * then attributes set earlier on this variable.
-     */
     private function getGetAttributeReturnType(MethodCallContext $call, ObjectType $modelType): ?Type
     {
         $key = $this->getLiteralKeyArgument($call);
+
+        return $key === null ? null : $this->resolveAttributeType($call, $modelType, $key);
+    }
+
+
+    private function getKeyReturnType(MethodCallContext $call, ObjectType $modelType): ?Type
+    {
+        $model = $modelType->className ? ModelResolver::resolve($modelType->className) : null;
+
+        if ($model === null) {
+            return null;
+        }
+
+        return $this->resolveAttributeType($call, $modelType, $model->getKeyName())
+            ?? $this->modelKeyType($model);
+    }
+
+
+    /**
+     * Resolves an attribute like the property read `$model->$key`: the model's
+     * own attribute types (columns, casts, accessors, relations) first, then
+     * attributes set earlier on this variable.
+     */
+    private function resolveAttributeType(MethodCallContext $call, ObjectType $modelType, string $key): ?Type
+    {
         $className = $modelType->className;
 
-        if ($key === null || $className === null || str_contains($key, '->')) {
+        if ($className === null || str_contains($key, '->')) {
             return null;
         }
 

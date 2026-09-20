@@ -6859,4 +6859,142 @@ class EloquentQueryController
 
         return $planets;
     }
+
+
+    /**
+     * Model key and persistence results
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model key and persistence results',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'key' => [
+                                    'type' => 'integer',
+                                ],
+                                'castKey' => [
+                                    'type' => 'string',
+                                ],
+                                'saved' => [
+                                    'type' => 'boolean',
+                                ],
+                                'updated' => [
+                                    'type' => 'boolean',
+                                ],
+                                'deleted' => [
+                                    'type' => [
+                                        'boolean',
+                                        'null',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'key',
+                                'castKey',
+                                'saved',
+                                'updated',
+                                'deleted',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function modelKeyAndPersistenceResults(): mixed
+    {
+        $planet = Planet::firstOrFail();
+
+        return [
+            'key' => $planet->getKey(),
+            'castKey' => AttributedPlanet::firstOrFail()->getKey(),
+            'saved' => $planet->save(),
+            'updated' => $planet->update(['name' => 'X']),
+            'deleted' => $planet->delete(),
+        ];
+    }
+
+
+    /**
+     * Model instance copies
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Model instance copies',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'fresh' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                    ],
+                                ],
+                                'refreshed' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                    ],
+                                ],
+                                'copy' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'fresh',
+                                'refreshed',
+                                'copy',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function modelInstanceCopies(): mixed
+    {
+        $planet = ClassifiedPlanet::firstOrFail();
+
+        return [
+            'fresh' => $planet->fresh(),
+            'refreshed' => $planet->refresh(),
+            'copy' => $planet->replicate(),
+        ];
+    }
 }
