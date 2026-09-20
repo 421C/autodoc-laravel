@@ -12,6 +12,7 @@ use AutoDoc\Laravel\Tests\TestProject\Models\LabeledPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use stdClass;
@@ -6091,6 +6092,13 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'pluckedSelectAlias' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'upperCaseAlias',
@@ -6102,6 +6110,7 @@ class EloquentQueryController
                                 'columnsOnFirst',
                                 'columnsOnFind',
                                 'selectWinsOverFinisher',
+                                'pluckedSelectAlias',
                             ],
                         ],
                     ],
@@ -6121,6 +6130,348 @@ class EloquentQueryController
             'columnsOnFirst' => Planet::query()->first(['id', 'name']),
             'columnsOnFind' => Planet::query()->find(1, ['diameter']),
             'selectWinsOverFinisher' => Planet::query()->select('id')->first(['name', 'diameter']),
+            'pluckedSelectAlias' => Planet::query()->select('diameter as size')->pluck('size'),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedRelation' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'launches' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'launches',
+                                    ],
+                                ],
+                                'arrayRelations' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'beacons_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_count',
+                                        'beacons_count',
+                                    ],
+                                ],
+                                'constrainedRelation' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_count',
+                                    ],
+                                ],
+                                'existsAggregate' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'beacons_exists' => [
+                                            'type' => 'boolean',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'beacons_exists',
+                                    ],
+                                ],
+                                'implicitAllColumns' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'rockets_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'diameter',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                        'rockets_count',
+                                    ],
+                                ],
+                                'pluckedAggregate' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'minimum' => 0,
+                                    ],
+                                ],
+                                'variadicRelations' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'rockets_count',
+                                            'beacons_count',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'implicitAllColumns',
+                                'variadicRelations',
+                                'arrayRelations',
+                                'aliasedRelation',
+                                'existsAggregate',
+                                'constrainedRelation',
+                                'pluckedAggregate',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function relationAggregates(): mixed
+    {
+        return [
+            'implicitAllColumns' => Planet::withCount('rockets')->first(['id']),
+            'variadicRelations' => Planet::query()->select('id')->withCount('rockets', 'beacons')->get(),
+            'arrayRelations' => Planet::query()->select('id')->withCount(['rockets', 'beacons'])->first(),
+            'aliasedRelation' => Planet::query()->select('id')->withCount('rockets as launches')->first(),
+            'existsAggregate' => Planet::query()->select('id')->withExists('beacons')->first(),
+            'constrainedRelation' => Planet::query()->select('id')->withCount([
+                'rockets' => fn (Builder $query) => $query->where('name', 'Falcon'),
+            ])->first(),
+            'pluckedAggregate' => Planet::query()->withCount('rockets')->pluck('rockets_count'),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'averageOfIntegerColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_avg_target_planet_id' => [
+                                            'type' => [
+                                                'number',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_avg_target_planet_id',
+                                    ],
+                                ],
+                                'maxOfDateColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_max_launch_date' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_max_launch_date',
+                                    ],
+                                ],
+                                'minOfIntegerColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_min_target_planet_id' => [
+                                            'type' => [
+                                                'integer',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_min_target_planet_id',
+                                    ],
+                                ],
+                                'sumOfIntegerColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_sum_target_planet_id' => [
+                                            'type' => [
+                                                'number',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_sum_target_planet_id',
+                                    ],
+                                ],
+                                'unresolvedColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_max_unknown_column' => [
+                                            'type' => [
+                                                'number',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'rockets_max_unknown_column',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'maxOfDateColumn',
+                                'minOfIntegerColumn',
+                                'sumOfIntegerColumn',
+                                'averageOfIntegerColumn',
+                                'unresolvedColumn',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function relationAggregateColumnTypes(): mixed
+    {
+        return [
+            'maxOfDateColumn' => Planet::query()->select('id')->withMax('rockets', 'launch_date')->first(),
+            'minOfIntegerColumn' => Planet::query()->select('id')->withMin('rockets', 'target_planet_id')->first(),
+            'sumOfIntegerColumn' => Planet::query()->select('id')->withSum('rockets', 'target_planet_id')->first(),
+            'averageOfIntegerColumn' => Planet::query()->select('id')->withAvg('rockets', 'target_planet_id')->first(),
+            'unresolvedColumn' => Planet::query()->select('id')->withMax('rockets', 'unknown_column')->first(),
         ];
     }
 }

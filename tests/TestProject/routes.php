@@ -302,4 +302,6 @@ Route::post('/test/eloquent/relation-rooted-query/{planet}', [EloquentQueryContr
 Route::get('/test/eloquent/conditional-builder-mutations', [EloquentQueryController::class, 'conditionalBuilderMutations']);
 Route::get('/test/eloquent/morph-untagged-relations', [EloquentQueryController::class, 'morphAndUntaggedRelations']);
 Route::get('/test/eloquent/column-selection-parsing', [EloquentQueryController::class, 'columnSelectionParsing']);
+Route::get('/test/eloquent/relation-aggregates', [EloquentQueryController::class, 'relationAggregates']);
+Route::get('/test/eloquent/relation-aggregate-column-types', [EloquentQueryController::class, 'relationAggregateColumnTypes']);
 Route::get('/test/raw/table-row-shapes', [RawQueryController::class, 'tableRowShapes']);
