@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\TestProject\Models\OfflineAttributedRecord;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Endpoints exercised only under offline mode, where model attribute types come
@@ -20,5 +21,10 @@ class OfflineModeController
     public function showAttributedRecord(): OfflineAttributedRecord
     {
         return OfflineAttributedRecord::firstOrFail();
+    }
+
+    public function rawTableQuery(): mixed
+    {
+        return DB::table('planets')->get();
     }
 }

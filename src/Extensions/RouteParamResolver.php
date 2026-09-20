@@ -10,6 +10,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\OperationExtension;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\OpenApi\Operation;
 use AutoDoc\OpenApi\Parameter;
 use AutoDoc\Route;
@@ -81,7 +82,9 @@ class RouteParamResolver extends OperationExtension
                         /**
                          * Route model binding
                          */
-                        $modelPropertyName = $param['binding'] ?? app()->make($typeName)->getRouteKeyName();
+                        $modelPropertyName = $param['binding']
+                            ?? ModelResolver::resolve($typeName)?->getRouteKeyName()
+                            ?? 'id';
 
                         $type = (new EloquentModel)->getPropertyType(
                             phpClass: $scope->getPhpClass($typeName),

@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -249,5 +250,414 @@ class RawQueryController
         });
 
         return response()->json($result);
+    }
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'brief',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedTable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'conditional' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'first' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'diameter',
+                                        'visited',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'fromSubquery' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                                'joined' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                                'keyedPluck' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
+                                'namedConnection' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'paginated' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'current_page' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'data' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        'first_page_url' => [
+                                            'type' => 'string',
+                                        ],
+                                        'from' => [
+                                            'type' => [
+                                                'integer',
+                                                'null',
+                                            ],
+                                        ],
+                                        'last_page' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'last_page_url' => [
+                                            'type' => 'string',
+                                        ],
+                                        'links' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'active' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                    'label' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'url' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        'next_page_url' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'path' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'per_page' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'prev_page_url' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                        'to' => [
+                                            'type' => [
+                                                'integer',
+                                                'null',
+                                            ],
+                                        ],
+                                        'total' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'current_page',
+                                        'first_page_url',
+                                        'from',
+                                        'last_page',
+                                        'last_page_url',
+                                        'next_page_url',
+                                        'path',
+                                        'per_page',
+                                        'prev_page_url',
+                                        'to',
+                                        'total',
+                                    ],
+                                ],
+                                'selected' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'value' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'wholeTable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'wholeTable',
+                                'selected',
+                                'aliasedTable',
+                                'first',
+                                'value',
+                                'keyedPluck',
+                                'paginated',
+                                'joined',
+                                'namedConnection',
+                                'fromSubquery',
+                                'conditional',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function tableRowShapes(Request $request): mixed
+    {
+        $conditional = DB::table('planets');
+
+        if ($request->boolean('brief')) {
+            $conditional->select('id');
+        }
+
+        return [
+            'wholeTable' => DB::table('planets')->get(),
+            'selected' => DB::table('planets')->select('id', 'name')->get(),
+            'aliasedTable' => DB::table('planets as p')->select('p.diameter')->get(),
+            'first' => DB::table('planets')->where('visited', true)->first(),
+            'value' => DB::table('planets')->value('name'),
+            'keyedPluck' => DB::table('planets')->pluck('diameter', 'name'),
+            'paginated' => DB::table('planets')->paginate(15),
+            'joined' => DB::table('planets')->join('rockets', 'rockets.planet_id', '=', 'planets.id')->get(),
+            'namedConnection' => DB::connection('testing')->table('planets')->select('name')->get(),
+            'fromSubquery' => DB::query()->fromSub(DB::table('planets'), 'p')->get(),
+            'conditional' => $conditional->get(),
+        ];
     }
 }

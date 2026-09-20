@@ -2,9 +2,11 @@
 
 namespace AutoDoc\Laravel\Tests\TestProject\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
 
 class Planet extends Model
@@ -30,6 +32,23 @@ class Planet extends Model
     public function spaceStations(): BelongsToMany
     {
         return $this->belongsToMany(SpaceStation::class);
+    }
+
+    /**
+     * @param Builder<$this> $query
+     * @return Builder<$this>
+     */
+    public function scopeVisited(Builder $query): Builder
+    {
+        return $query->where('visited', true);
+    }
+
+    /**
+     * @phpstan-ignore missingType.generics
+     */
+    public function beacons(): MorphMany
+    {
+        return $this->morphMany(Beacon::class, 'beaconable');
     }
 
     /**

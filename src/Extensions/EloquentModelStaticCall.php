@@ -3,15 +3,16 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\DataTypes\ArrayType;
-use AutoDoc\DataTypes\BoolType;
-use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
+use AutoDoc\Laravel\QueryBuilder\BuilderType;
+use AutoDoc\Laravel\QueryBuilder\QueryChain;
+use AutoDoc\Laravel\QueryBuilder\QueryChainMethod;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 /**
  * Handles static calls on `Illuminate\Database\Eloquent\Model` class.
@@ -43,7 +44,7 @@ class EloquentModelStaticCall extends StaticCallExtension
         }
 
         if (! BuilderMethodClassifier::supportsModelStaticCall($methodName)) {
-            return null;
+            return $this->getBuilderType($call);
         }
 
         $className = $call->className;
@@ -56,29 +57,29 @@ class EloquentModelStaticCall extends StaticCallExtension
             return null;
         }
 
-        $scope = $call->scope;
-        $node = $call->node;
+        return (new QueryNavigator($call->scope))->getResultType($call->node, $methodName);
+    }
 
-        if ($methodName === 'insert') {
-            return new BoolType;
+
+    private function getBuilderType(StaticCallContext $call): ?BuilderType
+    {
+        $className = $call->className;
+
+        if (! $className || ! is_subclass_of($className, Model::class)) {
+            return null;
         }
 
-        if ($methodName === 'count') {
-            return new IntegerType(minimum: 0);
+        if (! BuilderMethodClassifier::startsBuilderChain($call->methodName, $className)) {
+            return null;
         }
 
-        if ($methodName === 'all') {
-            $rowType = $scope->withoutScalarTypeValueMerging(function () use ($scope, $node) {
-                return (new QueryNavigator($scope))->getRowType($node);
-            });
-
-            return new ArrayType(
-                itemType: $rowType,
-                className: Collection::class,
-            );
-        }
-
-        return (new QueryNavigator($scope))->getResultType($node, $methodName);
+        return new BuilderType(
+            chain: new QueryChain(
+                modelClassName: $className,
+                methods: [new QueryChainMethod($call->methodName, $call->argTypes)],
+            ),
+            builderClassName: Builder::class,
+        );
     }
 
 

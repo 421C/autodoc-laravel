@@ -12,6 +12,7 @@ use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Eloquent\Model;
 use PhpParser\Node\Expr\NullsafeMethodCall;
@@ -215,7 +216,7 @@ class EloquentModelMethodCall extends MethodCallExtension
             return null;
         }
 
-        $model = $modelType->className ? $this->makeModel($modelType->className) : null;
+        $model = $modelType->className ? ModelResolver::resolve($modelType->className) : null;
         $valueType = clone $call->argTypes->get($valueIndex)->unwrapType($call->scope->config);
 
         if ($model) {

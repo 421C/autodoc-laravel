@@ -2,6 +2,8 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
+use Illuminate\Database\Eloquent\Model;
+
 class BuilderMethodClassifier
 {
     public static function supportsResultInference(string $methodName): bool
@@ -52,6 +54,37 @@ class BuilderMethodClassifier
             'all' => true,
             default => false,
         };
+    }
+
+
+    /**
+     * Write finishers whose return type is fully described by the builder's
+     * own signature.
+     */
+    public static function resolvesFromBuilderSignature(string $methodName): bool
+    {
+        return str_starts_with(strtolower($methodName), 'insert');
+    }
+
+
+    /**
+     * @param class-string<Model> $modelClassName
+     */
+    public static function startsBuilderChain(string $methodName, string $modelClassName): bool
+    {
+        if ($methodName === 'query' || $methodName === 'on' || $methodName === 'onWriteConnection') {
+            return true;
+        }
+
+        if (self::terminatesBuilderChain($methodName)) {
+            return false;
+        }
+
+        if (method_exists($modelClassName, 'scope' . ucfirst($methodName))) {
+            return true;
+        }
+
+        return ! method_exists($modelClassName, $methodName);
     }
 
 

@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use ReflectionMethod;
 use ReflectionNamedType;
-use Throwable;
 
 trait InspectsModelAttributes
 {
@@ -123,19 +122,6 @@ trait InspectsModelAttributes
     }
 
 
-    protected function makeModel(string $className): ?Model
-    {
-        try {
-            $model = app()->make($className);
-
-        } catch (Throwable) {
-            return null;
-        }
-
-        return $model instanceof Model ? $model : null;
-    }
-
-
     /**
      * Applies Laravel serialization semantics (`getArrayableItems()`) to a
      * model variable's resolved properties: `$hidden`/`$visible` exclusions
@@ -152,7 +138,7 @@ trait InspectsModelAttributes
             return $properties;
         }
 
-        $model = $this->makeModel($modelClassName);
+        $model = ModelResolver::resolve($modelClassName);
 
         if (! $model) {
             return $properties;

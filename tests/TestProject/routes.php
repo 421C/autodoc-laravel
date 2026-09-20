@@ -299,3 +299,7 @@ Route::get('/test/closure3/{uuid}/{name}/{version}', (
 Route::post('/test/eloquent/attributed-model', [EloquentQueryController::class, 'attributedModelSerialization']);
 Route::post('/test/eloquent/attributed-model-phpdoc-read', [EloquentQueryController::class, 'attributedModelPhpDocHiddenRead']);
 Route::post('/test/eloquent/relation-rooted-query/{planet}', [EloquentQueryController::class, 'relationRootedQuery']);
+Route::get('/test/eloquent/conditional-builder-mutations', [EloquentQueryController::class, 'conditionalBuilderMutations']);
+Route::get('/test/eloquent/morph-untagged-relations', [EloquentQueryController::class, 'morphAndUntaggedRelations']);
+Route::get('/test/eloquent/column-selection-parsing', [EloquentQueryController::class, 'columnSelectionParsing']);
+Route::get('/test/raw/table-row-shapes', [RawQueryController::class, 'tableRowShapes']);

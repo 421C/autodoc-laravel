@@ -17,13 +17,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use PhpParser\Node;
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 
 class Relation
 {
+    /**
+     * @var array<string, class-string>
+     */
+    public const FACTORY_METHODS = [
+        'hasOne' => HasOne::class,
+        'hasMany' => HasMany::class,
+        'belongsTo' => BelongsTo::class,
+        'belongsToMany' => BelongsToMany::class,
+        'hasOneThrough' => HasOneThrough::class,
+        'hasManyThrough' => HasManyThrough::class,
+        'morphOne' => MorphOne::class,
+        'morphMany' => MorphMany::class,
+        'morphTo' => MorphTo::class,
+        'morphToMany' => MorphToMany::class,
+        'morphedByMany' => MorphToMany::class,
+    ];
+
+    /** @var array<string, array{?class-string, ?class-string<Model>}> */
+    private static array $parsedDefinitions = [];
+
     public function __construct(
         /** @var PhpClass<Model> */
         private PhpClass $modelPhpClass,
@@ -40,20 +65,12 @@ class Relation
 
     public readonly string $exportedName;
 
-    /** @var ?class-string<Model> */
-    private ?string $relatedModelClassName = null;
-
-    /** @var ?class-string */
-    private ?string $relationTypeClassName = null;
-
 
     public function getExportedName(): string
     {
-        if (app()->make($this->modelPhpClass->className)::$snakeAttributes ?? true) {
-            return Str::snake($this->name);
-        }
+        $modelClassName = $this->modelPhpClass->className;
 
-        return $this->name;
+        return $modelClassName::$snakeAttributes ? Str::snake($this->name) : $this->name;
     }
 
 
@@ -62,86 +79,153 @@ class Relation
      */
     public function getRelatedModelClassName(): ?string
     {
-        if (! $this->relatedModelClassName) {
-            $this->parseRelationDefinition();
-        }
-
-        return $this->relatedModelClassName;
+        return $this->getDefinition()[1];
     }
+
 
     /**
      * @return ?class-string
      */
     public function getRelationTypeClassName(): ?string
     {
-        if (! $this->relationTypeClassName) {
-            $this->parseRelationDefinition();
-        }
-
-        return $this->relationTypeClassName;
+        return $this->getDefinition()[0];
     }
 
 
-    private function parseRelationDefinition(): void
+    public function getKind(): ?RelationKind
     {
-        if ($this->modelPhpClass->getReflection()->hasMethod($this->name)) {
-            $phpDocReturnType = $this->modelPhpClass->getMethod($this->name)->getTypeFromPhpDocReturnTag();
+        return self::kindOf($this->getRelationTypeClassName());
+    }
 
-            if ($phpDocReturnType && $phpDocReturnType->typeNode instanceof GenericTypeNode) {
-                $this->relationTypeClassName = $this->modelPhpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);
 
-                if (isset($phpDocReturnType->typeNode->genericTypes[0])
-                    && $phpDocReturnType->typeNode->genericTypes[0] instanceof IdentifierTypeNode
-                ) {
-                    $firstGenericTypeName = $phpDocReturnType->typeNode->genericTypes[0]->name;
-
-                    if ($this->relationTypeClassName === HasOne::class
-                        || $this->relationTypeClassName === BelongsTo::class
-                        || $this->relationTypeClassName === HasOneThrough::class
-                        || $this->relationTypeClassName === HasMany::class
-                        || $this->relationTypeClassName === BelongsToMany::class
-                        || $this->relationTypeClassName === HasManyThrough::class
-                    ) {
-                        $argumentClassName = $this->modelPhpClass->scope->getResolvedClassName($firstGenericTypeName);
-
-                        if ($argumentClassName) {
-                            if (is_subclass_of($argumentClassName, Model::class, true)) {
-                                $this->relatedModelClassName = $argumentClassName;
-
-                            } else {
-                                if ($this->modelPhpClass->scope->isDebugModeEnabled()) {
-                                    throw new Exception('Relation "' . $this->name . '" of "' . $this->modelPhpClass->className . '" is not related to an Eloquent Model');
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    public static function kindOf(?string $relationTypeClassName): ?RelationKind
+    {
+        if ($relationTypeClassName === null) {
+            return null;
         }
+
+        return match (true) {
+            is_a($relationTypeClassName, MorphTo::class, true) => RelationKind::Polymorphic,
+
+            is_a($relationTypeClassName, HasOne::class, true),
+            is_a($relationTypeClassName, MorphOne::class, true),
+            is_a($relationTypeClassName, HasOneThrough::class, true),
+            is_a($relationTypeClassName, BelongsTo::class, true) => RelationKind::One,
+
+            is_a($relationTypeClassName, HasMany::class, true),
+            is_a($relationTypeClassName, MorphMany::class, true),
+            is_a($relationTypeClassName, HasManyThrough::class, true),
+            is_a($relationTypeClassName, BelongsToMany::class, true) => RelationKind::Many,
+
+            default => null,
+        };
     }
 
 
     public function resolveType(): ?Type
     {
-        $relationTypeClassName = $this->getRelationTypeClassName();
+        return match ($this->getKind()) {
+            RelationKind::One => new UnionType([$this->getRelatedModelObjectType(), new NullType]),
 
-        if ($relationTypeClassName === HasOne::class
-            || $relationTypeClassName === BelongsTo::class
-            || $relationTypeClassName === HasOneThrough::class
-        ) {
-            return new UnionType([
-                $this->getRelatedModelObjectType(),
-                new NullType,
-            ]);
-
-        } else if ($relationTypeClassName === HasMany::class
-            || $relationTypeClassName === BelongsToMany::class
-            || $relationTypeClassName === HasManyThrough::class
-        ) {
-            return new ArrayType(
+            RelationKind::Many => new ArrayType(
                 itemType: $this->getRelatedModelObjectType(),
                 className: Collection::class,
-            );
+            ),
+
+            RelationKind::Polymorphic => new UnionType([new ObjectType, new NullType]),
+
+            null => null,
+        };
+    }
+
+
+    /**
+     * @return array{?class-string, ?class-string<Model>}
+     */
+    private function getDefinition(): array
+    {
+        $cacheKey = $this->modelPhpClass->className . '::' . $this->name;
+
+        if (isset(self::$parsedDefinitions[$cacheKey])) {
+            return self::$parsedDefinitions[$cacheKey];
+        }
+
+        if (! $this->modelPhpClass->getReflection()->hasMethod($this->name)) {
+            return self::$parsedDefinitions[$cacheKey] = [null, null];
+        }
+
+        $definition = $this->parseGenericReturnTag() ?? $this->parseFactoryCall() ?? [null, null];
+
+        return self::$parsedDefinitions[$cacheKey] = $definition;
+    }
+
+
+    /**
+     * @return ?array{?class-string, ?class-string<Model>}
+     */
+    private function parseGenericReturnTag(): ?array
+    {
+        $phpDocReturnType = $this->modelPhpClass->getMethod($this->name)->getTypeFromPhpDocReturnTag();
+
+        if (! $phpDocReturnType || ! ($phpDocReturnType->typeNode instanceof GenericTypeNode)) {
+            return null;
+        }
+
+        $relationTypeClassName = $this->modelPhpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);
+        $firstGenericType = $phpDocReturnType->typeNode->genericTypes[0] ?? null;
+
+        if (! ($firstGenericType instanceof IdentifierTypeNode) || ! self::kindOf($relationTypeClassName)) {
+            return [$relationTypeClassName, null];
+        }
+
+        return [
+            $relationTypeClassName,
+            $this->resolveRelatedModelClassName($firstGenericType->name),
+        ];
+    }
+
+
+    /**
+     * @return ?array{?class-string, ?class-string<Model>}
+     */
+    private function parseFactoryCall(): ?array
+    {
+        $finder = new RelationFactoryCallFinder($this->name);
+
+        $this->modelPhpClass->traverse($finder);
+
+        if ($finder->factoryName === null) {
+            return null;
+        }
+
+        $relatedClassArgument = $finder->relatedClassArgument;
+
+        $relatedModelClassName = $relatedClassArgument instanceof Node\Expr\ClassConstFetch
+            && $relatedClassArgument->class instanceof Node\Name
+                ? $this->resolveRelatedModelClassName($relatedClassArgument->class->toString())
+                : null;
+
+        return [self::FACTORY_METHODS[$finder->factoryName], $relatedModelClassName];
+    }
+
+
+    /**
+     * @return ?class-string<Model>
+     */
+    private function resolveRelatedModelClassName(string $name): ?string
+    {
+        $className = $this->modelPhpClass->scope->getResolvedClassName($name);
+
+        if (! $className) {
+            return null;
+        }
+
+        if (is_subclass_of($className, Model::class, true)) {
+            return $className;
+        }
+
+        if ($this->modelPhpClass->scope->isDebugModeEnabled()) {
+            throw new Exception('Relation "' . $this->name . '" of "' . $this->modelPhpClass->className . '" is not related to an Eloquent Model');
         }
 
         return null;
@@ -167,5 +251,11 @@ class Relation
         }
 
         return $objectType;
+    }
+
+
+    public static function clearCache(): void
+    {
+        self::$parsedDefinitions = [];
     }
 }

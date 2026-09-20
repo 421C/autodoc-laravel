@@ -59,6 +59,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
     {
         Route::get('/test/offline/planet', [TestProject\Http\OfflineModeController::class, 'showPlanet']);
         Route::get('/test/offline/attributed-record', [TestProject\Http\OfflineModeController::class, 'showAttributedRecord']);
+        Route::get('/test/offline/raw-table', [TestProject\Http\OfflineModeController::class, 'rawTableQuery']);
     }
 
     protected function setUp(): void
@@ -115,6 +116,34 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
         // columns offline, so the timestamp attributes must be absent.
         $this->assertArrayNotHasKey('created_at', $properties);
         $this->assertArrayNotHasKey('updated_at', $properties);
+    }
+
+
+    /**
+     * A raw table query has no casts, appends or PHPDoc to fall back on, so
+     * without schema access there is nothing left to describe its rows.
+     */
+    #[Test]
+    public function aRawTableQueryHasNoRowShapeWithoutDatabaseAccess(): void
+    {
+        $config = (new ConfigLoader)->load();
+
+        $workspace = Workspace::getDefault($config);
+
+        $this->assertNotNull($workspace);
+
+        /** @var ?Schema */
+        $schema = json_decode($workspace->getJson() ?: '', true);
+
+        $this->assertNotNull($schema);
+
+        /** @var array<string, mixed> */
+        $operation = $schema['paths']['/test/offline/raw-table']['get'] ?? [];
+
+        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+
+        $this->assertSame('array', $responseSchema['type'] ?? null);
+        $this->assertArrayNotHasKey('properties', $this->digArray($responseSchema, ['items']));
     }
 
 
