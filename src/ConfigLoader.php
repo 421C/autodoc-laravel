@@ -50,6 +50,7 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\EloquentModelSerialization::class,
                 \AutoDoc\Laravel\Extensions\QueryBuilderMethodCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModelMethodCall::class,
+                \AutoDoc\Laravel\Extensions\EloquentEagerLoad::class,
                 \AutoDoc\Laravel\Extensions\CollectionMethodCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentBuilderMethodCall::class,
             ]);

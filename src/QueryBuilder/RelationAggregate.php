@@ -25,6 +25,12 @@ final class RelationAggregate
         'withmax' => 'max',
         'withsum' => 'sum',
         'withavg' => 'avg',
+        'loadcount' => 'count',
+        'loadexists' => 'exists',
+        'loadmin' => 'min',
+        'loadmax' => 'max',
+        'loadsum' => 'sum',
+        'loadavg' => 'avg',
     ];
 
     public function __construct(
@@ -46,17 +52,17 @@ final class RelationAggregate
      * @param class-string<Model> $modelClassName
      * @return ?list<self>
      */
-    public static function parse(QueryChainMethod $method, string $modelClassName, Scope $scope): ?array
+    public static function parse(string $methodName, ArgumentList $args, string $modelClassName, Scope $scope): ?array
     {
-        $function = self::FUNCTIONS[strtolower($method->name)] ?? null;
+        $function = self::FUNCTIONS[strtolower($methodName)] ?? null;
 
-        if ($function === null || count($method->args) === 0) {
+        if ($function === null || count($args) === 0) {
             return null;
         }
 
         $column = self::takesNoColumnArgument($function)
             ? '*'
-            : self::resolveColumnArgument($method->args, $scope);
+            : self::resolveColumnArgument($args, $scope);
 
         if ($column === null) {
             return [];
@@ -71,7 +77,7 @@ final class RelationAggregate
                 function: $function,
                 column: $column,
             ),
-            self::resolveRelationExpressions($method->args, $function, $scope),
+            self::resolveRelationExpressions($args, $function, $scope),
         );
     }
 
@@ -194,7 +200,7 @@ final class RelationAggregate
     private static function relationArgumentIndexes(ArgumentList $args, string $function): array
     {
         if (! self::acceptsVariadicRelations($function)) {
-            $index = $args->indexForParameter('relation', 0);
+            $index = $args->findNamedIndex('relation') ?? $args->indexForParameter('relations', 0);
 
             return $index === null ? [] : [$index];
         }

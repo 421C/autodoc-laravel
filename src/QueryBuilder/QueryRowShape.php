@@ -3,7 +3,6 @@
 namespace AutoDoc\Laravel\QueryBuilder;
 
 use AutoDoc\Analyzer\ArgumentList;
-use AutoDoc\Analyzer\PhpClass;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
@@ -11,18 +10,18 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
-use AutoDoc\Laravel\Helpers\DotNotationParser;
 use AutoDoc\Laravel\Helpers\ModelResolver;
-use Illuminate\Database\Eloquent\Model;
 
 final class QueryRowShape
 {
-    use DotNotationParser;
-
     public function __construct(
         private Scope $scope,
         private QueryChain $chain,
-    ) {}
+    ) {
+        $this->eagerLoad = new EagerLoad($scope);
+    }
+
+    private readonly EagerLoad $eagerLoad;
 
     private ?ObjectType $baseRowType = null;
 
@@ -34,9 +33,6 @@ final class QueryRowShape
 
     /** @var ?array<string, Type> */
     private ?array $selectedColumns = null;
-
-    /** @var array<string, Type> */
-    private array $relationArguments = [];
 
     private ?Type $pluckedKeyType = null;
 
@@ -59,7 +55,7 @@ final class QueryRowShape
             }
 
             if ($method->name === 'with') {
-                $this->addEagerLoadedRelationArguments($method->args);
+                $this->eagerLoad->addArguments($method->args);
             }
 
             $aggregateColumns = $this->getRelationAggregateColumns($method);
@@ -170,32 +166,7 @@ final class QueryRowShape
     {
         $modelClassName = $this->chain->modelClassName;
 
-        if (! $modelClassName || ! $this->relationArguments) {
-            return [];
-        }
-
-        $modelPhpClass = $this->scope->getPhpClassInDeeperScope($modelClassName);
-        $relations = [];
-
-        foreach ($this->relationArguments as $key => $relationArgumentType) {
-            $relation = $this->makeRelationObject($key, $relationArgumentType, $modelPhpClass);
-
-            if (isset($relations[$relation->exportedName])) {
-                $relations[$relation->exportedName]->columns = array_merge($relations[$relation->exportedName]->columns, $relation->columns);
-                $relations[$relation->exportedName]->relations = array_merge($relations[$relation->exportedName]->relations, $relation->relations);
-
-            } else {
-                $relations[$relation->exportedName] = $relation;
-            }
-        }
-
-        $relationTypes = [];
-
-        foreach ($relations as $name => $relation) {
-            $relationTypes[$name] = $relation->resolveType() ?? new UnknownType;
-        }
-
-        return $relationTypes;
+        return $modelClassName ? $this->eagerLoad->resolveRelationTypes($modelClassName) : [];
     }
 
 
@@ -226,7 +197,8 @@ final class QueryRowShape
         }
 
         $aggregates = RelationAggregate::parse(
-            method: $method,
+            methodName: $method->name,
+            args: $method->args,
             modelClassName: $modelClassName,
             scope: $this->scope,
         );
@@ -325,72 +297,6 @@ final class QueryRowShape
         return count($values) === 1 ? $values[0] : null;
     }
 
-
-    private function addEagerLoadedRelationArguments(ArgumentList $arguments): void
-    {
-        $argumentListArrayType = $this->scope->withPartialArraysResolvingAsShapes(function () use ($arguments) {
-            if ($arguments->has(0)) {
-                $firstArgType = $arguments->get(0)->unwrapType($this->scope->config);
-
-                if ($firstArgType instanceof ArrayType) {
-                    return $firstArgType;
-                }
-            }
-
-            $shape = [];
-
-            for ($index = 0; $index < count($arguments); $index++) {
-                $shape[] = $arguments->get($index)->unwrapType($this->scope->config);
-            }
-
-            return new ArrayType(shape: $shape);
-        });
-
-        $this->normalizeRelationArgumentArray($argumentListArrayType, $this->relationArguments);
-    }
-
-
-    /**
-     * @param array<string, Type> &$normalizedShape
-     */
-    private function normalizeRelationArgumentArray(ArrayType $arrayType, array &$normalizedShape): void
-    {
-        $shape = $arrayType->shape;
-
-        if (! $shape && $arrayType->itemType) {
-            $shape = $arrayType->itemType instanceof UnionType
-                ? $arrayType->itemType->types
-                : [$arrayType->itemType];
-        }
-
-        foreach ($shape as $key => $valueType) {
-            $valueType = $valueType->unwrapType($this->scope->config);
-
-            if (is_string($key)) {
-                $keyVariants = [$key];
-
-                if ($valueType instanceof ArrayType) {
-                    $relationArgumentShape = [];
-
-                    $this->normalizeRelationArgumentArray($valueType, $relationArgumentShape);
-
-                    $valueType = new ArrayType(shape: $relationArgumentShape);
-                }
-
-            } else {
-                $keyVariants = [];
-
-                if ($valueType instanceof StringType) {
-                    $keyVariants = $valueType->getPossibleValues() ?? [];
-                    $valueType = new UnknownType;
-                }
-            }
-
-            foreach ($keyVariants as $dotNotationString) {
-                $this->dotNotationToNestedArrayType($normalizedShape, $this->splitDotNotation($dotNotationString), $valueType);
-            }
-        }
-    }
 
 
     private function resolvePluckedColumnType(ArgumentList $arguments): ?Type
@@ -575,54 +481,5 @@ final class QueryRowShape
         $segments = explode('->', $column);
 
         return trim((string) end($segments));
-    }
-
-
-    /**
-     * @param PhpClass<Model> $modelPhpClass
-     */
-    private function makeRelationObject(string $key, Type $relationArgumentType, PhpClass $modelPhpClass): Relation
-    {
-        $parts = explode(':', $key, 2);
-
-        $relation = new Relation(
-            modelPhpClass: $modelPhpClass,
-            name: $parts[0],
-            columns: isset($parts[1]) ? explode(',', $parts[1]) : [],
-            relations: [],
-        );
-
-        $relationArgumentType = $this->scope->withPartialArraysResolvingAsShapes(
-            fn () => $relationArgumentType->unwrapType($this->scope->config)
-        );
-
-        if (! ($relationArgumentType instanceof ArrayType)) {
-            return $relation;
-        }
-
-        $relatedModelClassName = $relation->getRelatedModelClassName();
-
-        if (! $relatedModelClassName) {
-            return $relation;
-        }
-
-        $relatedModelPhpClass = $modelPhpClass->scope->getPhpClassInDeeperScope($relatedModelClassName);
-
-        if ($relationArgumentType->shape) {
-            foreach ($relationArgumentType->shape as $subRelationKey => $valueType) {
-                $subRelation = $this->makeRelationObject((string) $subRelationKey, $valueType, $relatedModelPhpClass);
-
-                $relation->relations[$subRelation->exportedName] = $subRelation;
-            }
-
-        } else if ($relationArgumentType->itemType instanceof StringType) {
-            foreach ($relationArgumentType->itemType->getPossibleValues() ?? [] as $subRelationKey) {
-                $subRelation = $this->makeRelationObject($subRelationKey, new UnknownType, $relatedModelPhpClass);
-
-                $relation->relations[$subRelation->exportedName] = $subRelation;
-            }
-        }
-
-        return $relation;
     }
 }

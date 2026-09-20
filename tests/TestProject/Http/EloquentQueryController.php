@@ -1393,6 +1393,7 @@ class EloquentQueryController
                                 'required' => [
                                     'id',
                                     'diameter',
+                                    'space_stations',
                                 ],
                             ],
                         ],
@@ -1471,6 +1472,7 @@ class EloquentQueryController
                                             'required' => [
                                                 'name',
                                                 'description',
+                                                'rockets',
                                             ],
                                         ],
                                     ],
@@ -1492,6 +1494,7 @@ class EloquentQueryController
                                     'visited',
                                     'created_at',
                                     'updated_at',
+                                    'space_stations',
                                 ],
                             ],
                         ],
@@ -1596,11 +1599,13 @@ class EloquentQueryController
                                         'visited',
                                         'created_at',
                                         'updated_at',
+                                        'rockets',
                                     ],
                                 ],
                             ],
                             'required' => [
                                 'id',
+                                'planet',
                             ],
                         ],
                     ],
@@ -1673,11 +1678,13 @@ class EloquentQueryController
                                     'required' => [
                                         'id',
                                         'diameter',
+                                        'rockets',
                                     ],
                                 ],
                             ],
                             'required' => [
                                 'created_at',
+                                'planet',
                             ],
                         ],
                     ],
@@ -1816,6 +1823,7 @@ class EloquentQueryController
                                                     'size',
                                                     'created_at',
                                                     'updated_at',
+                                                    'rockets',
                                                 ],
                                             ],
                                         ],
@@ -1823,6 +1831,7 @@ class EloquentQueryController
                                     'required' => [
                                         'id',
                                         'diameter',
+                                        'space_stations',
                                     ],
                                 ],
                                 'size' => [
@@ -1843,6 +1852,7 @@ class EloquentQueryController
                                 'size',
                                 'created_at',
                                 'updated_at',
+                                'planet',
                             ],
                         ],
                     ],
@@ -2876,15 +2886,15 @@ class EloquentQueryController
                             'items' => [
                                 'type' => 'object',
                                 'properties' => [
+                                    'description' => [
+                                        'type' => 'string',
+                                    ],
                                     'created_at' => [
                                         'type' => [
                                             'string',
                                             'null',
                                         ],
                                         'format' => 'date-time',
-                                    ],
-                                    'description' => [
-                                        'type' => 'string',
                                     ],
                                     'id' => [
                                         'anyOf' => [
@@ -2967,6 +2977,7 @@ class EloquentQueryController
                                     'size',
                                     'created_at',
                                     'updated_at',
+                                    'planet',
                                 ],
                             ],
                         ],
@@ -5848,6 +5859,8 @@ class EloquentQueryController
                                         'beaconable_id',
                                         'created_at',
                                         'updated_at',
+                                        'beaconable',
+                                        'planet',
                                     ],
                                 ],
                                 'beacons' => [
@@ -5936,6 +5949,7 @@ class EloquentQueryController
                                             'visited',
                                             'created_at',
                                             'updated_at',
+                                            'beacons',
                                         ],
                                     ],
                                 ],
@@ -6473,5 +6487,376 @@ class EloquentQueryController
             'averageOfIntegerColumn' => Planet::query()->select('id')->withAvg('rockets', 'target_planet_id')->first(),
             'unresolvedColumn' => Planet::query()->select('id')->withMax('rockets', 'unknown_column')->first(),
         ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'rockets' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'rockets',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function loadRelationOnModel(): mixed
+    {
+        $planet = Planet::findOrFail(1);
+
+        $planet->load('rockets');
+
+        return $planet;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'space_stations' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'anyOf' => [
+                                                    [
+                                                        'type' => 'string',
+                                                        'const' => '',
+                                                    ],
+                                                    [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                            ],
+                                            'name' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                            'rockets' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'name' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'rockets',
+                                        ],
+                                    ],
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'space_stations',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function loadNestedRelationWithColumns(): mixed
+    {
+        $planet = Planet::findOrFail(1);
+
+        $planet->loadMissing([
+            'spaceStations:id,name' => fn ($query) => $query->where('id', '>', 1),
+            'spaceStations.rockets',
+        ]);
+
+        return $planet;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'diameter' => [
+                                    'type' => 'number',
+                                    'format' => 'float',
+                                ],
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'rockets_count' => [
+                                    'type' => 'integer',
+                                    'minimum' => 0,
+                                ],
+                                'rockets_max_launch_date' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date',
+                                ],
+                                'space_stations_exists' => [
+                                    'type' => 'boolean',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'visited' => [
+                                    'type' => 'boolean',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'diameter',
+                                'visited',
+                                'created_at',
+                                'updated_at',
+                                'rockets_count',
+                                'rockets_max_launch_date',
+                                'space_stations_exists',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function loadAggregatesOnModel(): mixed
+    {
+        $planet = Planet::findOrFail(1);
+
+        $planet->loadCount('rockets');
+        $planet->loadMax('rockets', 'launch_date');
+        $planet->loadExists('spaceStations');
+
+        return $planet;
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'beacons_count' => [
+                                        'type' => 'integer',
+                                        'minimum' => 0,
+                                    ],
+                                    'created_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'diameter' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                    'id' => [
+                                        'type' => 'integer',
+                                    ],
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'rockets' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'id' => [
+                                                    'type' => 'integer',
+                                                ],
+                                                'name' => [
+                                                    'type' => 'string',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'id',
+                                                'name',
+                                            ],
+                                        ],
+                                    ],
+                                    'updated_at' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                        'format' => 'date-time',
+                                    ],
+                                    'visited' => [
+                                        'type' => 'boolean',
+                                    ],
+                                ],
+                                'required' => [
+                                    'id',
+                                    'name',
+                                    'diameter',
+                                    'visited',
+                                    'created_at',
+                                    'updated_at',
+                                    'rockets',
+                                    'beacons_count',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function loadRelationOnCollection(): mixed
+    {
+        $planets = Planet::all();
+
+        $planets->load('rockets');
+        $planets->loadCount('beacons');
+
+        return $planets;
     }
 }

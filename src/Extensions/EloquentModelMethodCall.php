@@ -13,11 +13,9 @@ use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\Helpers\InspectsModelAttributes;
 use AutoDoc\Laravel\Helpers\ModelResolver;
-use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
+use AutoDoc\Laravel\Helpers\MutatesModelReceiver;
 use Illuminate\Database\Eloquent\Model;
 use PhpParser\Node\Expr\NullsafeMethodCall;
-use PhpParser\Node\Expr\NullsafePropertyFetch;
-use PhpParser\Node\Expr\PropertyFetch;
 use ReflectionMethod;
 
 /**
@@ -25,7 +23,7 @@ use ReflectionMethod;
  */
 class EloquentModelMethodCall extends MethodCallExtension
 {
-    use InspectsModelAttributes, ResolvesModelTypes;
+    use InspectsModelAttributes, MutatesModelReceiver;
 
     public function handleSideEffect(MethodCallContext $call): void
     {
@@ -48,17 +46,7 @@ class EloquentModelMethodCall extends MethodCallExtension
         if ($attribute !== null) {
             [$name, $type] = $attribute;
 
-            if ($this->mutateNullablePropertyReceiver($call, $modelType, $name, $type)) {
-                return;
-            }
-
-            if ($call->node instanceof NullsafeMethodCall
-                && $this->typeIncludesNull($call->getVarType())
-            ) {
-                return;
-            }
-
-            $call->mutateExpression($call->node->var, [$name => clone $type]);
+            $this->mutateModelReceiver($call, $modelType, [$name => $type]);
         }
     }
 
@@ -267,51 +255,5 @@ class EloquentModelMethodCall extends MethodCallExtension
     private function getModelType(MethodCallContext $call): ?ObjectType
     {
         return $this->resolveModelObjectType($call->getVarType());
-    }
-
-
-    /**
-     * Replaces a nullable relation on its parent so recording the mutation
-     * does not discard the null variant.
-     */
-    private function mutateNullablePropertyReceiver(
-        MethodCallContext $call,
-        ObjectType $modelType,
-        string $attributeName,
-        Type $attributeType,
-    ): bool {
-        if (! ($call->node instanceof NullsafeMethodCall)
-            || ! $this->typeIncludesNull($call->getVarType())
-            || ! ($call->node->var instanceof PropertyFetch
-                || $call->node->var instanceof NullsafePropertyFetch)
-        ) {
-            return false;
-        }
-
-        $propertyName = $call->scope->getRawValueFromNode($call->node->var->name);
-
-        if (! is_string($propertyName)) {
-            return false;
-        }
-
-        $mutatedModelType = clone $modelType;
-        $mutatedModelType->properties[$attributeName] = clone $attributeType;
-        $receiverType = $call->getVarType();
-        $receiverVariants = $receiverType instanceof UnionType ? $receiverType->types : [$receiverType];
-
-        $updatedReceiverVariants = array_map(
-            fn (Type $variant): Type => $variant === $modelType ? $mutatedModelType : $variant,
-            $receiverVariants,
-        );
-
-        $updatedReceiverType = new UnionType($updatedReceiverVariants)
-            ->unwrapType($call->scope->config)
-            ->setRequired($receiverType->required);
-
-        $call->mutateExpression($call->node->var->var, [
-            $propertyName => $updatedReceiverType,
-        ]);
-
-        return true;
     }
 }
