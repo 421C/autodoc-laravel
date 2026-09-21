@@ -8,11 +8,7 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
-use Illuminate\Database\Connection;
-use Illuminate\Database\DatabaseManager;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
@@ -28,16 +24,13 @@ final class QueryChainExtractor
         private Scope $scope,
     ) {}
 
-    /** @var ?array<string, true> */
-    private static ?array $builderClassMethods = null;
-
     /** @var ?class-string<Model> */
     private ?string $modelClassName = null;
 
     private bool $isRawDatabaseQuery = false;
 
-    /** @var list<QueryChainMethod> */
-    private array $methods = [];
+    /** @var list<list<QueryChainMethod>> */
+    private array $methodVariants = [[]];
 
     private bool $shortCircuitsToNull = false;
 
@@ -86,13 +79,13 @@ final class QueryChainExtractor
         $this->walkChain($queryNode);
 
         $chains = $this->rootChains
-            ? array_map($this->continueRootChain(...), $this->rootChains)
-            : [new QueryChain(
+            ? $this->continueRootChains()
+            : array_map(fn (array $methods) => new QueryChain(
                 modelClassName: $this->modelClassName,
-                methods: $this->methods,
+                methods: $methods,
                 isRawDatabaseQuery: $this->isRawDatabaseQuery,
                 shortCircuitsToNull: $this->shortCircuitsToNull,
-            )];
+            ), $this->methodVariants);
 
         return array_values(array_filter(
             $chains,
@@ -102,13 +95,26 @@ final class QueryChainExtractor
     }
 
 
-    private function continueRootChain(QueryChain $rootChain): QueryChain
+    /**
+     * @return list<QueryChain>
+     */
+    private function continueRootChains(): array
     {
-        foreach ($this->methods as $method) {
-            $rootChain = $rootChain->withMethod($method);
+        $chains = [];
+
+        foreach ($this->rootChains as $rootChain) {
+            foreach ($this->methodVariants as $methods) {
+                $chain = $rootChain;
+
+                foreach ($methods as $method) {
+                    $chain = $chain->withMethod($method);
+                }
+
+                $chains[] = $this->shortCircuitsToNull ? $chain->withShortCircuitToNull() : $chain;
+            }
         }
 
-        return $this->shortCircuitsToNull ? $rootChain->withShortCircuitToNull() : $rootChain;
+        return $chains;
     }
 
 
@@ -204,7 +210,7 @@ final class QueryChainExtractor
         }
 
         $this->modelClassName = $relatedModelClassName;
-        $this->methods = [];
+        $this->methodVariants = [[]];
 
         return true;
     }
@@ -249,11 +255,90 @@ final class QueryChainExtractor
 
     private function recordMethod(MethodCall|NullsafeMethodCall|StaticCall $expr): void
     {
-        $this->methods[] = new QueryChainMethod(
+        $method = new QueryChainMethod(
             name: (string) $this->scope->getRawValueFromNode($expr->name),
             args: ArgumentList::fromArgNodes($expr->args, $this->scope),
         );
+
+        foreach ($this->methodVariants as $index => $methods) {
+            $this->methodVariants[$index] = [...$methods, $method];
+        }
+
+        $this->recordCallbackMethods($expr, $method);
     }
+
+
+    private function recordCallbackMethods(MethodCall|NullsafeMethodCall|StaticCall $expr, QueryChainMethod $method): void
+    {
+        $conditional = ConditionalCallback::read($method, $expr, $this->provisionalChain(), $this->scope);
+
+        if ($conditional === null) {
+            return;
+        }
+
+        $conditional = $conditional->withoutRowPreservingCalls($this->modelClassName);
+
+        match ($conditional->callbackRuns) {
+            true => $this->appendToEveryVariant($conditional->callbackMethods),
+            false => $this->appendToEveryVariant($conditional->defaultMethods),
+            null => $this->splitVariants($conditional->callbackMethods, $conditional->defaultMethods),
+        };
+    }
+
+
+    private function provisionalChain(): QueryChain
+    {
+        return new QueryChain(
+            modelClassName: $this->modelClassName,
+            methods: [],
+            isRawDatabaseQuery: $this->isRawDatabaseQuery,
+        );
+    }
+
+    /**
+     * @param list<QueryChainMethod> $methods
+     */
+    private function appendToEveryVariant(array $methods): void
+    {
+        if ($methods === []) {
+            return;
+        }
+
+        foreach ($this->methodVariants as $index => $variant) {
+            $this->methodVariants[$index] = [...$variant, ...$methods];
+        }
+    }
+
+
+    /**
+     * @param list<QueryChainMethod> $callbackMethods
+     * @param list<QueryChainMethod> $defaultMethods
+     */
+    private function splitVariants(array $callbackMethods, array $defaultMethods): void
+    {
+        if ($callbackMethods === [] && $defaultMethods === []) {
+            return;
+        }
+
+        if (count($this->methodVariants) * 2 > QueryChain::MAX_VARIANTS) {
+            $this->appendToEveryVariant(array_map(
+                fn (QueryChainMethod $method) => $method->asConditional(),
+                [...$defaultMethods, ...$callbackMethods],
+            ));
+
+            return;
+        }
+
+        $split = [];
+
+        foreach ($this->methodVariants as $variant) {
+            $split[] = [...$variant, ...$defaultMethods];
+            $split[] = [...$variant, ...$callbackMethods];
+        }
+
+        $this->methodVariants = $split;
+    }
+
 
 
     private function receiverCanBeNull(Node\Expr $expr): bool
@@ -336,32 +421,11 @@ final class QueryChainExtractor
         }
 
         foreach ($chain->methods as $method) {
-            if (! $this->isKnownBuilderMethod($method->name, $chain->modelClassName)) {
+            if (! BuilderMethodClassifier::isKnownBuilderMethod($method->name, $chain->modelClassName)) {
                 return false;
             }
         }
 
         return true;
-    }
-
-
-    private function isKnownBuilderMethod(string $methodName, ?string $modelClassName): bool
-    {
-        self::$builderClassMethods ??= array_fill_keys(array_map(strtolower(...), array_merge(
-            get_class_methods(EloquentBuilder::class),
-            get_class_methods(QueryBuilder::class),
-        )), true);
-
-        if (isset(self::$builderClassMethods[strtolower($methodName)])) {
-            return true;
-        }
-
-        if (! $modelClassName) {
-            return method_exists(Connection::class, $methodName)
-                || method_exists(DatabaseManager::class, $methodName);
-        }
-
-        return method_exists($modelClassName, $methodName)
-            || method_exists($modelClassName, 'scope' . ucfirst($methodName));
     }
 }

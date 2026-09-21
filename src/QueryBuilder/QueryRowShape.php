@@ -25,9 +25,14 @@ final class QueryRowShape
         private QueryChain $chain,
     ) {
         $this->eagerLoad = new EagerLoad($scope);
+        $this->conditionalEagerLoad = new EagerLoad($scope);
     }
 
     private readonly EagerLoad $eagerLoad;
+
+    private readonly EagerLoad $conditionalEagerLoad;
+
+    private bool $applyingConditionalMethod = false;
 
     private ?FromClause $fromClause = null;
 
@@ -52,7 +57,9 @@ final class QueryRowShape
         $this->applyModelDefaults($baseRowType);
 
         foreach ($this->chain->methods as $method) {
-            if ($method->name === 'select') {
+            $this->applyingConditionalMethod = $method->runsConditionally;
+
+            if ($method->name === 'select' && ! $method->runsConditionally) {
                 $this->selectedColumns = $method->args->has(0)
                     ? $this->getColumnsFromArguments($method->args)
                     : self::starSelection();
@@ -62,27 +69,27 @@ final class QueryRowShape
                 $this->addSelectedColumns($this->getColumnsFromArguments($method->args));
             }
 
-            if ($method->name === 'selectRaw') {
+            if ($method->name === 'selectRaw' && ! $method->runsConditionally) {
                 $this->addSelectedColumns($this->getColumnsFromRawArguments($method->args));
             }
 
-            if ($method->name === 'selectSub') {
+            if ($method->name === 'selectSub' && ! $method->runsConditionally) {
                 $this->addSelectedColumns($this->getSubQueryColumns($method->args));
             }
 
             if ($method->name === 'with') {
-                $this->eagerLoad->addArguments($method->args);
+                $this->eagerLoadFor($method)->addArguments($method->args);
             }
 
-            if ($method->name === 'withOnly') {
+            if ($method->name === 'withOnly' && ! $method->runsConditionally) {
                 $this->eagerLoad->replaceArguments($method->args);
             }
 
             if ($method->name === 'withWhereHas') {
-                $this->eagerLoad->addRelationArgument($method->args);
+                $this->eagerLoadFor($method)->addRelationArgument($method->args);
             }
 
-            if ($method->name === 'without') {
+            if ($method->name === 'without' && ! $method->runsConditionally) {
                 $this->eagerLoad->removeArguments($method->args);
             }
 
@@ -200,7 +207,16 @@ final class QueryRowShape
     {
         $modelClassName = $this->chain->modelClassName;
 
-        return $modelClassName ? $this->eagerLoad->resolveRelationTypes($modelClassName) : [];
+        if (! $modelClassName) {
+            return [];
+        }
+
+        $conditional = array_map(
+            fn (Type $type) => (clone $type)->setRequired(false),
+            $this->conditionalEagerLoad->resolveRelationTypes($modelClassName),
+        );
+
+        return array_merge($conditional, $this->eagerLoad->resolveRelationTypes($modelClassName));
     }
 
 
@@ -276,7 +292,17 @@ final class QueryRowShape
      */
     private function addSelectedColumns(array $columns): void
     {
+        if ($this->applyingConditionalMethod) {
+            $columns = array_map(fn (Type $type) => (clone $type)->setRequired(false), $columns);
+        }
+
         $this->selectedColumns = array_merge($this->selectedColumns ?? [], $columns);
+    }
+
+
+    private function eagerLoadFor(QueryChainMethod $method): EagerLoad
+    {
+        return $method->runsConditionally ? $this->conditionalEagerLoad : $this->eagerLoad;
     }
 
 

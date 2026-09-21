@@ -6,6 +6,7 @@ use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
 use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
+use AutoDoc\Laravel\Tests\TestProject\Http\BuilderConditionalsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
 use AutoDoc\Laravel\Tests\TestProject\Http\FormRequestController;
 use AutoDoc\Laravel\Tests\TestProject\Http\InvokableController;
@@ -324,3 +325,12 @@ Route::get('/test/eloquent/written-model-attributes', [EloquentQueryController::
 Route::post('/test/eloquent/raw-select-expressions', [EloquentQueryController::class, 'rawSelectExpressions']);
 Route::post('/test/eloquent/eager-load-column-expressions', [EloquentQueryController::class, 'eagerLoadColumnExpressions']);
 Route::post('/test/raw/select-raw', [RawQueryController::class, 'rawSelectOnTableQuery']);
+Route::get('/test/eloquent/builder-callbacks', [EloquentQueryController::class, 'builderCallbacks']);
+
+Route::get('/test/conditionals/chained-conditions', [BuilderConditionalsController::class, 'chainedConditions']);
+Route::get('/test/conditionals/filtering-conditions', [BuilderConditionalsController::class, 'filteringConditions']);
+Route::get('/test/conditionals/conditional-eager-load', [BuilderConditionalsController::class, 'conditionalEagerLoad']);
+Route::get('/test/conditionals/conditions-beyond-limit', [BuilderConditionalsController::class, 'conditionsBeyondTheVariantLimit']);
+Route::get('/test/conditionals/filtering-ifs', [BuilderConditionalsController::class, 'filteringIfStatements']);
+Route::get('/test/conditionals/sequential-ifs', [BuilderConditionalsController::class, 'sequentialIfStatements']);
+Route::get('/test/conditionals/condition-behind-assignment', [BuilderConditionalsController::class, 'conditionBehindVariableAssignment']);

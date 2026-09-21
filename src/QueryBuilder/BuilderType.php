@@ -32,20 +32,29 @@ final class BuilderType extends ObjectType
      */
     public static function chainsIn(?Type $type): array
     {
+        return array_map(fn (self $builderType) => $builderType->chain, self::in($type));
+    }
+
+
+    /**
+     * @return list<self>
+     */
+    public static function in(?Type $type): array
+    {
         if ($type instanceof self) {
-            return [$type->chain];
+            return [$type];
         }
 
         if (! ($type instanceof UnionType)) {
             return [];
         }
 
-        $chains = [];
+        $builderTypes = [];
 
         foreach ($type->types as $variant) {
-            $chains = [...$chains, ...self::chainsIn($variant)];
+            $builderTypes = [...$builderTypes, ...self::in($variant)];
         }
 
-        return $chains;
+        return $builderTypes;
     }
 }

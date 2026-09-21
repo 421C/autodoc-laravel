@@ -8940,6 +8940,271 @@ class EloquentQueryController
     }
 
 
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'brief',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'wide',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'narrow',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'conditionWithDefault' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'conditionalSelect' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'literalCondition' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'mutatingCallback' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'created_at',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'tapped' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'conditionalSelect',
+                                'conditionWithDefault',
+                                'literalCondition',
+                                'tapped',
+                                'mutatingCallback',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function builderCallbacks(Request $request): mixed
+    {
+        return [
+            'conditionalSelect' => Planet::query()
+                ->when($request->boolean('brief'), fn ($query) => $query->select('id', 'name'))
+                ->get(),
+            'conditionWithDefault' => Planet::query()
+                ->when(
+                    $request->boolean('wide'),
+                    fn ($query) => $query->select('id'),
+                    fn ($query) => $query->select('name'),
+                )
+                ->get(),
+            'literalCondition' => Planet::query()
+                ->when(true, fn ($query) => $query->select('diameter'))
+                ->get(),
+            'tapped' => Planet::query()
+                ->tap(fn ($query) => $query->select('visited'))
+                ->get(),
+            'mutatingCallback' => Planet::query()
+                ->when($request->boolean('narrow'), function ($query) {
+                    $query->select('created_at');
+                })
+                ->get(),
+        ];
+    }
+
+
     /**
      * Raw select expressions
      */

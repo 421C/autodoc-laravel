@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class QueryChain
 {
+    public const MAX_VARIANTS = 8;
+
     public function __construct(
         /** @var ?class-string<Model> */
         public readonly ?string $modelClassName,
@@ -42,6 +44,57 @@ final class QueryChain
             isRawDatabaseQuery: $this->isRawDatabaseQuery,
             shortCircuitsToNull: true,
         );
+    }
+
+
+    /**
+     * @param list<self> $chains
+     */
+    public static function mergeVariants(array $chains): self
+    {
+        $first = $chains[0];
+        $sharedLength = count($first->methods);
+
+        foreach ($chains as $chain) {
+            $sharedLength = min($sharedLength, self::sharedPrefixLength($first->methods, $chain->methods));
+        }
+
+        $methods = array_slice($first->methods, 0, $sharedLength);
+
+        foreach ($chains as $chain) {
+            foreach (array_slice($chain->methods, $sharedLength) as $method) {
+                $conditionalMethod = $method->asConditional();
+
+                if (! array_any($methods, fn (QueryChainMethod $kept) => $kept->isSameAs($conditionalMethod))) {
+                    $methods[] = $conditionalMethod;
+                }
+            }
+        }
+
+        return new self(
+            modelClassName: $first->modelClassName,
+            methods: $methods,
+            isRawDatabaseQuery: $first->isRawDatabaseQuery,
+            shortCircuitsToNull: array_any($chains, fn (self $chain) => $chain->shortCircuitsToNull),
+        );
+    }
+
+
+    /**
+     * @param list<QueryChainMethod> $methods
+     * @param list<QueryChainMethod> $otherMethods
+     */
+    private static function sharedPrefixLength(array $methods, array $otherMethods): int
+    {
+        $length = 0;
+
+        while (isset($methods[$length], $otherMethods[$length])
+            && $methods[$length]->isSameAs($otherMethods[$length])
+        ) {
+            $length++;
+        }
+
+        return $length;
     }
 
 
