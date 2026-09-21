@@ -100,20 +100,9 @@ final class QueryChain
 
     public function equals(self $other): bool
     {
-        if ($this->modelClassName !== $other->modelClassName
-            || $this->isRawDatabaseQuery !== $other->isRawDatabaseQuery
-            || $this->shortCircuitsToNull !== $other->shortCircuitsToNull
-            || count($this->methods) !== count($other->methods)
-        ) {
-            return false;
-        }
-
-        foreach ($this->methods as $index => $method) {
-            if (! $method->isSameAs($other->methods[$index])) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->modelClassName === $other->modelClassName
+            && $this->isRawDatabaseQuery === $other->isRawDatabaseQuery
+            && $this->shortCircuitsToNull === $other->shortCircuitsToNull
+            && QueryChainMethod::listsAreSame($this->methods, $other->methods);
     }
 }

@@ -25,4 +25,24 @@ final class QueryChainMethod
             && $this->args === $other->args
             && $this->runsConditionally === $other->runsConditionally;
     }
+
+
+    /**
+     * @param list<self> $methods
+     * @param list<self> $otherMethods
+     */
+    public static function listsAreSame(array $methods, array $otherMethods): bool
+    {
+        if (count($methods) !== count($otherMethods)) {
+            return false;
+        }
+
+        foreach ($methods as $index => $method) {
+            if (! $method->isSameAs($otherMethods[$index])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

@@ -15,12 +15,12 @@ use WeakMap;
 final class ConditionalCallback
 {
     private function __construct(
-        /** @var list<QueryChainMethod> */
-        public readonly array $callbackMethods,
+        /** @var non-empty-list<list<QueryChainMethod>> */
+        private readonly array $callbackOutcomes,
 
-        /** @var list<QueryChainMethod> */
-        public readonly array $defaultMethods,
-        public readonly ?bool $callbackRuns,
+        /** @var non-empty-list<list<QueryChainMethod>> */
+        private readonly array $defaultOutcomes,
+        private readonly ?bool $callbackRuns,
     ) {}
 
 
@@ -55,8 +55,8 @@ final class ConditionalCallback
     {
         if ($method->name === 'tap') {
             return new self(
-                callbackMethods: self::methodsAddedBy($method, 'callback', 0, $callerNode, $chain, $scope),
-                defaultMethods: [],
+                callbackOutcomes: self::methodsAddedBy($method, 'callback', 0, $callerNode, $chain, $scope),
+                defaultOutcomes: [[]],
                 callbackRuns: true,
             );
         }
@@ -64,16 +64,29 @@ final class ConditionalCallback
         $condition = self::literalConditionValue($method, $scope);
 
         return new self(
-            callbackMethods: self::methodsAddedBy($method, 'callback', 1, $callerNode, $chain, $scope),
-            defaultMethods: self::methodsAddedBy($method, 'default', 2, $callerNode, $chain, $scope),
+            callbackOutcomes: self::methodsAddedBy($method, 'callback', 1, $callerNode, $chain, $scope),
+            defaultOutcomes: self::methodsAddedBy($method, 'default', 2, $callerNode, $chain, $scope),
             callbackRuns: $condition === null ? null : ($method->name === 'when' ? $condition : ! $condition),
         );
     }
 
 
+    /**
+     * @return non-empty-list<list<QueryChainMethod>>
+     */
+    public function outcomes(): array
+    {
+        return self::distinct(match ($this->callbackRuns) {
+            true => $this->callbackOutcomes,
+            false => $this->defaultOutcomes,
+            null => [...$this->defaultOutcomes, ...$this->callbackOutcomes],
+        });
+    }
+
+
     public function isEmpty(): bool
     {
-        return $this->callbackMethods === [] && $this->defaultMethods === [];
+        return $this->outcomes() === [[]];
     }
 
 
@@ -84,10 +97,44 @@ final class ConditionalCallback
     public function withoutRowPreservingCalls(?string $modelClassName): self
     {
         return new self(
-            callbackMethods: self::onlyRowShapeMethods($this->callbackMethods, $modelClassName),
-            defaultMethods: self::onlyRowShapeMethods($this->defaultMethods, $modelClassName),
+            callbackOutcomes: self::onlyRowShapeOutcomes($this->callbackOutcomes, $modelClassName),
+            defaultOutcomes: self::onlyRowShapeOutcomes($this->defaultOutcomes, $modelClassName),
             callbackRuns: $this->callbackRuns,
         );
+    }
+
+
+    /**
+     * @param non-empty-list<list<QueryChainMethod>> $outcomes
+     * @return non-empty-list<list<QueryChainMethod>>
+     */
+    private static function onlyRowShapeOutcomes(array $outcomes, ?string $modelClassName): array
+    {
+        return array_map(
+            fn (array $methods) => self::onlyRowShapeMethods($methods, $modelClassName),
+            $outcomes,
+        );
+    }
+
+
+    /**
+     * Outcomes that only filtered are identical once their calls are dropped,
+     * and splitting on them would describe one row several times over.
+     *
+     * @param non-empty-list<list<QueryChainMethod>> $outcomes
+     * @return non-empty-list<list<QueryChainMethod>>
+     */
+    private static function distinct(array $outcomes): array
+    {
+        $distinct = [$outcomes[0]];
+
+        foreach (array_slice($outcomes, 1) as $methods) {
+            if (! array_any($distinct, fn (array $kept) => QueryChainMethod::listsAreSame($kept, $methods))) {
+                $distinct[] = $methods;
+            }
+        }
+
+        return $distinct;
     }
 
 
@@ -119,11 +166,10 @@ final class ConditionalCallback
 
 
     /**
-     * A callback that returns the builder is read by invoking it, which
-     * resolves its arguments in its own scope. One that mutates and returns
-     * nothing leaves no trace there, so its body is read instead.
+     * Each builder the callback returns is one outcome. One that mutates and
+     * returns nothing leaves none, so its body is read instead.
      *
-     * @return list<QueryChainMethod>
+     * @return non-empty-list<list<QueryChainMethod>>
      */
     private static function methodsAddedBy(
         QueryChainMethod $method,
@@ -137,7 +183,7 @@ final class ConditionalCallback
         $callbackType = $index === null ? null : $method->args->get($index);
 
         if (! ($callbackType instanceof CallableType)) {
-            return [];
+            return [[]];
         }
 
         $returnedBuilder = $callbackType->getReturnType(
@@ -145,8 +191,13 @@ final class ConditionalCallback
             callerNode: $callerNode,
         );
 
-        return BuilderType::chainsIn($returnedBuilder)[0]->methods
-            ?? self::methodsInCallbackBody($callerNode, $parameterName, $parameterIndex, $scope);
+        $chains = BuilderType::chainsIn($returnedBuilder);
+
+        if ($chains === []) {
+            return [self::methodsInCallbackBody($callerNode, $parameterName, $parameterIndex, $scope)];
+        }
+
+        return array_map(fn (QueryChain $returnedChain) => $returnedChain->methods, $chains);
     }
 
 

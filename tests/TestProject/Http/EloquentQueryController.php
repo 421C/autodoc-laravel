@@ -8944,6 +8944,13 @@ class EloquentQueryController
         'parameters' => [
             [
                 'in' => 'query',
+                'name' => 'inner',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
                 'name' => 'brief',
                 'schema' => [
                     'type' => 'boolean',
@@ -8959,6 +8966,13 @@ class EloquentQueryController
             [
                 'in' => 'query',
                 'name' => 'narrow',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'outer',
                 'schema' => [
                     'type' => 'boolean',
                 ],
@@ -9163,6 +9177,67 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'nestedCondition' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'conditionalSelect',
@@ -9170,6 +9245,7 @@ class EloquentQueryController
                                 'literalCondition',
                                 'tapped',
                                 'mutatingCallback',
+                                'nestedCondition',
                             ],
                         ],
                     ],
@@ -9179,6 +9255,8 @@ class EloquentQueryController
     ])]
     public function builderCallbacks(Request $request): mixed
     {
+        $nested = $request->boolean('inner');
+
         return [
             'conditionalSelect' => Planet::query()
                 ->when($request->boolean('brief'), fn ($query) => $query->select('id', 'name'))
@@ -9200,6 +9278,12 @@ class EloquentQueryController
                 ->when($request->boolean('narrow'), function ($query) {
                     $query->select('created_at');
                 })
+                ->get(),
+            'nestedCondition' => Planet::query()
+                ->when(
+                    $request->boolean('outer'),
+                    fn ($query) => $query->when($nested, fn ($inner) => $inner->addSelect('id')),
+                )
                 ->get(),
         ];
     }

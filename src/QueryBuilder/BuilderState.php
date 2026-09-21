@@ -72,13 +72,7 @@ final class BuilderState
             return $this;
         }
 
-        if ($conditional->callbackRuns !== null) {
-            return $this->withMethods($conditional->callbackRuns
-                ? $conditional->callbackMethods
-                : $conditional->defaultMethods);
-        }
-
-        return $this->splitInto($conditional->callbackMethods, $conditional->defaultMethods);
+        return $this->splitInto($conditional->outcomes());
     }
 
 
@@ -91,23 +85,23 @@ final class BuilderState
 
 
     /**
-     * @param list<QueryChainMethod> $callbackMethods
-     * @param list<QueryChainMethod> $defaultMethods
+     * @param non-empty-list<list<QueryChainMethod>> $outcomes
      */
-    private function splitInto(array $callbackMethods, array $defaultMethods): self
+    private function splitInto(array $outcomes): self
     {
-        if (count($this->builderTypes) * 2 > QueryChain::MAX_VARIANTS) {
+        if (count($this->builderTypes) * count($outcomes) > QueryChain::MAX_VARIANTS) {
             return $this->withMethods(array_map(
                 fn (QueryChainMethod $method) => $method->asConditional(),
-                [...$defaultMethods, ...$callbackMethods],
+                array_merge(...$outcomes),
             ));
         }
 
         $split = [];
 
         foreach ($this->builderTypes as $builderType) {
-            $split[] = self::continued($builderType, $defaultMethods);
-            $split[] = self::continued($builderType, $callbackMethods);
+            foreach ($outcomes as $methods) {
+                $split[] = self::continued($builderType, $methods);
+            }
         }
 
         return new self($split);
