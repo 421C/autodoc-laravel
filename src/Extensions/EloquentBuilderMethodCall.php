@@ -83,8 +83,9 @@ class EloquentBuilderMethodCall extends MethodCallExtension
             return $state->applying($conditional->withoutRowPreservingCalls($state->modelClassName()));
         }
 
-        return BuilderMethodClassifier::belongsInChain($method->name, $state->modelClassName())
-            ? $state->withMethod($method)
-            : $state;
+        $belongsInChain = $state->nextMethodIsConditional()
+            || BuilderMethodClassifier::belongsInChain($method->name, $state->modelClassName());
+
+        return $belongsInChain ? $state->withMethod($method) : $state;
     }
 }

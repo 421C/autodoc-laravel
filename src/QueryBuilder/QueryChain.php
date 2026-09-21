@@ -16,6 +16,7 @@ final class QueryChain
         public readonly array $methods,
         public readonly bool $isRawDatabaseQuery = false,
         public readonly bool $shortCircuitsToNull = false,
+        public readonly bool $nextMethodIsConditional = false,
     ) {}
 
 
@@ -32,6 +33,7 @@ final class QueryChain
             methods: [...$this->methods, $method],
             isRawDatabaseQuery: $this->isRawDatabaseQuery,
             shortCircuitsToNull: $this->shortCircuitsToNull,
+            nextMethodIsConditional: false,
         );
     }
 
@@ -43,6 +45,23 @@ final class QueryChain
             methods: $this->methods,
             isRawDatabaseQuery: $this->isRawDatabaseQuery,
             shortCircuitsToNull: true,
+            nextMethodIsConditional: $this->nextMethodIsConditional,
+        );
+    }
+
+
+    /**
+     * `when($condition)` with no callback returns a `HigherOrderWhenProxy`,
+     * which forwards one call to the builder and then steps out of the way.
+     */
+    public function withNextMethodConditional(bool $nextMethodIsConditional): self
+    {
+        return new self(
+            modelClassName: $this->modelClassName,
+            methods: $this->methods,
+            isRawDatabaseQuery: $this->isRawDatabaseQuery,
+            shortCircuitsToNull: $this->shortCircuitsToNull,
+            nextMethodIsConditional: $nextMethodIsConditional,
         );
     }
 
@@ -76,6 +95,7 @@ final class QueryChain
             methods: $methods,
             isRawDatabaseQuery: $first->isRawDatabaseQuery,
             shortCircuitsToNull: array_any($chains, fn (self $chain) => $chain->shortCircuitsToNull),
+            nextMethodIsConditional: array_any($chains, fn (self $chain) => $chain->nextMethodIsConditional),
         );
     }
 
@@ -103,6 +123,7 @@ final class QueryChain
         return $this->modelClassName === $other->modelClassName
             && $this->isRawDatabaseQuery === $other->isRawDatabaseQuery
             && $this->shortCircuitsToNull === $other->shortCircuitsToNull
+            && $this->nextMethodIsConditional === $other->nextMethodIsConditional
             && QueryChainMethod::listsAreSame($this->methods, $other->methods);
     }
 }

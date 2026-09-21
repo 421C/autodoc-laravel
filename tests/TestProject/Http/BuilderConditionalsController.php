@@ -1662,4 +1662,139 @@ class BuilderConditionalsController
             ->without('rockets')
             ->get();
     }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'brief',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'visitedOnly',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'proxiedFilter' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                        ],
+                                    ],
+                                ],
+                                'proxiedSelect' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'proxiedSelect',
+                                'proxiedFilter',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function conditionsWithoutCallback(Request $request): mixed
+    {
+        return [
+            'proxiedSelect' => Planet::query()
+                /** @phpstan-ignore argument.templateType */
+                ->when($request->boolean('brief'))
+                /** @phpstan-ignore method.nonObject */
+                ->select('id', 'name')
+                ->get(),
+            'proxiedFilter' => Planet::query()
+                /** @phpstan-ignore argument.templateType */
+                ->when($request->boolean('visitedOnly'))
+                /** @phpstan-ignore method.nonObject */
+                ->where('visited', true)
+                ->select('id')
+                ->get(),
+        ];
+    }
 }

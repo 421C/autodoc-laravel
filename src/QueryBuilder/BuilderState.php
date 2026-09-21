@@ -62,12 +62,30 @@ final class BuilderState
 
     public function withMethod(QueryChainMethod $method): self
     {
-        return $this->withMethods([$method]);
+        if (! $this->nextMethodIsConditional()) {
+            return $this->withMethods([$method]);
+        }
+
+        $taken = $this->withNextMethodConditional(false);
+
+        return BuilderMethodClassifier::belongsInChain($method->name, $this->modelClassName())
+            ? $taken->splitInto([[], [$method]])
+            : $taken->withMethods([$method]);
+    }
+
+
+    public function nextMethodIsConditional(): bool
+    {
+        return $this->chain()->nextMethodIsConditional;
     }
 
 
     public function applying(ConditionalCallback $conditional): self
     {
+        if ($conditional->proxiesNextMethod()) {
+            return $this->withNextMethodConditional(true);
+        }
+
         if ($conditional->isEmpty()) {
             return $this;
         }
@@ -105,6 +123,18 @@ final class BuilderState
         }
 
         return new self($split);
+    }
+
+
+    private function withNextMethodConditional(bool $nextMethodIsConditional): self
+    {
+        return new self(array_map(
+            fn (BuilderType $builderType) => self::rebuilt(
+                $builderType,
+                $builderType->chain->withNextMethodConditional($nextMethodIsConditional),
+            ),
+            $this->builderTypes,
+        ));
     }
 
 
@@ -146,6 +176,12 @@ final class BuilderState
             $chain = $chain->withMethod($method);
         }
 
+        return self::rebuilt($builderType, $chain);
+    }
+
+
+    private static function rebuilt(BuilderType $builderType, QueryChain $chain): BuilderType
+    {
         return new BuilderType(
             chain: $chain,
             builderClassName: $builderType->className ?? EloquentBuilder::class,

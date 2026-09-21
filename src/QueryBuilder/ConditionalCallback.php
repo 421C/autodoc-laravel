@@ -21,6 +21,7 @@ final class ConditionalCallback
         /** @var non-empty-list<list<QueryChainMethod>> */
         private readonly array $defaultOutcomes,
         private readonly ?bool $callbackRuns,
+        private readonly bool $proxiesNextMethod = false,
     ) {}
 
 
@@ -67,7 +68,14 @@ final class ConditionalCallback
             callbackOutcomes: self::methodsAddedBy($method, 'callback', 1, $callerNode, $chain, $scope),
             defaultOutcomes: self::methodsAddedBy($method, 'default', 2, $callerNode, $chain, $scope),
             callbackRuns: $condition === null ? null : ($method->name === 'when' ? $condition : ! $condition),
+            proxiesNextMethod: $method->args->indexForParameter('callback', 1) === null,
         );
+    }
+
+
+    public function proxiesNextMethod(): bool
+    {
+        return $this->proxiesNextMethod;
     }
 
 
@@ -100,6 +108,7 @@ final class ConditionalCallback
             callbackOutcomes: self::onlyRowShapeOutcomes($this->callbackOutcomes, $modelClassName),
             defaultOutcomes: self::onlyRowShapeOutcomes($this->defaultOutcomes, $modelClassName),
             callbackRuns: $this->callbackRuns,
+            proxiesNextMethod: $this->proxiesNextMethod,
         );
     }
 
