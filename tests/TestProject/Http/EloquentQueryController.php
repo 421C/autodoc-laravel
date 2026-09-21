@@ -8799,6 +8799,147 @@ class EloquentQueryController
     }
 
 
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedModelTable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'createdSubset' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'firstOrCreated' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'diameter',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'queriedThroughInstance' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'createdSubset',
+                                'firstOrCreated',
+                                'queriedThroughInstance',
+                                'aliasedModelTable',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function writtenModelAttributes(): mixed
+    {
+        $planet = Planet::firstOrFail();
+
+        return [
+            'createdSubset' => Planet::create(['name' => 'Earth']),
+            'firstOrCreated' => Planet::firstOrCreate(['name' => 'Mars'], ['diameter' => 6779]),
+            'queriedThroughInstance' => $planet::query()->select('id', 'name')->get(),
+            'aliasedModelTable' => Planet::query()->from('planets as p')->select('p.diameter')->get(),
+        ];
+    }
+
+
     /**
      * Raw select expressions
      */

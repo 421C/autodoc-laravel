@@ -4,6 +4,7 @@ namespace AutoDoc\Laravel\QueryBuilder;
 
 use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\Scope;
+use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
@@ -131,7 +132,9 @@ final class QueryChainExtractor
 
         } else if ($expr instanceof StaticCall) {
             if ($expr->class instanceof Node\Expr) {
-                $this->walkChain($expr->class, $visitedPositions);
+                if (! $this->rootChainInClass($this->resolveModelClassNameInExpression($expr->class))) {
+                    $this->walkChain($expr->class, $visitedPositions);
+                }
 
             } else if (! $this->rootChainInClass($this->scope->getResolvedClassName($expr->class))) {
                 return;
@@ -269,6 +272,36 @@ final class QueryChainExtractor
         $receiverType = $this->resolveReceiverType($expr);
 
         return $receiverType ? $this->resolveModelClassName($receiverType) : null;
+    }
+
+
+    /**
+     * A static call can name its class through a variable holding either a
+     * model instance or a model class-string.
+     *
+     * @return ?class-string<Model>
+     */
+    private function resolveModelClassNameInExpression(Node\Expr $expr): ?string
+    {
+        $expressionType = $this->resolveReceiverType($expr);
+
+        if (! $expressionType) {
+            return null;
+        }
+
+        $modelClassName = $this->resolveModelClassName($expressionType);
+
+        if ($modelClassName) {
+            return $modelClassName;
+        }
+
+        if (! ($expressionType instanceof StringType)) {
+            return null;
+        }
+
+        $values = $expressionType->getPossibleValues() ?? [];
+
+        return count($values) === 1 && is_subclass_of($values[0], Model::class, true) ? $values[0] : null;
     }
 
 

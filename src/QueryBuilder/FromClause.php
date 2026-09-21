@@ -2,7 +2,6 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
-use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
@@ -50,8 +49,6 @@ final class FromClause
      * @var list<QueryTable>
      */
     private array $tables = [];
-
-    private ?QueryTable $modelTable = null;
 
     private ?string $connectionName = null;
 
@@ -127,10 +124,10 @@ final class FromClause
         }
 
         $this->isResolved = true;
-        $this->connectionName = $this->findLastStringArgument('connection', 'on') ?? $this->model()?->getConnectionName();
-        $this->modelTable = $this->createModelTable();
+        $this->connectionName = $this->getStringArgument($this->findLastMethod('connection', 'on'))
+            ?? $this->model()?->getConnectionName();
 
-        $baseTable = $this->modelTable ?? $this->createTable($this->findLastStringArgument('table', 'from'));
+        $baseTable = $this->createBaseTable();
 
         if (! $baseTable) {
             return;
@@ -140,7 +137,7 @@ final class FromClause
 
         foreach ($this->chain->methods as $method) {
             if (in_array($method->name, self::JOIN_METHODS, strict: true)) {
-                $this->addJoinedTable($method->name, $method->args);
+                $this->addJoinedTable($method);
 
             } else if (self::hidesTheRow($method->name)) {
                 $this->rowIsIndeterminate = true;
@@ -148,14 +145,57 @@ final class FromClause
         }
 
         if ($this->rowIsIndeterminate) {
-            $this->tables = $this->modelTable ? [$this->modelTable] : [];
+            $this->tables = $this->chain->modelClassName === null ? [] : [$baseTable];
         }
     }
 
 
-    private function addJoinedTable(string $joinMethodName, ArgumentList $args): void
+    private function createBaseTable(): ?QueryTable
     {
-        $joinedTable = $this->createTable($this->getStringArgument($args));
+        $modelRowType = $this->createModelRowType();
+        $baseMethod = $this->findLastMethod('table', 'from');
+        $tableExpression = $this->getStringArgument($baseMethod);
+
+        if ($tableExpression === null) {
+            return $modelRowType === null
+                ? null
+                : QueryTable::forModel(
+                    tableName: $this->model()?->getTable(),
+                    alias: null,
+                    rowType: $modelRowType,
+                );
+        }
+
+        [$tableName, $alias] = self::splitAlias($tableExpression);
+        $alias ??= $this->getStringArgument($baseMethod, argumentIndex: 1);
+
+        return $modelRowType === null
+            ? QueryTable::fromSchema(
+                tableName: $tableName,
+                alias: $alias,
+                connectionName: $this->connectionName,
+            )
+            : QueryTable::forModel(
+                tableName: $tableName,
+                alias: $alias,
+                rowType: $modelRowType,
+            );
+    }
+
+
+    private function createModelRowType(): ?ObjectType
+    {
+        $modelClassName = $this->chain->modelClassName;
+
+        return $modelClassName === null
+            ? null
+            : clone $this->scope->getPhpClassInDeeperScope($modelClassName)->resolveType();
+    }
+
+
+    private function addJoinedTable(QueryChainMethod $method): void
+    {
+        $joinedTable = $this->createJoinedTable($method);
 
         if (! $joinedTable) {
             $this->rowIsIndeterminate = true;
@@ -163,13 +203,13 @@ final class FromClause
             return;
         }
 
-        if (str_starts_with($joinMethodName, 'right')) {
+        if (str_starts_with($method->name, 'right')) {
             foreach ($this->tables as $table) {
                 $table->makeNullable();
             }
         }
 
-        if (str_starts_with($joinMethodName, 'left')) {
+        if (str_starts_with($method->name, 'left')) {
             $joinedTable->makeNullable();
         }
 
@@ -177,23 +217,10 @@ final class FromClause
     }
 
 
-    private function createModelTable(): ?QueryTable
+    private function createJoinedTable(QueryChainMethod $method): ?QueryTable
     {
-        $modelClassName = $this->chain->modelClassName;
+        $tableExpression = $this->getStringArgument($method);
 
-        if ($modelClassName === null) {
-            return null;
-        }
-
-        return QueryTable::forModel(
-            tableName: $this->model()?->getTable(),
-            rowType: clone $this->scope->getPhpClassInDeeperScope($modelClassName)->resolveType(),
-        );
-    }
-
-
-    private function createTable(?string $tableExpression): ?QueryTable
-    {
         if ($tableExpression === null) {
             return null;
         }
@@ -222,27 +249,27 @@ final class FromClause
     }
 
 
-    private function findLastStringArgument(string ...$methodNames): ?string
+    private function findLastMethod(string ...$methodNames): ?QueryChainMethod
     {
-        $value = null;
+        $found = null;
 
         foreach ($this->chain->methods as $method) {
             if (in_array($method->name, $methodNames, strict: true)) {
-                $value = $this->getStringArgument($method->args) ?? $value;
+                $found = $method;
             }
         }
 
-        return $value;
+        return $found;
     }
 
 
-    private function getStringArgument(ArgumentList $args): ?string
+    private function getStringArgument(?QueryChainMethod $method, int $argumentIndex = 0): ?string
     {
-        if (! $args->has(0)) {
+        if ($method === null || ! $method->args->has($argumentIndex)) {
             return null;
         }
 
-        $argType = $args->get(0)->unwrapType($this->scope->config);
+        $argType = $method->args->get($argumentIndex)->unwrapType($this->scope->config);
 
         if (! ($argType instanceof StringType)) {
             return null;
