@@ -334,3 +334,4 @@ Route::get('/test/conditionals/conditions-beyond-limit', [BuilderConditionalsCon
 Route::get('/test/conditionals/filtering-ifs', [BuilderConditionalsController::class, 'filteringIfStatements']);
 Route::get('/test/conditionals/sequential-ifs', [BuilderConditionalsController::class, 'sequentialIfStatements']);
 Route::get('/test/conditionals/condition-behind-assignment', [BuilderConditionalsController::class, 'conditionBehindVariableAssignment']);
+Route::get('/test/conditionals/condition-on-variable', [BuilderConditionalsController::class, 'conditionOnBuilderVariable']);

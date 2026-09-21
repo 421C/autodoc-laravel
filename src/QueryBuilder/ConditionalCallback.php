@@ -10,6 +10,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use WeakMap;
 
 final class ConditionalCallback
 {
@@ -23,7 +24,34 @@ final class ConditionalCallback
     ) {}
 
 
+    /**
+     * @var ?WeakMap<Node\Expr, WeakMap<Scope, self>>
+     */
+    private static ?WeakMap $cache = null;
+
+
     public static function read(QueryChainMethod $method, Node\Expr $callerNode, QueryChain $chain, Scope $scope): ?self
+    {
+        if ($method->name !== 'tap' && $method->name !== 'when' && $method->name !== 'unless') {
+            return null;
+        }
+
+        self::$cache ??= new WeakMap;
+
+        /** @var WeakMap<Scope, self> $callbacksByScope */
+        $callbacksByScope = self::$cache[$callerNode] ?? new WeakMap;
+
+        self::$cache[$callerNode] = $callbacksByScope;
+
+        if (! isset($callbacksByScope[$scope])) {
+            $callbacksByScope[$scope] = self::readCallbacks($method, $callerNode, $chain, $scope);
+        }
+
+        return $callbacksByScope[$scope];
+    }
+
+
+    private static function readCallbacks(QueryChainMethod $method, Node\Expr $callerNode, QueryChain $chain, Scope $scope): self
     {
         if ($method->name === 'tap') {
             return new self(
@@ -31,10 +59,6 @@ final class ConditionalCallback
                 defaultMethods: [],
                 callbackRuns: true,
             );
-        }
-
-        if ($method->name !== 'when' && $method->name !== 'unless') {
-            return null;
         }
 
         $condition = self::literalConditionValue($method, $scope);
