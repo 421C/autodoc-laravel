@@ -220,7 +220,8 @@ class RequestParameter extends MethodCallExtension
     private function getKeyListFields(string $methodName, MethodCallContext $call): array
     {
         $fieldNames = $this->resolveKeyListNames(
-            call: $call,
+            args: $call->argTypes,
+            config: $call->scope->config,
             allowVariadic: in_array($methodName, self::VARIADIC_KEY_LIST_METHODS, true),
         );
 

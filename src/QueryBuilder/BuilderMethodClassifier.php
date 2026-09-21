@@ -2,7 +2,11 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
+use Illuminate\Database\Connection;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class BuilderMethodClassifier
 {
@@ -117,6 +121,87 @@ class BuilderMethodClassifier
             'findor' => 'find',
             default => null,
         };
+    }
+
+
+    public static function changesRowShape(string $methodName): bool
+    {
+        return match (strtolower($methodName)) {
+            'select',
+            'addselect',
+            'selectraw',
+            'selectsub',
+            'with',
+            'withonly',
+            'withwherehas',
+            'without',
+            'withcount',
+            'withexists',
+            'withmin',
+            'withmax',
+            'withsum',
+            'withavg',
+            'join',
+            'joinwhere',
+            'crossjoin',
+            'leftjoin',
+            'leftjoinwhere',
+            'rightjoin',
+            'rightjoinwhere',
+            'straightjoin',
+            'straightjoinwhere',
+            'joinsub',
+            'joinlateral',
+            'leftjoinsub',
+            'leftjoinlateral',
+            'rightjoinsub',
+            'crossjoinsub',
+            'straightjoinsub',
+            'union',
+            'unionall',
+            'fromsub',
+            'fromraw',
+            'table',
+            'from',
+            'connection',
+            'on',
+            'get',
+            'all',
+            'pluck' => true,
+            default => false,
+        };
+    }
+
+
+    /** @var ?array<string, true> */
+    private static ?array $builderClassMethods = null;
+
+
+    public static function isKnownBuilderMethod(string $methodName, ?string $modelClassName): bool
+    {
+        self::$builderClassMethods ??= array_fill_keys(array_map(strtolower(...), array_merge(
+            get_class_methods(EloquentBuilder::class),
+            get_class_methods(QueryBuilder::class),
+        )), true);
+
+        if (isset(self::$builderClassMethods[strtolower($methodName)])) {
+            return true;
+        }
+
+        if (! $modelClassName) {
+            return method_exists(Connection::class, $methodName)
+                || method_exists(DatabaseManager::class, $methodName);
+        }
+
+        return method_exists($modelClassName, $methodName)
+            || method_exists($modelClassName, 'scope' . ucfirst($methodName));
+    }
+
+
+    public static function belongsInChain(string $methodName, ?string $modelClassName): bool
+    {
+        return self::changesRowShape($methodName)
+            || ! self::isKnownBuilderMethod($methodName, $modelClassName);
     }
 
 

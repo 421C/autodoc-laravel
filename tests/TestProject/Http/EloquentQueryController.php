@@ -9,14 +9,18 @@ use AutoDoc\Laravel\Tests\TestProject\Models\Beacon;
 use AutoDoc\Laravel\Tests\TestProject\Models\AttributedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\CastedPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\ClassifiedPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\EagerPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\LabeledPlanet;
+use AutoDoc\Laravel\Tests\TestProject\Models\LoopingPlanet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Planet;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
 use AutoDoc\Laravel\Tests\TestProject\Models\SpaceStation;
 use AutoDoc\Laravel\Tests\TestProject\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use stdClass;
 
 /**
@@ -6441,6 +6445,9 @@ class EloquentQueryController
                                                 'type' => 'string',
                                             ],
                                         ],
+                                        'required' => [
+                                            'name',
+                                        ],
                                     ],
                                 ],
                                 'jsonPath' => [
@@ -6457,6 +6464,7 @@ class EloquentQueryController
                                         ],
                                         'required' => [
                                             'name',
+                                            'model',
                                         ],
                                     ],
                                 ],
@@ -7872,10 +7880,58 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'prefixedStarSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'rocket_name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rocket_name',
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'joined',
                                 'leftJoinedWithPrefixedSelect',
+                                'prefixedStarSelect',
                             ],
                         ],
                     ],
@@ -7891,6 +7947,1960 @@ class EloquentQueryController
                 ->leftJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')
                 ->select('planets.id', 'rockets.launch_date')
                 ->get(),
+            'prefixedStarSelect' => Planet::query()
+                ->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->select('planets.*', 'rockets.name as rocket_name')
+                ->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'plucked' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
+                                'singleValue' => [
+                                    'type' => [
+                                        'number',
+                                        'null',
+                                    ],
+                                    'format' => 'float',
+                                ],
+                                'notSerialized' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'plucked',
+                                'singleValue',
+                                'notSerialized',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function hiddenColumnReads(): mixed
+    {
+        return [
+            'plucked' => ClassifiedPlanet::pluck('diameter'),
+            'singleValue' => ClassifiedPlanet::value('diameter'),
+            'notSerialized' => ClassifiedPlanet::select('diameter')->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'columnSubset' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'rockets' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'name' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'rockets',
+                                        ],
+                                    ],
+                                ],
+                                'everyColumn' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rockets' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'name' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rockets_count',
+                                            'rockets',
+                                        ],
+                                    ],
+                                ],
+                                'selfReferencing' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'neighbour' => [
+                                                'type' => [
+                                                    'object',
+                                                    'null',
+                                                ],
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'neighbour' => [
+                                                        'type' => [
+                                                            'object',
+                                                            'null',
+                                                        ],
+                                                        'properties' => [
+                                                            'created_at' => [
+                                                                'type' => [
+                                                                    'string',
+                                                                    'null',
+                                                                ],
+                                                                'format' => 'date-time',
+                                                            ],
+                                                            'diameter' => [
+                                                                'type' => 'number',
+                                                                'format' => 'float',
+                                                            ],
+                                                            'id' => [
+                                                                'type' => 'integer',
+                                                            ],
+                                                            'name' => [
+                                                                'type' => 'string',
+                                                            ],
+                                                            'updated_at' => [
+                                                                'type' => [
+                                                                    'string',
+                                                                    'null',
+                                                                ],
+                                                                'format' => 'date-time',
+                                                            ],
+                                                            'visited' => [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                        'required' => [
+                                                            'id',
+                                                            'name',
+                                                            'diameter',
+                                                            'visited',
+                                                            'created_at',
+                                                            'updated_at',
+                                                        ],
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                    'neighbour',
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'neighbour',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'everyColumn',
+                                'columnSubset',
+                                'selfReferencing',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function modelDefaultEagerLoads(): mixed
+    {
+        return [
+            'everyColumn' => EagerPlanet::query()->get(),
+            'columnSubset' => EagerPlanet::query()->select('id')->get(),
+            'selfReferencing' => LoopingPlanet::query()->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'constrainedExistence' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'space_stations' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'anyOf' => [
+                                                                [
+                                                                    'type' => 'string',
+                                                                    'const' => '',
+                                                                ],
+                                                                [
+                                                                    'type' => 'integer',
+                                                                ],
+                                                            ],
+                                                        ],
+                                                        'name' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'space_stations',
+                                        ],
+                                    ],
+                                ],
+                                'explicitCountOperator' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'beaconable_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'beaconable_type' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'created_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'label' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'planet_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'updated_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'label',
+                                                        'planet_id',
+                                                        'beaconable_type',
+                                                        'beaconable_id',
+                                                        'created_at',
+                                                        'updated_at',
+                                                    ],
+                                                ],
+                                            ],
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'beacons',
+                                        ],
+                                    ],
+                                ],
+                                'removedDefault' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rockets_count',
+                                        ],
+                                    ],
+                                ],
+                                'replacedDefault' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'rockets_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'space_stations' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'description' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'created_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                        'id' => [
+                                                            'anyOf' => [
+                                                                [
+                                                                    'type' => 'string',
+                                                                    'const' => '',
+                                                                ],
+                                                                [
+                                                                    'type' => 'integer',
+                                                                ],
+                                                            ],
+                                                        ],
+                                                        'name' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                        ],
+                                                        'size' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'updated_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                        'description',
+                                                        'size',
+                                                        'created_at',
+                                                        'updated_at',
+                                                    ],
+                                                ],
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'rockets_count',
+                                            'space_stations',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'replacedDefault',
+                                'removedDefault',
+                                'constrainedExistence',
+                                'explicitCountOperator',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function eagerLoadSetChanges(): mixed
+    {
+        return [
+            'replacedDefault' => EagerPlanet::query()->withOnly('spaceStations')->get(),
+            'removedDefault' => EagerPlanet::query()->without('rockets')->get(),
+            'constrainedExistence' => Planet::query()
+                ->withWhereHas('spaceStations:id,name', fn ($query) => $query->where('size', 'big'))
+                ->get(),
+            'explicitCountOperator' => Planet::query()->withWhereHas('beacons', null, '>=', 2)->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'localScopeNamedLikeAJoin' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                                'selectWithoutArguments' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                        ],
+                                    ],
+                                ],
+                                'straightJoined' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'launch_date' => [
+                                                'type' => 'string',
+                                                'format' => 'date',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'target_planet_id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                            'created_at',
+                                            'updated_at',
+                                            'launch_date',
+                                            'target_planet_id',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'selectWithoutArguments',
+                                'straightJoined',
+                                'localScopeNamedLikeAJoin',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function selectDefaultsAndJoinMethods(): mixed
+    {
+        return [
+            'selectWithoutArguments' => Planet::query()->select()->get(),
+            'straightJoined' => Planet::query()
+                ->straightJoin('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->get(),
+            'localScopeNamedLikeAJoin' => Planet::query()
+                ->join('rockets', 'rockets.target_planet_id', '=', 'planets.id')
+                ->orderedByJoinDate()
+                ->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedModelTable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'createdSubset' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'firstOrCreated' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'created_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'diameter' => [
+                                            'type' => 'number',
+                                            'format' => 'float',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'updated_at' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'visited' => [
+                                            'type' => 'boolean',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                        'diameter',
+                                        'created_at',
+                                        'updated_at',
+                                    ],
+                                ],
+                                'queriedThroughInstance' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'createdSubset',
+                                'firstOrCreated',
+                                'queriedThroughInstance',
+                                'aliasedModelTable',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function writtenModelAttributes(): mixed
+    {
+        $planet = Planet::firstOrFail();
+
+        return [
+            'createdSubset' => Planet::create(['name' => 'Earth']),
+            'firstOrCreated' => Planet::firstOrCreate(['name' => 'Mars'], ['diameter' => 6779]),
+            'queriedThroughInstance' => $planet::query()->select('id', 'name')->get(),
+            'aliasedModelTable' => Planet::query()->from('planets as p')->select('p.diameter')->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'inner',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'brief',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'wide',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'narrow',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'outer',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'conditionWithDefault' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'conditionalSelect' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'literalCondition' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'mutatingCallback' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'created_at',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'tapped' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                'nestedCondition' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'visited' => [
+                                                        'type' => 'boolean',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'diameter',
+                                                    'visited',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'conditionalSelect',
+                                'conditionWithDefault',
+                                'literalCondition',
+                                'tapped',
+                                'mutatingCallback',
+                                'nestedCondition',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function builderCallbacks(Request $request): mixed
+    {
+        $nested = $request->boolean('inner');
+
+        return [
+            'conditionalSelect' => Planet::query()
+                ->when($request->boolean('brief'), fn ($query) => $query->select('id', 'name'))
+                ->get(),
+            'conditionWithDefault' => Planet::query()
+                ->when(
+                    $request->boolean('wide'),
+                    fn ($query) => $query->select('id'),
+                    fn ($query) => $query->select('name'),
+                )
+                ->get(),
+            'literalCondition' => Planet::query()
+                ->when(true, fn ($query) => $query->select('diameter'))
+                ->get(),
+            'tapped' => Planet::query()
+                ->tap(fn ($query) => $query->select('visited'))
+                ->get(),
+            'mutatingCallback' => Planet::query()
+                ->when($request->boolean('narrow'), function ($query) {
+                    $query->select('created_at');
+                })
+                ->get(),
+            'nestedCondition' => Planet::query()
+                ->when(
+                    $request->boolean('outer'),
+                    fn ($query) => $query->when($nested, fn ($inner) => $inner->addSelect('id')),
+                )
+                ->get(),
+        ];
+    }
+
+
+    /**
+     * Raw select expressions
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Raw select expressions',
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'columns' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aggregateAlias' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'total',
+                                        ],
+                                    ],
+                                ],
+                                'aggregatesAddedToSelection' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'biggest' => [
+                                                'type' => [
+                                                    'number',
+                                                    'null',
+                                                ],
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'typical' => [
+                                                'type' => [
+                                                    'number',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'total',
+                                            'biggest',
+                                            'typical',
+                                        ],
+                                    ],
+                                ],
+                                'aliasInsideQuotedLiteral' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                        ],
+                                    ],
+                                ],
+                                'ansiQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'backtickQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'row count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                            'row count',
+                                        ],
+                                    ],
+                                ],
+                                'bracketQuotedIdentifiers' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'row count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'label',
+                                            'diameter',
+                                            'row count',
+                                        ],
+                                    ],
+                                ],
+                                'bracketQuotedSeparators' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'kept as is' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'kept as is',
+                                        ],
+                                    ],
+                                ],
+                                'constructedExpression' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'slug' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'slug',
+                                        ],
+                                    ],
+                                ],
+                                'minOfDateColumn' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'earliest' => [
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                            'format' => 'date-time',
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'earliest',
+                                    ],
+                                ],
+                                'nothingNameableLeavesRowUnknown' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                                'plainColumnsInRawSelect' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                'rawExpressionObject' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'total',
+                                        ],
+                                    ],
+                                ],
+                                'subQueryAlias' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'rocket_count' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'rocket_count',
+                                        ],
+                                    ],
+                                ],
+                                'unaliasedExpressionIsOmitted' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                        ],
+                                    ],
+                                ],
+                                'unreadableExpressionLeavesRowUnknown' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'aggregateAlias',
+                                'aggregatesAddedToSelection',
+                                'minOfDateColumn',
+                                'rawExpressionObject',
+                                'constructedExpression',
+                                'aliasInsideQuotedLiteral',
+                                'plainColumnsInRawSelect',
+                                'unaliasedExpressionIsOmitted',
+                                'subQueryAlias',
+                                'bracketQuotedIdentifiers',
+                                'bracketQuotedSeparators',
+                                'backtickQuotedIdentifiers',
+                                'ansiQuotedIdentifiers',
+                                'nothingNameableLeavesRowUnknown',
+                                'unreadableExpressionLeavesRowUnknown',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function rawSelectExpressions(Request $request): mixed
+    {
+        return [
+            'aggregateAlias' => Planet::query()->selectRaw('count(*) as total')->get(),
+            'aggregatesAddedToSelection' => Planet::query()
+                ->select('id')
+                ->selectRaw('count(*) as total, max(diameter) as biggest, avg(diameter) as typical')
+                ->get(),
+            'minOfDateColumn' => Planet::query()->select('id')->selectRaw('min(created_at) as earliest')->first(),
+            'rawExpressionObject' => Planet::query()->select(DB::raw('count(*) as total'))->get(),
+            'constructedExpression' => Planet::query()
+                ->select('id')
+                ->addSelect(new Expression('lower(name) as slug'))
+                ->get(),
+            'aliasInsideQuotedLiteral' => Planet::query()->selectRaw("concat(name, ' as ', name) as label")->get(),
+            'plainColumnsInRawSelect' => Planet::query()->selectRaw('id, planets.diameter')->get(),
+            'unaliasedExpressionIsOmitted' => Planet::query()->select('id')->selectRaw('count(*)')->get(),
+            'subQueryAlias' => Planet::query()
+                ->select('id')
+                ->selectSub(Rocket::query()->selectRaw('count(*)'), 'rocket_count')
+                ->get(),
+            'bracketQuotedIdentifiers' => Planet::query()->selectRaw('[name] as [label], [planets].[diameter], count(*) as [row count]')->get(),
+            'bracketQuotedSeparators' => Planet::query()->selectRaw('[dropped, renamed] as [kept as is]')->get(),
+            'backtickQuotedIdentifiers' => Planet::query()->selectRaw('`name` as `label`, `planets`.`diameter`, count(*) as `row count`')->get(),
+            'ansiQuotedIdentifiers' => Planet::query()->selectRaw('"name" as "label", "planets"."diameter"')->get(),
+            'nothingNameableLeavesRowUnknown' => Planet::query()->selectRaw('count(*)')->get(),
+            'unreadableExpressionLeavesRowUnknown' => Planet::query()->select($request->string('columns')->toString())->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'aliasedColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'label' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'label',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'appendedAttribute' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'appendable_planets' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'summary' => [
+                                                        'type' => 'string',
+                                                        'const' => 'S',
+                                                    ],
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'summary',
+                                                ],
+                                            ],
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'appendable_planets',
+                                    ],
+                                ],
+                                'everyColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'description' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'id' => [
+                                                        'anyOf' => [
+                                                            [
+                                                                'type' => 'string',
+                                                                'const' => '',
+                                                            ],
+                                                            [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'description',
+                                                    'size',
+                                                    'created_at',
+                                                    'updated_at',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'nestedColumnList' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'description' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'created_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'id' => [
+                                                        'anyOf' => [
+                                                            [
+                                                                'type' => 'string',
+                                                                'const' => '',
+                                                            ],
+                                                            [
+                                                                'type' => 'integer',
+                                                            ],
+                                                        ],
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                    'planet' => [
+                                                        'type' => [
+                                                            'object',
+                                                            'null',
+                                                        ],
+                                                        'properties' => [
+                                                            'name' => [
+                                                                'type' => 'string',
+                                                            ],
+                                                        ],
+                                                        'required' => [
+                                                            'name',
+                                                        ],
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'updated_at' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                    'description',
+                                                    'size',
+                                                    'created_at',
+                                                    'updated_at',
+                                                    'planet',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                                'qualifiedColumn' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'space_stations' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'space_stations',
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'everyColumn',
+                                'qualifiedColumn',
+                                'aliasedColumn',
+                                'nestedColumnList',
+                                'appendedAttribute',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            404 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function eagerLoadColumnExpressions(): mixed
+    {
+        return [
+            'everyColumn' => Planet::select('id')->with('spaceStations:*')->firstOrFail(),
+            'qualifiedColumn' => Planet::select('id')->with('spaceStations:space_stations.name')->firstOrFail(),
+            'aliasedColumn' => Planet::select('id')->with('spaceStations:name as label')->firstOrFail(),
+            'nestedColumnList' => Planet::select('id')->with('spaceStations.planet:name')->firstOrFail(),
+            'appendedAttribute' => Planet::select('id')->with('appendablePlanets:id')->firstOrFail(),
         ];
     }
 }
+

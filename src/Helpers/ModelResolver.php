@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
+use ReflectionProperty;
 use Throwable;
 
 final class ModelResolver
@@ -25,6 +26,40 @@ final class ModelResolver
         }
 
         return self::$resolved[$className] = $model instanceof Model ? $model : null;
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    public static function defaultEagerLoads(string $className): array
+    {
+        return self::configuredRelationNames($className, 'with');
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    public static function defaultEagerLoadCounts(string $className): array
+    {
+        return self::configuredRelationNames($className, 'withCount');
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    private static function configuredRelationNames(string $className, string $propertyName): array
+    {
+        $model = self::resolve($className);
+        $names = $model ? new ReflectionProperty($model, $propertyName)->getValue($model) : null;
+
+        if (! is_array($names)) {
+            return [];
+        }
+
+        return array_values(array_filter($names, is_string(...)));
     }
 
 

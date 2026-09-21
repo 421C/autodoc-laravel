@@ -44,6 +44,15 @@ class Planet extends Model
     }
 
     /**
+     * @param Builder<$this> $query
+     * @return Builder<$this>
+     */
+    public function scopeOrderedByJoinDate(Builder $query): Builder
+    {
+        return $query->orderBy('created_at');
+    }
+
+    /**
      * @phpstan-ignore missingType.generics
      */
     public function beacons(): MorphMany
@@ -57,5 +66,14 @@ class Planet extends Model
     public function rockets(): HasMany
     {
         return $this->hasMany(Rocket::class);
+    }
+
+
+    /**
+     * @return HasMany<AppendablePlanet, $this>
+     */
+    public function appendablePlanets(): HasMany
+    {
+        return $this->hasMany(AppendablePlanet::class, 'id');
     }
 }

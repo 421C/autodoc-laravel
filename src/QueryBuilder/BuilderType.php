@@ -5,6 +5,8 @@ namespace AutoDoc\Laravel\QueryBuilder;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Override;
 
 final class BuilderType extends ObjectType
@@ -20,6 +22,15 @@ final class BuilderType extends ObjectType
     }
 
 
+    public static function forChain(QueryChain $chain): self
+    {
+        return new self(
+            chain: $chain,
+            builderClassName: $chain->isRawDatabaseQuery ? QueryBuilder::class : EloquentBuilder::class,
+        );
+    }
+
+
     #[Override]
     public function canMergeWith(ObjectType $other): bool
     {
@@ -32,20 +43,29 @@ final class BuilderType extends ObjectType
      */
     public static function chainsIn(?Type $type): array
     {
+        return array_map(fn (self $builderType) => $builderType->chain, self::in($type));
+    }
+
+
+    /**
+     * @return list<self>
+     */
+    public static function in(?Type $type): array
+    {
         if ($type instanceof self) {
-            return [$type->chain];
+            return [$type];
         }
 
         if (! ($type instanceof UnionType)) {
             return [];
         }
 
-        $chains = [];
+        $builderTypes = [];
 
         foreach ($type->types as $variant) {
-            $chains = [...$chains, ...self::chainsIn($variant)];
+            $builderTypes = [...$builderTypes, ...self::in($variant)];
         }
 
-        return $chains;
+        return $builderTypes;
     }
 }

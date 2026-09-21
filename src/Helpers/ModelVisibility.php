@@ -70,9 +70,9 @@ final class ModelVisibility
         $methodName = $this->call->methodName;
         $isReplacing = in_array($methodName, self::REPLACING_METHODS, true);
 
-        $keyNames = $this->resolveKeyListNames($this->call, allowVariadic: ! $isReplacing);
+        $keyNames = $this->resolveKeyListNames($this->call->argTypes, $this->call->scope->config, allowVariadic: ! $isReplacing);
 
-        if ($keyNames === [] && ! ($isReplacing && $this->hasEmptyKeyListArgument($this->call))) {
+        if ($keyNames === [] && ! ($isReplacing && $this->hasEmptyKeyListArgument($this->call->argTypes, $this->call->scope->config))) {
             return null;
         }
 

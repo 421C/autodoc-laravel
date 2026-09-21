@@ -14,6 +14,7 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\Laravel\Helpers\ResolvesCallbackReturnType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
 use Illuminate\Database\Eloquent\Builder;
@@ -89,7 +90,9 @@ final class QueryResultType
         }
 
         if (in_array($methodName, ['create', 'firstOrNew', 'firstOrCreate', 'updateOrCreate'])) {
-            return $rowType;
+            return $rowType instanceof ObjectType
+                ? $this->getWrittenModelType($rowType, ArgumentList::fromArgNodes($methodCall->args, $this->scope), $methodName)
+                : $rowType;
         }
 
         if ($methodName === 'firstWhere') {
@@ -202,6 +205,77 @@ final class QueryResultType
         }
 
         return (new UnionType([...$variantsWithoutNull, $replacementType]))->unwrapType($this->scope->config);
+    }
+
+
+    /**
+     * A written model holds only what was assigned to it plus what Laravel
+     * fills in, so the columns it never touched are absent. `firstOrNew` and
+     * the `*OrCreate` pair may return a row that was read in full instead,
+     * which makes those columns optional rather than absent.
+     */
+    private function getWrittenModelType(ObjectType $rowType, ArgumentList $methodArgs, string $methodName): Type
+    {
+        $modelClassName = $this->chain->modelClassName;
+        $assignedNames = $this->resolveAssignedAttributeNames($methodArgs);
+        $model = $modelClassName === null ? null : ModelResolver::resolve($modelClassName);
+
+        if ($assignedNames === null || $model === null) {
+            return $rowType;
+        }
+
+        $presentNames = array_merge(
+            $assignedNames,
+            array_keys($model->getAttributes()),
+            $model->getAppends(),
+            array_filter([
+                $model->getKeyName(),
+                $model->usesTimestamps() ? $model->getCreatedAtColumn() : null,
+                $model->usesTimestamps() ? $model->getUpdatedAtColumn() : null,
+            ]),
+        );
+
+        $writtenType = clone $rowType;
+
+        foreach ($rowType->properties as $propertyName => $propertyType) {
+            if (in_array($propertyName, $presentNames, strict: true)) {
+                continue;
+            }
+
+            if ($methodName === 'create') {
+                unset($writtenType->properties[$propertyName]);
+
+            } else {
+                $writtenType->properties[$propertyName] = (clone $propertyType)->setRequired(false);
+            }
+        }
+
+        return $writtenType;
+    }
+
+
+    /**
+     * @return ?list<string>
+     */
+    private function resolveAssignedAttributeNames(ArgumentList $methodArgs): ?array
+    {
+        $names = [];
+
+        for ($index = 0; $index < count($methodArgs); $index++) {
+            $argType = $this->scope->withPartialArraysResolvingAsShapes(
+                fn () => $methodArgs->get($index)->unwrapType($this->scope->config),
+            );
+
+            if (! ($argType instanceof ArrayType) || ! $argType->shape) {
+                return null;
+            }
+
+            foreach (array_keys($argType->shape) as $attributeName) {
+                $names[] = (string) $attributeName;
+            }
+        }
+
+        return $names === [] ? null : $names;
     }
 
 

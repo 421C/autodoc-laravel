@@ -28,11 +28,23 @@ final class TableSchema
 
         $cacheKey = ($connectionName ?? '') . '.' . $tableName;
 
-        if (array_key_exists($cacheKey, self::$resolved)) {
-            return self::$resolved[$cacheKey];
+        if (! array_key_exists($cacheKey, self::$resolved)) {
+            self::$resolved[$cacheKey] = self::readColumns($tableName, $connectionName);
         }
 
-        return self::$resolved[$cacheKey] = self::readColumns($tableName, $connectionName);
+        $rowType = self::$resolved[$cacheKey];
+
+        return $rowType ? self::copyRowType($rowType) : null;
+    }
+
+
+    private static function copyRowType(ObjectType $rowType): ObjectType
+    {
+        $copy = clone $rowType;
+
+        $copy->properties = array_map(fn (Type $type) => clone $type, $copy->properties);
+
+        return $copy;
     }
 
 

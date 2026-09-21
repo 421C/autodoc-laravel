@@ -8,7 +8,8 @@ use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodResolver;
-use AutoDoc\Laravel\QueryBuilder\BuilderType;
+use AutoDoc\Laravel\QueryBuilder\BuilderState;
+use AutoDoc\Laravel\QueryBuilder\ConditionalCallback;
 use AutoDoc\Laravel\QueryBuilder\QueryChainMethod;
 use Illuminate\Database\Eloquent\Builder;
 use PhpParser\Node\Expr\MethodCall;
@@ -53,21 +54,38 @@ class EloquentBuilderMethodCall extends MethodCallExtension
     }
 
 
-    private function continueChain(MethodCallContext $call): ?BuilderType
+    private function continueChain(MethodCallContext $call): ?Type
     {
         if (BuilderMethodClassifier::terminatesBuilderChain($call->methodName)) {
             return null;
         }
 
-        $varType = $call->getVarType();
+        $state = BuilderState::in($call->getVarType());
 
-        if (! ($varType instanceof BuilderType)) {
+        if (! $state) {
             return null;
         }
 
-        return new BuilderType(
-            chain: $varType->chain->withMethod(new QueryChainMethod($call->methodName, $call->argTypes)),
-            builderClassName: $varType->className ?? Builder::class,
-        );
+        return $this->continued($state, $call)->toType($call->scope->config);
+    }
+
+
+    private function continued(BuilderState $state, MethodCallContext $call): BuilderState
+    {
+        $method = new QueryChainMethod($call->methodName, $call->argTypes);
+        $node = $call->node;
+
+        $conditional = $node instanceof MethodCall
+            ? ConditionalCallback::read($method, $node, $state->chain(), $call->scope)
+            : null;
+
+        if ($conditional) {
+            return $state->applying($conditional->withoutRowPreservingCalls($state->modelClassName()));
+        }
+
+        $belongsInChain = $state->nextMethodIsConditional()
+            || BuilderMethodClassifier::belongsInChain($method->name, $state->modelClassName());
+
+        return $belongsInChain ? $state->withMethod($method) : $state;
     }
 }

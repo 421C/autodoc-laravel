@@ -4,13 +4,11 @@ namespace AutoDoc\Laravel\QueryBuilder;
 
 use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\Scope;
+use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnresolvedParserNodeType;
 use AutoDoc\Laravel\Helpers\ResolvesModelTypes;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
@@ -26,21 +24,9 @@ final class QueryChainExtractor
         private Scope $scope,
     ) {}
 
-    /** @var ?array<string, true> */
-    private static ?array $builderClassMethods = null;
-
-    /** @var ?class-string<Model> */
-    private ?string $modelClassName = null;
-
-    private bool $isRawDatabaseQuery = false;
-
-    /** @var list<QueryChainMethod> */
-    private array $methods = [];
+    private ?BuilderState $state = null;
 
     private bool $shortCircuitsToNull = false;
-
-    /** @var list<QueryChain> */
-    private array $rootChains = [];
 
     /** @var array<int, Type> */
     private array $resolvedReceiverTypes = [];
@@ -83,30 +69,16 @@ final class QueryChainExtractor
     {
         $this->walkChain($queryNode);
 
-        $chains = $this->rootChains
-            ? array_map($this->continueRootChain(...), $this->rootChains)
-            : [new QueryChain(
-                modelClassName: $this->modelClassName,
-                methods: $this->methods,
-                isRawDatabaseQuery: $this->isRawDatabaseQuery,
-                shortCircuitsToNull: $this->shortCircuitsToNull,
-            )];
-
-        return array_values(array_filter(
-            $chains,
-            fn (QueryChain $chain) => ($chain->modelClassName !== null || $chain->isRawDatabaseQuery)
-                && $this->methodsAreAnalyzable($chain),
-        ));
-    }
-
-
-    private function continueRootChain(QueryChain $rootChain): QueryChain
-    {
-        foreach ($this->methods as $method) {
-            $rootChain = $rootChain->withMethod($method);
+        if (! $this->state) {
+            return [];
         }
 
-        return $this->shortCircuitsToNull ? $rootChain->withShortCircuitToNull() : $rootChain;
+        $chains = array_map(
+            fn (QueryChain $chain) => $this->shortCircuitsToNull ? $chain->withShortCircuitToNull() : $chain,
+            $this->state->chains(),
+        );
+
+        return array_values(array_filter($chains, fn (QueryChain $chain) => $this->methodsAreAnalyzable($chain)));
     }
 
 
@@ -130,7 +102,9 @@ final class QueryChainExtractor
 
         } else if ($expr instanceof StaticCall) {
             if ($expr->class instanceof Node\Expr) {
-                $this->walkChain($expr->class, $visitedPositions);
+                if (! $this->rootChainInClass($this->resolveModelClassNameInExpression($expr->class))) {
+                    $this->walkChain($expr->class, $visitedPositions);
+                }
 
             } else if (! $this->rootChainInClass($this->scope->getResolvedClassName($expr->class))) {
                 return;
@@ -151,7 +125,9 @@ final class QueryChainExtractor
         }
 
         if (is_a($className, DB::class, true)) {
-            $this->isRawDatabaseQuery = true;
+            $this->state = BuilderState::fromChain(
+                new QueryChain(modelClassName: null, methods: [], isRawDatabaseQuery: true),
+            );
 
             return true;
         }
@@ -160,7 +136,7 @@ final class QueryChainExtractor
             return false;
         }
 
-        $this->modelClassName = $className;
+        $this->state = BuilderState::fromChain(new QueryChain(modelClassName: $className, methods: []));
 
         return true;
     }
@@ -168,7 +144,7 @@ final class QueryChainExtractor
 
     private function rootChainInRelation(MethodCall|NullsafeMethodCall $expr): bool
     {
-        if ($this->isRawDatabaseQuery) {
+        if ($this->state && $this->state->chain()->isRawDatabaseQuery) {
             return false;
         }
 
@@ -178,7 +154,7 @@ final class QueryChainExtractor
             return false;
         }
 
-        $modelClassName = $this->modelClassName ?? $this->resolveReceiverModelClassName($expr->var);
+        $modelClassName = $this->state?->modelClassName() ?? $this->resolveReceiverModelClassName($expr->var);
 
         if (! $modelClassName) {
             return false;
@@ -199,8 +175,7 @@ final class QueryChainExtractor
             return false;
         }
 
-        $this->modelClassName = $relatedModelClassName;
-        $this->methods = [];
+        $this->state = BuilderState::fromChain(new QueryChain(modelClassName: $relatedModelClassName, methods: []));
 
         return true;
     }
@@ -211,10 +186,10 @@ final class QueryChainExtractor
      */
     private function walkVariable(Node\Expr\Variable $expr, array $visitedPositions): void
     {
-        $rootChains = BuilderType::chainsIn($this->resolveReceiverType($expr));
+        $state = BuilderState::in($this->resolveReceiverType($expr));
 
-        if ($rootChains) {
-            $this->rootChains = $rootChains;
+        if ($state) {
+            $this->state = $state;
 
             return;
         }
@@ -245,10 +220,28 @@ final class QueryChainExtractor
 
     private function recordMethod(MethodCall|NullsafeMethodCall|StaticCall $expr): void
     {
-        $this->methods[] = new QueryChainMethod(
+        $state = $this->state;
+
+        if (! $state) {
+            return;
+        }
+
+        $method = new QueryChainMethod(
             name: (string) $this->scope->getRawValueFromNode($expr->name),
             args: ArgumentList::fromArgNodes($expr->args, $this->scope),
         );
+
+        $this->state = $this->applyingCallbacks($state->withMethod($method), $method, $expr);
+    }
+
+
+    private function applyingCallbacks(BuilderState $state, QueryChainMethod $method, Node\Expr $callerNode): BuilderState
+    {
+        $conditional = ConditionalCallback::read($method, $callerNode, $state->chain(), $this->scope);
+
+        return $conditional
+            ? $state->applying($conditional->withoutRowPreservingCalls($state->modelClassName()))
+            : $state;
     }
 
 
@@ -268,6 +261,36 @@ final class QueryChainExtractor
         $receiverType = $this->resolveReceiverType($expr);
 
         return $receiverType ? $this->resolveModelClassName($receiverType) : null;
+    }
+
+
+    /**
+     * A static call can name its class through a variable holding either a
+     * model instance or a model class-string.
+     *
+     * @return ?class-string<Model>
+     */
+    private function resolveModelClassNameInExpression(Node\Expr $expr): ?string
+    {
+        $expressionType = $this->resolveReceiverType($expr);
+
+        if (! $expressionType) {
+            return null;
+        }
+
+        $modelClassName = $this->resolveModelClassName($expressionType);
+
+        if ($modelClassName) {
+            return $modelClassName;
+        }
+
+        if (! ($expressionType instanceof StringType)) {
+            return null;
+        }
+
+        $values = $expressionType->getPossibleValues() ?? [];
+
+        return count($values) === 1 && is_subclass_of($values[0], Model::class, true) ? $values[0] : null;
     }
 
 
@@ -302,31 +325,11 @@ final class QueryChainExtractor
         }
 
         foreach ($chain->methods as $method) {
-            if (! $this->isKnownBuilderMethod($method->name, $chain->modelClassName)) {
+            if (! BuilderMethodClassifier::isKnownBuilderMethod($method->name, $chain->modelClassName)) {
                 return false;
             }
         }
 
         return true;
-    }
-
-
-    private function isKnownBuilderMethod(string $methodName, ?string $modelClassName): bool
-    {
-        self::$builderClassMethods ??= array_fill_keys(array_map(strtolower(...), array_merge(
-            get_class_methods(EloquentBuilder::class),
-            get_class_methods(QueryBuilder::class),
-        )), true);
-
-        if (isset(self::$builderClassMethods[strtolower($methodName)])) {
-            return true;
-        }
-
-        if (! $modelClassName) {
-            return method_exists(Connection::class, $methodName);
-        }
-
-        return method_exists($modelClassName, $methodName)
-            || method_exists($modelClassName, 'scope' . ucfirst($methodName));
     }
 }

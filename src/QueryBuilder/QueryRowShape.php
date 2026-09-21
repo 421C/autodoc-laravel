@@ -5,25 +5,34 @@ namespace AutoDoc\Laravel\QueryBuilder;
 use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
+use AutoDoc\DataTypes\IntegerType;
+use AutoDoc\DataTypes\NullType;
+use AutoDoc\DataTypes\NumberType;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
-use AutoDoc\Laravel\Helpers\ParsesSqlAliases;
+use AutoDoc\Laravel\Helpers\ModelResolver;
+use AutoDoc\Laravel\Helpers\ParsesSqlExpressions;
 
 final class QueryRowShape
 {
-    use ParsesSqlAliases;
+    use ParsesSqlExpressions;
 
     public function __construct(
         private Scope $scope,
         private QueryChain $chain,
     ) {
         $this->eagerLoad = new EagerLoad($scope);
+        $this->conditionalEagerLoad = new EagerLoad($scope);
     }
 
     private readonly EagerLoad $eagerLoad;
+
+    private readonly EagerLoad $conditionalEagerLoad;
+
+    private bool $applyingConditionalMethod = false;
 
     private ?FromClause $fromClause = null;
 
@@ -45,17 +54,48 @@ final class QueryRowShape
             return null;
         }
 
+        $this->applyModelDefaults($baseRowType);
+
         foreach ($this->chain->methods as $method) {
-            if ($method->name === 'select') {
-                $this->selectedColumns = $this->getColumnsFromArguments($method->args);
+            $this->applyingConditionalMethod = $method->runsConditionally;
+
+            if ($method->name === 'select' && ! $method->runsConditionally) {
+                $this->selectedColumns = $method->args->has(0)
+                    ? $this->getColumnsFromArguments($method->args)
+                    : self::starSelection();
             }
 
-            if ($method->name === 'addSelect') {
-                $this->addSelectedColumns($this->getColumnsFromArguments($method->args));
+            $addedColumns = match ($method->name) {
+                'addSelect' => $this->getColumnsFromArguments($method->args),
+                'selectRaw' => $this->getColumnsFromRawArguments($method->args),
+                'selectSub' => $this->getSubQueryColumns($method->args),
+                default => null,
+            };
+
+            if ($addedColumns !== null) {
+                if ($method->runsConditionally && ! $this->selectsExplicitColumns()) {
+                    $this->selectedColumns = self::asOptionalProperties($baseRowType->properties);
+                }
+
+                $this->addSelectedColumns($addedColumns);
             }
 
             if ($method->name === 'with') {
-                $this->eagerLoad->addArguments($method->args);
+                $this->eagerLoadFor($method)->addArguments($method->args);
+            }
+
+            if ($method->name === 'withOnly' && ! $method->runsConditionally) {
+                $this->conditionalEagerLoad->removeAllArguments();
+                $this->eagerLoad->replaceArguments($method->args);
+            }
+
+            if ($method->name === 'withWhereHas') {
+                $this->eagerLoadFor($method)->addRelationArgument($method->args);
+            }
+
+            if ($method->name === 'without' && ! $method->runsConditionally) {
+                $this->eagerLoad->removeArguments($method->args);
+                $this->conditionalEagerLoad->removeArguments($method->args);
             }
 
             $aggregateColumns = $this->getRelationAggregateColumns($method);
@@ -109,13 +149,19 @@ final class QueryRowShape
      */
     public function applyColumns(ObjectType $objectType, array $columns, array $eagerLoadedRelations): ObjectType
     {
-        if (isset($columns['*'])) {
-            unset($columns['*']);
+        $expandedColumns = [];
 
-            $columns = array_merge($objectType->properties, $columns);
+        foreach ($columns as $name => $columnType) {
+            if (self::isStarSelection($name)) {
+                $expandedColumns = array_merge($expandedColumns, $this->expandStarSelection($name, $objectType));
+
+                continue;
+            }
+
+            $expandedColumns[$name] = $columnType;
         }
 
-        $objectType->properties = array_merge($columns, $eagerLoadedRelations);
+        $objectType->properties = array_merge($expandedColumns, $eagerLoadedRelations);
 
         return $objectType;
     }
@@ -166,13 +212,82 @@ final class QueryRowShape
     {
         $modelClassName = $this->chain->modelClassName;
 
-        return $modelClassName ? $this->eagerLoad->resolveRelationTypes($modelClassName) : [];
+        if (! $modelClassName) {
+            return [];
+        }
+
+        $conditional = self::asOptionalProperties(
+            $this->conditionalEagerLoad->resolveRelationTypes($modelClassName),
+        );
+
+        return array_merge($conditional, $this->eagerLoad->resolveRelationTypes($modelClassName));
+    }
+
+
+    /**
+     * Laravel seeds `$with` and `$withCount` when the builder is created, so
+     * they apply before anything the chain does. A later `select()` replaces
+     * the columns and drops the counts, while the relations survive it.
+     */
+    private function applyModelDefaults(ObjectType $baseRowType): void
+    {
+        $modelClassName = $this->chain->modelClassName;
+
+        if ($modelClassName === null || $this->chain->isRawDatabaseQuery) {
+            return;
+        }
+
+        foreach (array_keys(EagerLoad::defaultRelationTypes($this->scope, $modelClassName)) as $defaultRelationName) {
+            unset($baseRowType->properties[$defaultRelationName]);
+        }
+
+        $this->eagerLoad->addRelationNames(ModelResolver::defaultEagerLoads($modelClassName));
+
+        $countColumns = RelationAggregate::defaultCountColumns(
+            $this->scope->getPhpClassInDeeperScope($modelClassName),
+        );
+
+        if ($countColumns) {
+            $this->selectAllColumnsUnlessAlreadySelected();
+            $this->addSelectedColumns($countColumns);
+        }
     }
 
 
     private function selectAllColumnsUnlessAlreadySelected(): void
     {
-        $this->selectColumnsUnlessAlreadySelected(['*' => new UnknownType]);
+        $this->selectColumnsUnlessAlreadySelected(self::starSelection());
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private static function starSelection(): array
+    {
+        return ['*' => new UnknownType];
+    }
+
+
+    private static function isStarSelection(string $name): bool
+    {
+        return $name === '*' || str_ends_with($name, '.*');
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private function expandStarSelection(string $name, ObjectType $rowType): array
+    {
+        if ($name === '*') {
+            return $rowType->properties;
+        }
+
+        [$table] = self::splitTablePrefix($name);
+        $tableRowType = $this->fromClause()->tableRowType($table);
+
+        return $tableRowType ? $tableRowType->properties : [];
     }
 
 
@@ -181,7 +296,27 @@ final class QueryRowShape
      */
     private function addSelectedColumns(array $columns): void
     {
+        if ($this->applyingConditionalMethod) {
+            $columns = self::asOptionalProperties($columns);
+        }
+
         $this->selectedColumns = array_merge($this->selectedColumns ?? [], $columns);
+    }
+
+
+    /**
+     * @param array<string, Type> $properties
+     * @return array<string, Type>
+     */
+    private static function asOptionalProperties(array $properties): array
+    {
+        return array_map(fn (Type $type) => (clone $type)->setRequired(false), $properties);
+    }
+
+
+    private function eagerLoadFor(QueryChainMethod $method): EagerLoad
+    {
+        return $method->runsConditionally ? $this->conditionalEagerLoad : $this->eagerLoad;
     }
 
 
@@ -343,7 +478,142 @@ final class QueryRowShape
                         $columns[$column[0]] = $column[1];
                     }
                 }
+
+                continue;
             }
+
+            $rawSelectList = RawSelectExpression::readExpressionArgument($columnType, $this->scope->config);
+
+            if ($rawSelectList !== null) {
+                $columns = array_merge($columns, $this->getColumnsFromRawSelectList($rawSelectList));
+            }
+        }
+
+        return $columns;
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private function getColumnsFromRawArguments(ArgumentList $args): array
+    {
+        $expressionIndex = $args->indexForParameter('expression', 0);
+
+        if ($expressionIndex === null) {
+            return [];
+        }
+
+        $expressionArgType = $args->get($expressionIndex)->unwrapType($this->scope->config);
+
+        if (! ($expressionArgType instanceof StringType)) {
+            return [];
+        }
+
+        $columns = [];
+
+        foreach ($expressionArgType->getPossibleValues() ?? [] as $selectList) {
+            $columns = array_merge($columns, $this->getColumnsFromRawSelectList($selectList));
+        }
+
+        return $columns;
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private function getColumnsFromRawSelectList(string $selectList): array
+    {
+        $columns = [];
+
+        foreach (RawSelectExpression::parseList($selectList) as $rawColumn) {
+            $column = $this->selectRawColumn($rawColumn);
+
+            if ($column) {
+                $columns[$column[0]] = $column[1];
+            }
+        }
+
+        return $columns;
+    }
+
+
+    /**
+     * An expression the driver would name differently on every database is
+     * left out rather than guessed at.
+     *
+     * @return ?array{string, Type}
+     */
+    private function selectRawColumn(RawSelectExpression $rawColumn): ?array
+    {
+        if ($rawColumn->functionName !== null) {
+            return $rawColumn->alias === null
+                ? null
+                : [$rawColumn->alias, $this->getRawFunctionType($rawColumn)->setRequired(true)];
+        }
+
+        if ($rawColumn->alias === null && ! $rawColumn->isPlainColumnReference()) {
+            return null;
+        }
+
+        return $this->selectAliasedColumn($rawColumn->expression, $rawColumn->alias);
+    }
+
+
+    private function getRawFunctionType(RawSelectExpression $rawColumn): Type
+    {
+        return match ($rawColumn->functionName) {
+            'count' => new IntegerType(minimum: 0),
+            'sum', 'avg' => $this->orNull(new NumberType),
+            'min', 'max' => $this->orNull($this->getAggregatedColumnType($rawColumn) ?? new NumberType),
+            default => new UnknownType,
+        };
+    }
+
+
+    private function getAggregatedColumnType(RawSelectExpression $rawColumn): ?Type
+    {
+        $argument = $rawColumn->functionArgument;
+
+        if ($argument === null || ! RawSelectExpression::isPlainColumn($argument)) {
+            return null;
+        }
+
+        [$table, $column] = $this->splitTablePrefix($argument);
+        $columnType = $this->fromClause()->columnType($table, $column);
+
+        return $columnType ? clone $columnType : null;
+    }
+
+
+    private function orNull(Type $type): Type
+    {
+        return (new UnionType([$type, new NullType]))->unwrapType($this->scope->config);
+    }
+
+
+    /**
+     * @return array<string, Type>
+     */
+    private function getSubQueryColumns(ArgumentList $args): array
+    {
+        $aliasIndex = $args->indexForParameter('as', 1);
+
+        if ($aliasIndex === null) {
+            return [];
+        }
+
+        $aliasArgType = $args->get($aliasIndex)->unwrapType($this->scope->config);
+
+        if (! ($aliasArgType instanceof StringType)) {
+            return [];
+        }
+
+        $columns = [];
+
+        foreach ($aliasArgType->getPossibleValues() ?? [] as $alias) {
+            $columns[$alias] = (new UnknownType)->setRequired(true);
         }
 
         return $columns;
@@ -355,22 +625,36 @@ final class QueryRowShape
      */
     private function selectColumn(string $columnExpression): ?array
     {
-        [$column, $alias] = $this->splitAlias($columnExpression);
+        [$column, $alias] = self::splitAlias($columnExpression);
 
+        return $this->selectAliasedColumn($column, $alias);
+    }
+
+
+    /**
+     * @return ?array{string, Type}
+     */
+    private function selectAliasedColumn(string $column, ?string $alias): ?array
+    {
         if (str_contains($column, '->')) {
             $name = $alias ?? $this->jsonPathLeaf($column);
 
-            return $name === '' ? null : [$name, new UnknownType];
+            return $name === '' ? null : [$name, (new UnknownType)->setRequired(true)];
         }
 
         [$table, $column] = $this->splitTablePrefix($column);
+
+        if ($column === '*' && $alias === null) {
+            return [$table === null ? '*' : $table . '.*', new UnknownType];
+        }
+
         $name = $alias ?? $column;
 
         if ($name === '') {
             return null;
         }
 
-        return [$name, $this->getColumnType($table, $column)];
+        return [$name, $this->getColumnType($table, $column)->setRequired(true)];
     }
 
 
@@ -383,18 +667,6 @@ final class QueryRowShape
         }
 
         return $columnType ? clone $columnType : new UnknownType;
-    }
-
-
-    /**
-     * @return array{?string, string}
-     */
-    private function splitTablePrefix(string $column): array
-    {
-        $segments = explode('.', $column);
-        $name = (string) array_pop($segments);
-
-        return [array_pop($segments), $name];
     }
 
 

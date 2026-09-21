@@ -25,11 +25,11 @@ final class QueryTable
     private bool $isNullable = false;
 
 
-    public static function forModel(?string $tableName, ObjectType $rowType): self
+    public static function forModel(?string $tableName, ?string $alias, ObjectType $rowType): self
     {
         return new self(
             tableName: $tableName,
-            alias: null,
+            alias: $alias,
             connectionName: null,
             rowType: $rowType,
         );

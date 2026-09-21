@@ -811,4 +811,56 @@ class RawQueryController
             'conditional' => $conditional->get(),
         ];
     }
+
+
+    /**
+     * Raw select on a raw table query
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Raw select on a raw table query',
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'name' => [
+                                        'type' => 'string',
+                                    ],
+                                    'smallest' => [
+                                        'type' => [
+                                            'number',
+                                            'null',
+                                        ],
+                                        'format' => 'float',
+                                    ],
+                                    'total' => [
+                                        'type' => 'integer',
+                                        'minimum' => 0,
+                                    ],
+                                ],
+                                'required' => [
+                                    'name',
+                                    'total',
+                                    'smallest',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function rawSelectOnTableQuery(): mixed
+    {
+        return DB::table('planets')
+            ->select('name')
+            ->selectRaw('count(*) as total, min(diameter) as smallest')
+            ->get();
+    }
 }
+

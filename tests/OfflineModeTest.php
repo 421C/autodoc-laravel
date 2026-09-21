@@ -2,11 +2,10 @@
 
 namespace AutoDoc\Laravel\Tests;
 
-use AutoDoc\Laravel\ConfigLoader;
 use AutoDoc\Laravel\Extensions\EloquentModel;
 use AutoDoc\Laravel\Providers\AutoDocServiceProvider;
 use AutoDoc\Laravel\Tests\TestProject\TestRouteProvider;
-use AutoDoc\Workspace;
+use AutoDoc\Laravel\Tests\Traits\ReadsGeneratedSchema;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -14,13 +13,11 @@ use PHPUnit\Framework\Attributes\Test;
  * When `laravel.offline_mode` is enabled the package must build model attribute
  * shapes without ever connecting to the database. This suite deliberately loads
  * no migrations (and points at an unusable connection) so any DB access throws.
- *
- * @phpstan-type Schema array{
- *     paths: array<string, array<string, array<string, mixed>>>,
- * }
  */
 class OfflineModeTest extends \Orchestra\Testbench\TestCase
 {
+    use ReadsGeneratedSchema;
+
     /**
      * @param  \Illuminate\Foundation\Application  $app
      * @return array<int, class-string<\Illuminate\Support\ServiceProvider>>
@@ -127,21 +124,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
     #[Test]
     public function aRawTableQueryHasNoRowShapeWithoutDatabaseAccess(): void
     {
-        $config = (new ConfigLoader)->load();
-
-        $workspace = Workspace::getDefault($config);
-
-        $this->assertNotNull($workspace);
-
-        /** @var ?Schema */
-        $schema = json_decode($workspace->getJson() ?: '', true);
-
-        $this->assertNotNull($schema);
-
-        /** @var array<string, mixed> */
-        $operation = $schema['paths']['/test/offline/raw-table']['get'] ?? [];
-
-        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+        $responseSchema = $this->getResponseSchema('/test/offline/raw-table');
 
         $this->assertSame('array', $responseSchema['type'] ?? null);
         $this->assertArrayNotHasKey('properties', $this->digArray($responseSchema, ['items']));
@@ -151,21 +134,7 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
     #[Test]
     public function aJoinedTableContributesNothingWithoutDatabaseAccess(): void
     {
-        $config = (new ConfigLoader)->load();
-
-        $workspace = Workspace::getDefault($config);
-
-        $this->assertNotNull($workspace);
-
-        /** @var ?Schema */
-        $schema = json_decode($workspace->getJson() ?: '', true);
-
-        $this->assertNotNull($schema);
-
-        /** @var array<string, mixed> */
-        $operation = $schema['paths']['/test/offline/joined-model']['get'] ?? [];
-
-        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+        $responseSchema = $this->getResponseSchema('/test/offline/joined-model');
 
         $properties = $this->digArray($responseSchema, ['items', 'properties']);
 
@@ -183,46 +152,10 @@ class OfflineModeTest extends \Orchestra\Testbench\TestCase
      */
     private function getResponseProperties(string $uri): array
     {
-        $config = (new ConfigLoader)->load();
-
-        $workspace = Workspace::getDefault($config);
-
-        $this->assertNotNull($workspace);
-
-        /** @var ?Schema */
-        $schema = json_decode($workspace->getJson() ?: '', true);
-
-        $this->assertNotNull($schema);
-
-        /** @var array<string, mixed> */
-        $operation = $schema['paths'][$uri]['get'] ?? [];
-
-        $responseSchema = $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+        $responseSchema = $this->getResponseSchema($uri);
 
         $this->assertSame('object', $responseSchema['type'] ?? null);
 
         return $this->digArray($responseSchema, ['properties']);
-    }
-
-    /**
-     * Walk a nested schema array by keys, returning an empty array on any miss.
-     *
-     * @param array<string, mixed> $array
-     * @param array<int, string|int> $keys
-     * @return array<string, mixed>
-     */
-    private function digArray(array $array, array $keys): array
-    {
-        $value = $array;
-
-        foreach ($keys as $key) {
-            if (! is_array($value) || ! array_key_exists($key, $value)) {
-                return [];
-            }
-
-            $value = $value[$key];
-        }
-
-        return is_array($value) ? $value : [];
     }
 }
