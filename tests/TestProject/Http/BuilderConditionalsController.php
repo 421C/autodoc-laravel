@@ -511,6 +511,23 @@ class BuilderConditionalsController
                                     'items' => [
                                         'type' => 'object',
                                         'properties' => [
+                                            'created_at' => [
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                                'format' => 'date-time',
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
                                             'updated_at' => [
                                                 'type' => [
                                                     'string',

@@ -66,6 +66,10 @@ final class QueryRowShape
             }
 
             if ($method->name === 'addSelect') {
+                if ($method->runsConditionally && ! $this->selectsExplicitColumns()) {
+                    $this->selectedColumns = self::asOptionalProperties($baseRowType->properties);
+                }
+
                 $this->addSelectedColumns($this->getColumnsFromArguments($method->args));
             }
 
@@ -211,8 +215,7 @@ final class QueryRowShape
             return [];
         }
 
-        $conditional = array_map(
-            fn (Type $type) => (clone $type)->setRequired(false),
+        $conditional = self::asOptionalProperties(
             $this->conditionalEagerLoad->resolveRelationTypes($modelClassName),
         );
 
@@ -293,10 +296,20 @@ final class QueryRowShape
     private function addSelectedColumns(array $columns): void
     {
         if ($this->applyingConditionalMethod) {
-            $columns = array_map(fn (Type $type) => (clone $type)->setRequired(false), $columns);
+            $columns = self::asOptionalProperties($columns);
         }
 
         $this->selectedColumns = array_merge($this->selectedColumns ?? [], $columns);
+    }
+
+
+    /**
+     * @param array<string, Type> $properties
+     * @return array<string, Type>
+     */
+    private static function asOptionalProperties(array $properties): array
+    {
+        return array_map(fn (Type $type) => (clone $type)->setRequired(false), $properties);
     }
 
 
