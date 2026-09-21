@@ -1293,4 +1293,373 @@ class BuilderConditionalsController
 
         return $query->get();
     }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'a',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'b',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'c',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+            [
+                'in' => 'query',
+                'name' => 'd',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'anyOf' => [
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'diameter',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                    ],
+                                                ],
+                                            ],
+                                            'diameter' => [
+                                                'type' => 'number',
+                                                'format' => 'float',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'total' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'diameter',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function conditionalRawSelectAndEagerLoads(Request $request): mixed
+    {
+        return Planet::query()
+            ->select('id')
+            ->when($request->boolean('a'), fn ($query) => $query->addSelect('name'))
+            ->when($request->boolean('b'), fn ($query) => $query->addSelect('diameter'))
+            ->when($request->boolean('c'), fn ($query) => $query->addSelect('visited'))
+            ->when(
+                $request->boolean('d'),
+                fn ($query) => $query->selectRaw('count(*) as total')->with(['rockets:id', 'beacons:id']),
+            )
+            ->without('rockets')
+            ->get();
+    }
 }

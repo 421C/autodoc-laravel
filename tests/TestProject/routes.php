@@ -335,3 +335,4 @@ Route::get('/test/conditionals/filtering-ifs', [BuilderConditionalsController::c
 Route::get('/test/conditionals/sequential-ifs', [BuilderConditionalsController::class, 'sequentialIfStatements']);
 Route::get('/test/conditionals/condition-behind-assignment', [BuilderConditionalsController::class, 'conditionBehindVariableAssignment']);
 Route::get('/test/conditionals/condition-on-variable', [BuilderConditionalsController::class, 'conditionOnBuilderVariable']);
+Route::get('/test/conditionals/conditional-raw-select', [BuilderConditionalsController::class, 'conditionalRawSelectAndEagerLoads']);

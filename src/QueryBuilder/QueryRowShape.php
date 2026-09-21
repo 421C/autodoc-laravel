@@ -65,20 +65,19 @@ final class QueryRowShape
                     : self::starSelection();
             }
 
-            if ($method->name === 'addSelect') {
+            $addedColumns = match ($method->name) {
+                'addSelect' => $this->getColumnsFromArguments($method->args),
+                'selectRaw' => $this->getColumnsFromRawArguments($method->args),
+                'selectSub' => $this->getSubQueryColumns($method->args),
+                default => null,
+            };
+
+            if ($addedColumns !== null) {
                 if ($method->runsConditionally && ! $this->selectsExplicitColumns()) {
                     $this->selectedColumns = self::asOptionalProperties($baseRowType->properties);
                 }
 
-                $this->addSelectedColumns($this->getColumnsFromArguments($method->args));
-            }
-
-            if ($method->name === 'selectRaw' && ! $method->runsConditionally) {
-                $this->addSelectedColumns($this->getColumnsFromRawArguments($method->args));
-            }
-
-            if ($method->name === 'selectSub' && ! $method->runsConditionally) {
-                $this->addSelectedColumns($this->getSubQueryColumns($method->args));
+                $this->addSelectedColumns($addedColumns);
             }
 
             if ($method->name === 'with') {
@@ -86,6 +85,7 @@ final class QueryRowShape
             }
 
             if ($method->name === 'withOnly' && ! $method->runsConditionally) {
+                $this->conditionalEagerLoad->removeAllArguments();
                 $this->eagerLoad->replaceArguments($method->args);
             }
 
@@ -95,6 +95,7 @@ final class QueryRowShape
 
             if ($method->name === 'without' && ! $method->runsConditionally) {
                 $this->eagerLoad->removeArguments($method->args);
+                $this->conditionalEagerLoad->removeArguments($method->args);
             }
 
             $aggregateColumns = $this->getRelationAggregateColumns($method);

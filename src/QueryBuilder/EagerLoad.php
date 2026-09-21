@@ -52,9 +52,15 @@ final class EagerLoad
 
     public function replaceArguments(ArgumentList $arguments): void
     {
-        $this->arguments = [];
+        $this->removeAllArguments();
 
         $this->addArguments($arguments);
+    }
+
+
+    public function removeAllArguments(): void
+    {
+        $this->arguments = [];
     }
 
 
