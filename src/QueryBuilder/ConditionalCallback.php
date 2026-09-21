@@ -6,8 +6,6 @@ use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\BoolType;
 use AutoDoc\DataTypes\CallableType;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
@@ -130,14 +128,11 @@ final class ConditionalCallback
 
     private static function createProbeBuilderType(QueryChain $chain): BuilderType
     {
-        return new BuilderType(
-            chain: new QueryChain(
-                modelClassName: $chain->modelClassName,
-                methods: [],
-                isRawDatabaseQuery: $chain->isRawDatabaseQuery,
-            ),
-            builderClassName: $chain->isRawDatabaseQuery ? QueryBuilder::class : EloquentBuilder::class,
-        );
+        return BuilderType::forChain(new QueryChain(
+            modelClassName: $chain->modelClassName,
+            methods: [],
+            isRawDatabaseQuery: $chain->isRawDatabaseQuery,
+        ));
     }
 
 

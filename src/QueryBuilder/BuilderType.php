@@ -5,6 +5,8 @@ namespace AutoDoc\Laravel\QueryBuilder;
 use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Override;
 
 final class BuilderType extends ObjectType
@@ -17,6 +19,15 @@ final class BuilderType extends ObjectType
         string $builderClassName,
     ) {
         parent::__construct(className: $builderClassName);
+    }
+
+
+    public static function forChain(QueryChain $chain): self
+    {
+        return new self(
+            chain: $chain,
+            builderClassName: $chain->isRawDatabaseQuery ? QueryBuilder::class : EloquentBuilder::class,
+        );
     }
 
 

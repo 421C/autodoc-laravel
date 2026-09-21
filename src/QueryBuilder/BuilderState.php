@@ -6,6 +6,7 @@ use AutoDoc\Config;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 
 final class BuilderState
 {
@@ -29,12 +30,30 @@ final class BuilderState
     }
 
 
+    public static function fromChain(QueryChain $chain): self
+    {
+        return new self([BuilderType::forChain($chain)]);
+    }
+
+
     public function chain(): QueryChain
     {
         return $this->builderTypes[0]->chain;
     }
 
 
+    /**
+     * @return list<QueryChain>
+     */
+    public function chains(): array
+    {
+        return array_map(fn (BuilderType $builderType) => $builderType->chain, $this->builderTypes);
+    }
+
+
+    /**
+     * @return ?class-string<Model>
+     */
     public function modelClassName(): ?string
     {
         return $this->chain()->modelClassName;
