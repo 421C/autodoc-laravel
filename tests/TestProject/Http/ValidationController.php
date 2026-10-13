@@ -1014,6 +1014,109 @@ status description',
 
 
     #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'numeric' => [
+                                'type' => 'number',
+                                'minimum' => 1,
+                                'maximum' => 10,
+                            ],
+                            'decimal' => [
+                                'type' => 'number',
+                                'format' => 'float',
+                                'minimum' => 0,
+                                'maximum' => 100,
+                            ],
+                            'nullable_decimal' => [
+                                'type' => [
+                                    'number',
+                                    'null',
+                                ],
+                                'format' => 'float',
+                                'minimum' => 0,
+                                'maximum' => 9999999,
+                            ],
+                            'integer_between' => [
+                                'type' => 'integer',
+                                'minimum' => 1,
+                                'maximum' => 5,
+                            ],
+                            'numeric_size' => [
+                                'type' => 'number',
+                                'minimum' => 3,
+                                'maximum' => 3,
+                            ],
+                            'string_size' => [
+                                'type' => 'string',
+                                'minLength' => 2,
+                                'maxLength' => 2,
+                            ],
+                            'array_between' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                                'minItems' => 1,
+                                'maxItems' => 3,
+                            ],
+                            'overlapping_bounds' => [
+                                'type' => 'integer',
+                                'minimum' => 2,
+                                'maximum' => 5,
+                            ],
+                            'fractional_bound' => [
+                                'type' => 'number',
+                                'format' => 'float',
+                                'minimum' => 0.5,
+                                'maximum' => 10,
+                            ],
+                            'integer_fractional_bound' => [
+                                'type' => 'integer',
+                                'minimum' => 1,
+                                'maximum' => 9,
+                            ],
+                            'numeric_string' => [
+                                'type' => 'string',
+                                'minimum' => 1,
+                                'maximum' => 10,
+                                'format' => 'numeric',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function sizeRules(Request $request): void
+    {
+        $request->validate([
+            'numeric' => 'numeric|min:1|max:10',
+            'decimal' => 'decimal:0,2|min:0|max:100',
+            'nullable_decimal' => ['nullable', 'decimal:0,3', 'min:0', 'max:9999999'],
+            'integer_between' => 'integer|between:1,5',
+            'numeric_size' => 'numeric|size:3',
+            'string_size' => 'string|size:2',
+            'array_between' => 'array|between:1,3',
+            'overlapping_bounds' => 'integer|min:1|between:2,5|max:8',
+            'fractional_bound' => 'decimal:0,2|min:0.5|max:10',
+            'integer_fractional_bound' => 'integer|min:0.5|max:9.5',
+            'numeric_string' => 'string|numeric|min:1|max:10',
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
         'responses' => [
             422 => [
                 'description' => '',

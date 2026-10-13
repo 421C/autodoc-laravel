@@ -35,6 +35,7 @@ Route::post('/test/validation/nested-required-wildcard', [ValidationController::
 Route::post('/test/validation/phpdoc-type', [ValidationController::class, 'phpdocTypeInValidation']);
 Route::post('/test/validation/enum-nested-filled', [ValidationController::class, 'enumWithNestedAndFilledRules']);
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
+Route::post('/test/validation/size-rules', [ValidationController::class, 'sizeRules']);
 Route::post('/test/validation/unresolved-rules', [ValidationController::class, 'unresolvedRulesStillRecordValidationResponse']);
 
 Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);

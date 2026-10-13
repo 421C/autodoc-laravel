@@ -398,41 +398,32 @@ trait ValidationRulesParser
             $type->isString = in_array('string', $rules);
         }
 
-        foreach ($rules as $rule) {
-            if (is_string($rule)) {
-                if (str_starts_with($rule, 'min:')) {
-                    $param = (int) explode(':', $rule, 2)[1];
+        [$minimum, $maximum] = $this->getSizeBoundsFromRules($rules);
 
-                    if ($type instanceof IntegerType) {
-                        $type->minimum = $param;
+        if ($minimum !== null || $maximum !== null) {
+            if ($type instanceof FloatType || $type instanceof NumberType) {
+                $type->minimum = $minimum;
+                $type->maximum = $maximum;
 
-                    } else if ($type instanceof ArrayType) {
-                        $type->minItems = $param;
+            } else {
+                $minimum = $minimum === null ? null : (int) ceil($minimum);
+                $maximum = $maximum === null ? null : (int) floor($maximum);
 
-                    } else {
-                        if (! ($type instanceof StringType)) {
-                            $type = new StringType;
-                        }
+                if ($type instanceof IntegerType) {
+                    $type->minimum = $minimum;
+                    $type->maximum = $maximum;
 
-                        $type->minLength = $param;
+                } else if ($type instanceof ArrayType) {
+                    $type->minItems = $minimum;
+                    $type->maxItems = $maximum;
+
+                } else {
+                    if (! ($type instanceof StringType)) {
+                        $type = new StringType;
                     }
 
-                } else if (str_starts_with($rule, 'max:')) {
-                    $param = (int) explode(':', $rule, 2)[1];
-
-                    if ($type instanceof IntegerType) {
-                        $type->maximum = $param;
-
-                    } else if ($type instanceof ArrayType) {
-                        $type->maxItems = $param;
-
-                    } else {
-                        if (! ($type instanceof StringType)) {
-                            $type = new StringType;
-                        }
-
-                        $type->maxLength = $param;
-                    }
+                    $type->minLength = $minimum;
+                    $type->maxLength = $maximum;
                 }
             }
         }
@@ -563,6 +554,45 @@ trait ValidationRulesParser
         }
 
         return $type;
+    }
+
+    /**
+     * @param array<string|Rule> $rules
+     * @return array{int|float|null, int|float|null}
+     */
+    protected function getSizeBoundsFromRules(array $rules): array
+    {
+        $minimums = [];
+        $maximums = [];
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            [$ruleName, $parameters] = explode(':', $rule, 2) + [1 => ''];
+
+            [$minimum, $maximum] = match ($ruleName) {
+                'min' => [$parameters, null],
+                'max' => [null, $parameters],
+                'size' => [$parameters, $parameters],
+                'between' => explode(',', $parameters, 2) + [1 => null],
+                default => [null, null],
+            };
+
+            if (is_numeric($minimum)) {
+                $minimums[] = $minimum + 0;
+            }
+
+            if (is_numeric($maximum)) {
+                $maximums[] = $maximum + 0;
+            }
+        }
+
+        return [
+            $minimums ? max($minimums) : null,
+            $maximums ? min($maximums) : null,
+        ];
     }
 
     /**
