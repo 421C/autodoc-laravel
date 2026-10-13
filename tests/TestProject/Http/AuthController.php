@@ -582,6 +582,73 @@ class AuthController
     }
 
 
+    /**
+     * User via the request on a Sanctum-guarded route
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'User via the request on a Sanctum-guarded route',
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'email' => [
+                                    'type' => 'string',
+                                ],
+                                'email_verified_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'email',
+                                'email_verified_at',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function sanctumUser(Request $request): mixed
+    {
+        return $request->user();
+    }
+
+
     #[ExpectedOperationSchema([
         'responses' => [
             403 => [

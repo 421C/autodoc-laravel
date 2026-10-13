@@ -25,6 +25,8 @@ class TestRouteProvider extends ServiceProvider
         config()->set('auth.guards.web', ['driver' => 'session', 'provider' => 'users']);
         config()->set('auth.guards.admin', ['driver' => 'session', 'provider' => 'admins']);
         config()->set('auth.guards.database', ['driver' => 'session', 'provider' => 'database_users']);
+        config()->set('auth.guards.sanctum', ['driver' => 'sanctum', 'provider' => null]);
+        config()->set('sanctum.guard', ['web']);
         config()->set('auth.providers.users', ['driver' => 'eloquent', 'model' => User::class]);
         config()->set('auth.providers.admins', ['driver' => 'eloquent', 'model' => AdminUser::class]);
         config()->set('auth.providers.database_users', ['driver' => 'database', 'table' => 'users']);

@@ -10,6 +10,7 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnresolvedClassType;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Arr;
 
 final class AuthUserTypeResolver
 {
@@ -96,25 +97,67 @@ final class AuthUserTypeResolver
         $modelClassNames = [];
 
         foreach ($guardNames as $guardName) {
-            $providerName = $this->authConfigString('auth.guards.' . $guardName . '.provider');
+            $providerGuardNames = $this->providerGuardNames($guardName);
 
-            if ($providerName === null) {
+            if ($providerGuardNames === null) {
                 return null;
             }
 
-            $modelClassName = $this->authConfigString('auth.providers.' . $providerName . '.model');
+            foreach ($providerGuardNames as $providerGuardName) {
+                $modelClassName = $this->guardModelClassName($providerGuardName);
 
-            if ($modelClassName === null
-                || ! class_exists($modelClassName)
-                || ! is_a($modelClassName, Authenticatable::class, true)
-            ) {
-                return null;
+                if ($modelClassName === null) {
+                    return null;
+                }
+
+                $modelClassNames[] = $modelClassName;
             }
-
-            $modelClassNames[] = $modelClassName;
         }
 
         return array_values(array_unique($modelClassNames));
+    }
+
+
+    /**
+     * @return non-empty-list<string>|null
+     */
+    private function providerGuardNames(string $guardName): ?array
+    {
+        if ($this->authConfigString('auth.guards.' . $guardName . '.provider') !== null) {
+            return [$guardName];
+        }
+
+        if (config('auth.guards.' . $guardName . '.driver') !== 'sanctum') {
+            return null;
+        }
+
+        $sanctumGuardNames = array_values(array_filter(Arr::wrap(config('sanctum.guard', ['web'])), 'is_string'));
+
+        return $sanctumGuardNames === [] ? null : $sanctumGuardNames;
+    }
+
+
+    /**
+     * @return class-string|null
+     */
+    private function guardModelClassName(string $guardName): ?string
+    {
+        $providerName = $this->authConfigString('auth.guards.' . $guardName . '.provider');
+
+        if ($providerName === null) {
+            return null;
+        }
+
+        $modelClassName = $this->authConfigString('auth.providers.' . $providerName . '.model');
+
+        if ($modelClassName === null
+            || ! class_exists($modelClassName)
+            || ! is_a($modelClassName, Authenticatable::class, true)
+        ) {
+            return null;
+        }
+
+        return $modelClassName;
     }
 
 
