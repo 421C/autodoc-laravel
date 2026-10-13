@@ -3,6 +3,8 @@
 namespace AutoDoc\Laravel;
 
 use AutoDoc\AbstractRouteLoader;
+use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
+use AutoDoc\Laravel\Helpers\RouteMiddleware;
 use AutoDoc\Route;
 use Closure;
 use Illuminate\Routing\Route as LaravelRoute;
@@ -13,6 +15,8 @@ use Throwable;
 
 class RouteLoader extends AbstractRouteLoader
 {
+    use RecordsErrorResponses;
+
     public function getRoutes(): iterable
     {
         $laravelRoutes = LaravelRouteFacade::getRoutes()->getRoutesByMethod();
@@ -20,43 +24,76 @@ class RouteLoader extends AbstractRouteLoader
         foreach ($laravelRoutes as $method => $routes) {
             $method = strtolower($method);
 
-            foreach ($routes as $route) {
-                if (is_string($route->action['uses'])) {
-                    if (! RouteAction::containsSerializedClosure($route->action)) {
-                        if (str_contains($route->action['uses'], '@')) {
-                            [$controllerClass, $controllerMethod] = explode('@', $route->action['uses']);
+            foreach ($routes as $laravelRoute) {
+                $route = $this->createRoute($laravelRoute, $method);
 
-                        } else {
-                            $controllerClass = $route->action['uses'];
-                            $controllerMethod = '__invoke';
-                        }
-
-                        if (class_exists($controllerClass)) {
-                            yield new Route(
-                                uri: preg_replace('/\{(\w+)\?\}/', '{$1}', $route->uri),
-                                method: $method,
-                                className: $controllerClass,
-                                classMethod: $controllerMethod,
-                                meta: [
-                                    'pathParameters' => $this->extractRouteParameters($route),
-                                    'middleware' => $this->gatherRouteMiddleware($route),
-                                ],
-                            );
-                        }
-                    }
-
-                } else if ($route->action['uses'] instanceof Closure) {
-                    yield new Route(
-                        uri: preg_replace('/\{(\w+)\?\}/', '{$1}', $route->uri),
-                        method: $method,
-                        closure: $route->action['uses'],
-                        meta: [
-                            'pathParameters' => $this->extractRouteParameters($route),
-                            'middleware' => $this->gatherRouteMiddleware($route),
-                        ],
-                    );
+                if ($route) {
+                    yield $route;
                 }
             }
+        }
+    }
+
+
+    protected function createRoute(LaravelRoute $laravelRoute, string $method): ?Route
+    {
+        $uses = $laravelRoute->action['uses'];
+        $controllerClass = null;
+        $controllerMethod = null;
+        $closure = null;
+
+        if (is_string($uses)) {
+            if (RouteAction::containsSerializedClosure($laravelRoute->action)) {
+                return null;
+            }
+
+            [$controllerClass, $controllerMethod] = str_contains($uses, '@')
+                ? explode('@', $uses, 2)
+                : [$uses, '__invoke'];
+
+            if (! class_exists($controllerClass)) {
+                return null;
+            }
+
+        } else if ($uses instanceof Closure) {
+            $closure = $uses;
+
+        } else {
+            return null;
+        }
+
+        $middleware = $this->gatherRouteMiddleware($laravelRoute);
+
+        $route = new Route(
+            uri: preg_replace('/\{(\w+)\?\}/', '{$1}', $laravelRoute->uri) ?? $laravelRoute->uri,
+            method: $method,
+            className: $controllerClass,
+            classMethod: $controllerMethod,
+            closure: $closure,
+            meta: [
+                'pathParameters' => $this->extractRouteParameters($laravelRoute),
+                'middleware' => $middleware,
+            ],
+        );
+
+        $this->addMiddlewareErrorResponses($route, new RouteMiddleware($middleware));
+
+        return $route;
+    }
+
+
+    protected function addMiddlewareErrorResponses(Route $route, RouteMiddleware $middleware): void
+    {
+        if ($middleware->requiresAuthentication()) {
+            $this->addUnauthenticatedResponse($route);
+        }
+
+        if ($middleware->requiresAuthorization()) {
+            $this->addForbiddenResponse($route);
+        }
+
+        if ($middleware->isThrottled()) {
+            $this->addTooManyRequestsResponse($route);
         }
     }
 

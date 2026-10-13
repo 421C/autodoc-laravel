@@ -84,6 +84,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'User via Auth facade on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -148,6 +151,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'User via the request on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -271,6 +277,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'User with the guard inferred from auth middleware',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -327,6 +336,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'User id via auth()->id() on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -359,6 +371,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'User with one of multiple middleware guards',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -462,6 +477,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'Explicit guard id under different auth middleware',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -497,6 +515,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'Default guard id under explicit basic auth',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -532,6 +553,9 @@ class AuthController
     #[ExpectedOperationSchema([
         'summary' => 'Explicit guard id under matching basic auth',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -556,4 +580,50 @@ class AuthController
     {
         return ['id' => auth('admin')->id()];
     }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            403 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function gateAbility(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            403 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function policyAbility(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            429 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function throttled(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            403 => [
+                'description' => '',
+            ],
+            429 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function authorizedAndThrottled(): void {}
 }

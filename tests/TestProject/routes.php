@@ -188,6 +188,10 @@ Route::post('/test/auth/multiple-middleware-guards', [AuthController::class, 'mu
 Route::post('/test/auth/explicit-guard-id-under-different-middleware', [AuthController::class, 'explicitGuardIdUnderDifferentMiddleware'])->middleware('auth:web');
 Route::post('/test/auth/default-guard-id-under-basic-auth', [AuthController::class, 'defaultGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
 Route::post('/test/auth/explicit-guard-id-under-basic-auth', [AuthController::class, 'explicitGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
+Route::post('/test/auth/gate-ability', [AuthController::class, 'gateAbility'])->middleware('can:viewReports');
+Route::post('/test/auth/policy-ability', [AuthController::class, 'policyAbility'])->can('view', 'rocket');
+Route::post('/test/auth/throttled', [AuthController::class, 'throttled'])->middleware('throttle:60,1');
+Route::post('/test/auth/authorized-and-throttled', [AuthController::class, 'authorizedAndThrottled'])->middleware(['auth', 'can:viewReports', 'throttle:60,1']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
 

@@ -66,6 +66,13 @@ class ConsumerErrorResponseOverrideTest extends \Orchestra\Testbench\TestCase
             $this->dig($overridden, 'paths', '/test/request-params/all-after-validation', 'post', 'responses', 422, 'content', 'application/json', 'schema'),
         );
 
+        foreach ([401, 403, 429] as $status) {
+            $this->assertSame(
+                $envelope,
+                $this->dig($overridden, 'paths', '/test/auth/authorized-and-throttled', 'post', 'responses', $status, 'content', 'application/json', 'schema'),
+            );
+        }
+
         // The success response is untouched by the error-only override.
         $this->assertSame(
             'object',
