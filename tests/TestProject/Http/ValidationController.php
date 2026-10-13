@@ -440,6 +440,7 @@ class ValidationController
                                 'token_confirmation' => [
                                     'type' => 'string',
                                     'description' => 'Must match "token".',
+                                    'minLength' => 12,
                                 ],
                                 'what' => [
                                     'type' => 'array',
@@ -511,6 +512,53 @@ class ValidationController
     {
         request()->validate([
             'token' => ['required', 'confirmed', Password::defaults()],
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'password' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                            ],
+                            'password_confirmation' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                                'description' => 'Must match "password".',
+                            ],
+                        ],
+                        'required' => [
+                            'password',
+                            'password_confirmation',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function nullablePasswordConfirmation(Request $request): void
+    {
+        $request->validate([
+            'password' => [$request->isMethod('post') ? 'required' : 'nullable', 'string', 'confirmed', Password::min(9)],
         ]);
     }
 

@@ -54,10 +54,15 @@ trait ValidationRulesParser
                 if ($lastSegmentIndex === null) {
                     continue;
                 }
-                $typeClass = get_class($validationType->type);
 
-                $confirmationType = new $typeClass;
-                $confirmationType->required = $validationType->type->required;
+                $confirmationType = $validationType->type->deepClone();
+                $confirmationType->description = null;
+
+                if ($confirmationType instanceof UnionType) {
+                    foreach ($confirmationType->types as $memberType) {
+                        $memberType->description = null;
+                    }
+                }
 
                 if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
                     $format = config('autodoc.laravel.format_generated_descriptions');
@@ -65,10 +70,6 @@ trait ValidationRulesParser
                     $description = 'Must match "' . $segments[$lastSegmentIndex] . '".';
 
                     $confirmationType->description = is_string($format) ? sprintf($format, $description) : $description;
-                }
-
-                if ($confirmationType instanceof StringType) {
-                    $confirmationType->format = $validationType->type->format ?? null;
                 }
 
                 $segments[$lastSegmentIndex] = $validationType->confirmationKey ?? ($segments[$lastSegmentIndex] . '_confirmation');

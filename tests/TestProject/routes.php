@@ -28,6 +28,7 @@ Route::post('/test/validation/rule-objects', [ValidationController::class, 'rule
 Route::post('/test/validation/enum-rules', [ValidationController::class, 'enumRules']);
 Route::post('/test/validation/wildcard-array', [ValidationController::class, 'wildcardArrayValidation']);
 Route::post('/test/validation/password-rule', [ValidationController::class, 'passwordRule']);
+Route::post('/test/validation/nullable-password-confirmation', [ValidationController::class, 'nullablePasswordConfirmation']);
 Route::post('/test/validation/url-and-ip', [ValidationController::class, 'urlAndIpValidation']);
 Route::post('/test/validation/conditional-rules', [ValidationController::class, 'conditionalRules']);
 Route::post('/test/validation/numeric', [ValidationController::class, 'numericValidation']);
@@ -42,6 +43,7 @@ Route::post('/test/validation/unresolved-rules', [ValidationController::class, '
 Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
 Route::post('/test/form-request/extended', [FormRequestController::class, 'extendedItemsRequest']);
+Route::post('/test/form-request/password-confirmation', [FormRequestController::class, 'passwordConfirmation']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);
