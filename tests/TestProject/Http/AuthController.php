@@ -82,6 +82,11 @@ class AuthController
      * User via Auth facade on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User via Auth facade on an auth-guarded route',
         'responses' => [
             401 => [
@@ -149,6 +154,11 @@ class AuthController
      * User via the request on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User via the request on an auth-guarded route',
         'responses' => [
             401 => [
@@ -275,6 +285,11 @@ class AuthController
      * User with the guard inferred from auth middleware
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'admin' => [],
+            ],
+        ],
         'summary' => 'User with the guard inferred from auth middleware',
         'responses' => [
             401 => [
@@ -334,6 +349,11 @@ class AuthController
      * User id via auth()->id() on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User id via auth()->id() on an auth-guarded route',
         'responses' => [
             401 => [
@@ -369,6 +389,14 @@ class AuthController
      * User with one of multiple middleware guards
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'admin' => [],
+            ],
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User with one of multiple middleware guards',
         'responses' => [
             401 => [
@@ -475,6 +503,11 @@ class AuthController
      * Explicit guard id under different auth middleware
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'Explicit guard id under different auth middleware',
         'responses' => [
             401 => [
@@ -513,6 +546,11 @@ class AuthController
      * Default guard id under explicit basic auth
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'basicAuth' => [],
+            ],
+        ],
         'summary' => 'Default guard id under explicit basic auth',
         'responses' => [
             401 => [
@@ -551,6 +589,11 @@ class AuthController
      * Explicit guard id under matching basic auth
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'basicAuth' => [],
+            ],
+        ],
         'summary' => 'Explicit guard id under matching basic auth',
         'responses' => [
             401 => [
@@ -586,6 +629,11 @@ class AuthController
      * User via the request on a Sanctum-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'sanctum' => [],
+            ],
+        ],
         'summary' => 'User via the request on a Sanctum-guarded route',
         'responses' => [
             401 => [
@@ -651,6 +699,54 @@ class AuthController
 
     #[ExpectedOperationSchema([
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            403 => [
+                'description' => '',
+            ],
+        ],
+        'security' => [
+            [
+                'sanctum' => [
+                    'reports.view',
+                ],
+            ],
+        ],
+    ])]
+    public function sanctumAbilities(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function unmappedGuard(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+        ],
+        'security' => [
+            [
+                'sanctum' => [],
+            ],
+            [
+                'basicAuth' => [],
+            ],
+        ],
+    ])]
+    public function tokenAndBasicAuth(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
             403 => [
                 'description' => '',
             ],
@@ -680,6 +776,13 @@ class AuthController
 
 
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [
+                    'viewReports',
+                ],
+            ],
+        ],
         'responses' => [
             401 => [
                 'description' => '',

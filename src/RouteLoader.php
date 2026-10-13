@@ -76,9 +76,41 @@ class RouteLoader extends AbstractRouteLoader
             ],
         );
 
-        $this->addMiddlewareErrorResponses($route, new RouteMiddleware($middleware));
+        $routeMiddleware = new RouteMiddleware($middleware);
+
+        $this->addMiddlewareErrorResponses($route, $routeMiddleware);
+        $this->addSecurityRequirements($route, $routeMiddleware);
 
         return $route;
+    }
+
+
+    protected function addSecurityRequirements(Route $route, RouteMiddleware $middleware): void
+    {
+        $securitySchemes = $this->config->getSecuritySchemes();
+
+        $basicSchemeNames = array_keys(array_filter(
+            $securitySchemes,
+            fn (array $scheme): bool => ($scheme['type'] ?? null) === 'http'
+                && is_string($scheme['scheme'] ?? null)
+                && strtolower($scheme['scheme']) === 'basic',
+        ));
+
+        $schemeNames = [];
+
+        foreach ($middleware->authentications() as $authentication) {
+            foreach ($authentication['basic'] ? $basicSchemeNames : $authentication['guardNames'] as $schemeName) {
+                if (isset($securitySchemes[$schemeName])) {
+                    $schemeNames[$schemeName] = true;
+                }
+            }
+        }
+
+        $abilities = $middleware->abilities();
+
+        foreach (array_keys($schemeNames) as $schemeName) {
+            $route->addSecurityRequirement([$schemeName => $abilities]);
+        }
     }
 
 

@@ -39,30 +39,68 @@ final class RouteMiddleware
      */
     public function authState(): array
     {
-        $defaultGuardName = config('auth.defaults.guard');
-        $implicitGuardNames = is_string($defaultGuardName) && $defaultGuardName !== '' ? [$defaultGuardName] : [];
+        $implicitGuardNames = $this->defaultGuardNames();
         $guaranteedGuardNames = [];
         $implicitUserGuaranteed = false;
+
+        foreach ($this->authentications() as $authentication) {
+            $implicitGuardNames = $authentication['implicitGuardNames'];
+
+            if ($authentication['basic']) {
+                if (count($authentication['guardNames']) === 1) {
+                    $guaranteedGuardNames[] = $authentication['guardNames'][0];
+                }
+
+                if ($authentication['guardNames'] === $implicitGuardNames) {
+                    $implicitUserGuaranteed = $implicitGuardNames !== [];
+                }
+
+            } else if ($implicitGuardNames !== []) {
+                $implicitUserGuaranteed = true;
+
+                if (count($implicitGuardNames) === 1) {
+                    $guaranteedGuardNames[] = $implicitGuardNames[0];
+                }
+            }
+        }
+
+        return [
+            'implicitGuardNames' => $implicitGuardNames,
+            'guaranteedGuardNames' => array_values(array_unique($guaranteedGuardNames)),
+            'implicitUserGuaranteed' => $implicitUserGuaranteed,
+        ];
+    }
+
+
+    /**
+     * `Authenticate` switches the default guard, so each entry carries the implicit guards after it runs.
+     *
+     * @return list<array{
+     *     basic: bool,
+     *     guardNames: list<string>,
+     *     implicitGuardNames: list<string>,
+     * }>
+     */
+    public function authentications(): array
+    {
+        $implicitGuardNames = $this->defaultGuardNames();
+        $authentications = [];
 
         foreach ($this->middleware as $middleware) {
             if ($this->isBasicAuthMiddleware($middleware)) {
                 $parameterSlots = $this->middlewareParameterSlots($middleware);
                 $usesImplicitGuard = $parameterSlots === [] || $parameterSlots[0] === '';
-                $basicGuardNames = $usesImplicitGuard ? $implicitGuardNames : [$parameterSlots[0]];
 
-                if (count($basicGuardNames) === 1) {
-                    $guaranteedGuardNames[] = $basicGuardNames[0];
-                }
-
-                if ($usesImplicitGuard || $basicGuardNames === $implicitGuardNames) {
-                    $implicitUserGuaranteed = $implicitGuardNames !== [];
-                }
+                $authentications[] = [
+                    'basic' => true,
+                    'guardNames' => $usesImplicitGuard ? $implicitGuardNames : [$parameterSlots[0]],
+                    'implicitGuardNames' => $implicitGuardNames,
+                ];
 
             } else if ($this->isAuthenticateMiddleware($middleware)) {
-                $parameterSlots = $this->middlewareParameterSlots($middleware);
                 $guardNames = [];
 
-                foreach ($parameterSlots as $parameterSlot) {
+                foreach ($this->middlewareParameterSlots($middleware) as $parameterSlot) {
                     if ($parameterSlot === '') {
                         array_push($guardNames, ...$implicitGuardNames);
 
@@ -75,21 +113,51 @@ final class RouteMiddleware
                     $implicitGuardNames = array_values(array_unique($guardNames));
                 }
 
-                if ($implicitGuardNames !== []) {
-                    $implicitUserGuaranteed = true;
-
-                    if (count($implicitGuardNames) === 1) {
-                        $guaranteedGuardNames[] = $implicitGuardNames[0];
-                    }
-                }
+                $authentications[] = [
+                    'basic' => false,
+                    'guardNames' => $implicitGuardNames,
+                    'implicitGuardNames' => $implicitGuardNames,
+                ];
             }
         }
 
-        return [
-            'implicitGuardNames' => array_values(array_unique($implicitGuardNames)),
-            'guaranteedGuardNames' => array_values(array_unique($guaranteedGuardNames)),
-            'implicitUserGuaranteed' => $implicitUserGuaranteed,
-        ];
+        return $authentications;
+    }
+
+
+    /**
+     * A `can:` with more than one parameter is a policy check against a model or class, not an ability.
+     *
+     * @return list<string>
+     */
+    public function abilities(): array
+    {
+        $abilities = [];
+
+        foreach ($this->middleware as $middleware) {
+            if (! $this->matches($middleware, 'can', Authorize::class)) {
+                continue;
+            }
+
+            $parameterSlots = $this->middlewareParameterSlots($middleware);
+
+            if (count($parameterSlots) === 1 && $parameterSlots[0] !== '') {
+                $abilities[] = $parameterSlots[0];
+            }
+        }
+
+        return array_values(array_unique($abilities));
+    }
+
+
+    /**
+     * @return list<string>
+     */
+    private function defaultGuardNames(): array
+    {
+        $defaultGuardName = config('auth.defaults.guard');
+
+        return is_string($defaultGuardName) && $defaultGuardName !== '' ? [$defaultGuardName] : [];
     }
 
 

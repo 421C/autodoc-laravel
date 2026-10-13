@@ -193,6 +193,9 @@ Route::post('/test/auth/sanctum-user', [AuthController::class, 'sanctumUser'])->
 Route::post('/test/auth/gate-ability', [AuthController::class, 'gateAbility'])->middleware('can:viewReports');
 Route::post('/test/auth/policy-ability', [AuthController::class, 'policyAbility'])->can('view', 'rocket');
 Route::post('/test/auth/throttled', [AuthController::class, 'throttled'])->middleware('throttle:60,1');
+Route::post('/test/auth/sanctum-abilities', [AuthController::class, 'sanctumAbilities'])->middleware(['auth:sanctum', 'can:reports.view', 'can:view,rocket']);
+Route::post('/test/auth/unmapped-guard', [AuthController::class, 'unmappedGuard'])->middleware('auth:database');
+Route::post('/test/auth/token-and-basic-auth', [AuthController::class, 'tokenAndBasicAuth'])->middleware(['auth:sanctum', 'auth.basic']);
 Route::post('/test/auth/authorized-and-throttled', [AuthController::class, 'authorizedAndThrottled'])->middleware(['auth', 'can:viewReports', 'throttle:60,1']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
