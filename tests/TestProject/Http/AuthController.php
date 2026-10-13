@@ -82,8 +82,16 @@ class AuthController
      * User via Auth facade on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User via Auth facade on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -146,8 +154,16 @@ class AuthController
      * User via the request on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User via the request on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -269,8 +285,16 @@ class AuthController
      * User with the guard inferred from auth middleware
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'admin' => [],
+            ],
+        ],
         'summary' => 'User with the guard inferred from auth middleware',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -325,8 +349,16 @@ class AuthController
      * User id via auth()->id() on an auth-guarded route
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User id via auth()->id() on an auth-guarded route',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -357,8 +389,19 @@ class AuthController
      * User with one of multiple middleware guards
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'admin' => [],
+            ],
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'User with one of multiple middleware guards',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -460,8 +503,16 @@ class AuthController
      * Explicit guard id under different auth middleware
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [],
+            ],
+        ],
         'summary' => 'Explicit guard id under different auth middleware',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -495,8 +546,16 @@ class AuthController
      * Default guard id under explicit basic auth
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'basicAuth' => [],
+            ],
+        ],
         'summary' => 'Default guard id under explicit basic auth',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -530,8 +589,16 @@ class AuthController
      * Explicit guard id under matching basic auth
      */
     #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'basicAuth' => [],
+            ],
+        ],
         'summary' => 'Explicit guard id under matching basic auth',
         'responses' => [
+            401 => [
+                'description' => '',
+            ],
             200 => [
                 'description' => '',
                 'content' => [
@@ -556,4 +623,177 @@ class AuthController
     {
         return ['id' => auth('admin')->id()];
     }
+
+
+    /**
+     * User via the request on a Sanctum-guarded route
+     */
+    #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'sanctum' => [],
+            ],
+        ],
+        'summary' => 'User via the request on a Sanctum-guarded route',
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'integer',
+                                ],
+                                'name' => [
+                                    'type' => 'string',
+                                ],
+                                'email' => [
+                                    'type' => 'string',
+                                ],
+                                'email_verified_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'created_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                                'updated_at' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                    'format' => 'date-time',
+                                ],
+                            ],
+                            'required' => [
+                                'id',
+                                'name',
+                                'email',
+                                'email_verified_at',
+                                'created_at',
+                                'updated_at',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function sanctumUser(Request $request): mixed
+    {
+        return $request->user();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            403 => [
+                'description' => '',
+            ],
+        ],
+        'security' => [
+            [
+                'sanctum' => [
+                    'reports.view',
+                ],
+            ],
+        ],
+    ])]
+    public function sanctumAbilities(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function unmappedGuard(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+        ],
+        'security' => [
+            [
+                'sanctum' => [],
+            ],
+            [
+                'basicAuth' => [],
+            ],
+        ],
+    ])]
+    public function tokenAndBasicAuth(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            403 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function gateAbility(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            403 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function policyAbility(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            429 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function throttled(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'security' => [
+            [
+                'web' => [
+                    'viewReports',
+                ],
+            ],
+        ],
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+            403 => [
+                'description' => '',
+            ],
+            429 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function authorizedAndThrottled(): void {}
 }

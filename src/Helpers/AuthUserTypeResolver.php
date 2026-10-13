@@ -9,9 +9,8 @@ use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnresolvedClassType;
-use Illuminate\Auth\Middleware\Authenticate;
-use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Arr;
 
 final class AuthUserTypeResolver
 {
@@ -88,7 +87,7 @@ final class AuthUserTypeResolver
     private function resolveUserModelClassNames(AuthGuardSelection $selection, Scope $scope): ?array
     {
         $guardNames = $selection->isImplicit()
-            ? $this->routeAuthState($scope)['implicitGuardNames']
+            ? RouteMiddleware::fromRoute($scope->route)->authState()['implicitGuardNames']
             : $selection->guardNames;
 
         if ($guardNames === null || $guardNames === []) {
@@ -98,25 +97,67 @@ final class AuthUserTypeResolver
         $modelClassNames = [];
 
         foreach ($guardNames as $guardName) {
-            $providerName = $this->authConfigString('auth.guards.' . $guardName . '.provider');
+            $providerGuardNames = $this->providerGuardNames($guardName);
 
-            if ($providerName === null) {
+            if ($providerGuardNames === null) {
                 return null;
             }
 
-            $modelClassName = $this->authConfigString('auth.providers.' . $providerName . '.model');
+            foreach ($providerGuardNames as $providerGuardName) {
+                $modelClassName = $this->guardModelClassName($providerGuardName);
 
-            if ($modelClassName === null
-                || ! class_exists($modelClassName)
-                || ! is_a($modelClassName, Authenticatable::class, true)
-            ) {
-                return null;
+                if ($modelClassName === null) {
+                    return null;
+                }
+
+                $modelClassNames[] = $modelClassName;
             }
-
-            $modelClassNames[] = $modelClassName;
         }
 
         return array_values(array_unique($modelClassNames));
+    }
+
+
+    /**
+     * @return non-empty-list<string>|null
+     */
+    private function providerGuardNames(string $guardName): ?array
+    {
+        if ($this->authConfigString('auth.guards.' . $guardName . '.provider') !== null) {
+            return [$guardName];
+        }
+
+        if (config('auth.guards.' . $guardName . '.driver') !== 'sanctum') {
+            return null;
+        }
+
+        $sanctumGuardNames = array_values(array_filter(Arr::wrap(config('sanctum.guard', ['web'])), 'is_string'));
+
+        return $sanctumGuardNames === [] ? null : $sanctumGuardNames;
+    }
+
+
+    /**
+     * @return class-string|null
+     */
+    private function guardModelClassName(string $guardName): ?string
+    {
+        $providerName = $this->authConfigString('auth.guards.' . $guardName . '.provider');
+
+        if ($providerName === null) {
+            return null;
+        }
+
+        $modelClassName = $this->authConfigString('auth.providers.' . $providerName . '.model');
+
+        if ($modelClassName === null
+            || ! class_exists($modelClassName)
+            || ! is_a($modelClassName, Authenticatable::class, true)
+        ) {
+            return null;
+        }
+
+        return $modelClassName;
     }
 
 
@@ -132,7 +173,7 @@ final class AuthUserTypeResolver
 
     private function routeGuaranteesAuthenticatedUser(AuthGuardSelection $selection, Scope $scope): bool
     {
-        $routeAuthState = $this->routeAuthState($scope);
+        $routeAuthState = RouteMiddleware::fromRoute($scope->route)->authState();
 
         if ($selection->isImplicit()) {
             return $routeAuthState['implicitUserGuaranteed'];
@@ -145,113 +186,6 @@ final class AuthUserTypeResolver
         }
 
         return $selection->guardNames !== [];
-    }
-
-
-    /**
-     * @return array{
-     *     implicitGuardNames: list<string>,
-     *     guaranteedGuardNames: list<string>,
-     *     implicitUserGuaranteed: bool,
-     * }
-     */
-    private function routeAuthState(Scope $scope): array
-    {
-        $defaultGuardName = $this->authConfigString('auth.defaults.guard');
-        $implicitGuardNames = $defaultGuardName === null ? [] : [$defaultGuardName];
-        $guaranteedGuardNames = [];
-        $implicitUserGuaranteed = false;
-
-        foreach ($this->routeMiddleware($scope) as $middleware) {
-            if ($this->isBasicAuthMiddleware($middleware)) {
-                $parameterSlots = $this->middlewareParameterSlots($middleware);
-                $usesImplicitGuard = $parameterSlots === [] || $parameterSlots[0] === '';
-                $basicGuardNames = $usesImplicitGuard ? $implicitGuardNames : [$parameterSlots[0]];
-
-                if (count($basicGuardNames) === 1) {
-                    $guaranteedGuardNames[] = $basicGuardNames[0];
-                }
-
-                if ($usesImplicitGuard || $basicGuardNames === $implicitGuardNames) {
-                    $implicitUserGuaranteed = $implicitGuardNames !== [];
-                }
-
-            } else if ($this->isAuthenticateMiddleware($middleware)) {
-                $parameterSlots = $this->middlewareParameterSlots($middleware);
-                $guardNames = [];
-
-                foreach ($parameterSlots as $parameterSlot) {
-                    if ($parameterSlot === '') {
-                        array_push($guardNames, ...$implicitGuardNames);
-
-                    } else {
-                        $guardNames[] = $parameterSlot;
-                    }
-                }
-
-                if ($guardNames !== []) {
-                    $implicitGuardNames = array_values(array_unique($guardNames));
-                }
-
-                if ($implicitGuardNames !== []) {
-                    $implicitUserGuaranteed = true;
-
-                    if (count($implicitGuardNames) === 1) {
-                        $guaranteedGuardNames[] = $implicitGuardNames[0];
-                    }
-                }
-            }
-        }
-
-        return [
-            'implicitGuardNames' => array_values(array_unique($implicitGuardNames)),
-            'guaranteedGuardNames' => array_values(array_unique($guaranteedGuardNames)),
-            'implicitUserGuaranteed' => $implicitUserGuaranteed,
-        ];
-    }
-
-
-    /**
-     * @return list<string>
-     */
-    private function routeMiddleware(Scope $scope): array
-    {
-        $middleware = $scope->route?->meta['middleware'] ?? [];
-
-        if (! is_array($middleware)) {
-            return [];
-        }
-
-        return array_values(array_filter($middleware, 'is_string'));
-    }
-
-
-    private function isAuthenticateMiddleware(string $middleware): bool
-    {
-        $className = explode(':', $middleware, 2)[0];
-
-        return strtolower($className) === 'auth'
-            || is_a($className, Authenticate::class, true);
-    }
-
-
-    private function isBasicAuthMiddleware(string $middleware): bool
-    {
-        $className = explode(':', $middleware, 2)[0];
-
-        return strtolower($className) === 'auth.basic'
-            || is_a($className, AuthenticateWithBasicAuth::class, true);
-    }
-
-
-    /**
-     * @return list<string>
-     */
-    private function middlewareParameterSlots(string $middleware): array
-    {
-        $parameters = explode(':', $middleware, 2)[1] ?? null;
-
-        return $parameters === null ? [] : array_map(trim(...), explode(',', $parameters));
     }
 
 

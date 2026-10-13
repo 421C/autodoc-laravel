@@ -5,6 +5,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
+use AutoDoc\Laravel\Tests\TestProject\Http\BinaryResponseController;
 use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\BuilderConditionalsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
@@ -45,6 +46,7 @@ Route::post('/test/form-request/extra-parameters', [FormRequestController::class
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
 Route::post('/test/form-request/extended', [FormRequestController::class, 'extendedItemsRequest']);
 Route::post('/test/form-request/password-confirmation', [FormRequestController::class, 'passwordConfirmation']);
+Route::post('/test/form-request/upload', [FormRequestController::class, 'upload']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);
@@ -188,8 +190,28 @@ Route::post('/test/auth/multiple-middleware-guards', [AuthController::class, 'mu
 Route::post('/test/auth/explicit-guard-id-under-different-middleware', [AuthController::class, 'explicitGuardIdUnderDifferentMiddleware'])->middleware('auth:web');
 Route::post('/test/auth/default-guard-id-under-basic-auth', [AuthController::class, 'defaultGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
 Route::post('/test/auth/explicit-guard-id-under-basic-auth', [AuthController::class, 'explicitGuardIdUnderBasicAuth'])->middleware('auth.basic:admin');
+Route::post('/test/auth/sanctum-user', [AuthController::class, 'sanctumUser'])->middleware('auth:sanctum');
+Route::post('/test/auth/gate-ability', [AuthController::class, 'gateAbility'])->middleware('can:viewReports');
+Route::post('/test/auth/policy-ability', [AuthController::class, 'policyAbility'])->can('view', 'rocket');
+Route::post('/test/auth/throttled', [AuthController::class, 'throttled'])->middleware('throttle:60,1');
+Route::post('/test/auth/sanctum-abilities', [AuthController::class, 'sanctumAbilities'])->middleware(['auth:sanctum', 'can:reports.view', 'can:view,rocket']);
+Route::post('/test/auth/unmapped-guard', [AuthController::class, 'unmappedGuard'])->middleware('auth:database');
+Route::post('/test/auth/token-and-basic-auth', [AuthController::class, 'tokenAndBasicAuth'])->middleware(['auth:sanctum', 'auth.basic']);
+Route::post('/test/auth/authorized-and-throttled', [AuthController::class, 'authorizedAndThrottled'])->middleware(['auth', 'can:viewReports', 'throttle:60,1']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
+
+Route::post('/test/binary/download', [BinaryResponseController::class, 'download']);
+Route::post('/test/binary/file', [BinaryResponseController::class, 'file']);
+Route::post('/test/binary/stream-download', [BinaryResponseController::class, 'streamDownload']);
+Route::post('/test/binary/storage-download', [BinaryResponseController::class, 'storageDownload']);
+Route::post('/test/binary/storage-response', [BinaryResponseController::class, 'storageResponse']);
+Route::post('/test/binary/stream-json', [BinaryResponseController::class, 'streamJson']);
+Route::post('/test/binary/download-with-content-type', [BinaryResponseController::class, 'downloadWithContentType']);
+Route::post('/test/binary/file-with-content-type', [BinaryResponseController::class, 'fileWithContentType']);
+Route::post('/test/binary/stream-download-with-content-type', [BinaryResponseController::class, 'streamDownloadWithContentType']);
+Route::post('/test/binary/storage-download-with-content-type', [BinaryResponseController::class, 'storageDownloadWithContentType']);
+Route::post('/test/binary/file-with-non-literal-content-type', [BinaryResponseController::class, 'fileWithNonLiteralContentType']);
 
 Route::post('/test/response/no-content', [ResponseController::class, 'noContent']);
 Route::post('/test/response/no-content-custom-status', [ResponseController::class, 'noContentWithCustomStatus']);

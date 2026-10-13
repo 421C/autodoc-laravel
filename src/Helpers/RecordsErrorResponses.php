@@ -16,4 +16,19 @@ trait RecordsErrorResponses
     {
         $route->addResponse(status: 422, contentType: 'application/json', body: new UnknownType);
     }
+
+    protected function addUnauthenticatedResponse(Route $route): void
+    {
+        $route->addResponse(status: 401, contentType: 'application/json', body: new UnknownType);
+    }
+
+    protected function addForbiddenResponse(Route $route): void
+    {
+        $route->addResponse(status: 403, contentType: 'application/json', body: new UnknownType);
+    }
+
+    protected function addTooManyRequestsResponse(Route $route): void
+    {
+        $route->addResponse(status: 429, contentType: 'application/json', body: new UnknownType);
+    }
 }

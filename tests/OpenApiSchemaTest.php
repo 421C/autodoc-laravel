@@ -43,6 +43,23 @@ class OpenApiSchemaTest extends \Orchestra\Testbench\TestCase
     }
 
     #[Test]
+    public function securitySchemesReachTheDocument(): void
+    {
+        $workspace = Workspace::getDefault((new ConfigLoader)->load());
+
+        $this->assertNotNull($workspace);
+
+        $schema = json_decode($workspace->getJson() ?: '', true);
+
+        $this->assertIsArray($schema);
+
+        $components = $schema['components'] ?? null;
+
+        $this->assertIsArray($components);
+        $this->assertSame(config('autodoc.openapi.security_schemes'), $components['securitySchemes'] ?? null);
+    }
+
+    #[Test]
     public function checkOpenApiJsonSchema(): void
     {
         $config = (new ConfigLoader)->load();
