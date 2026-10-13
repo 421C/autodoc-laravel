@@ -38,6 +38,7 @@ Route::post('/test/validation/enum-nested-filled', [ValidationController::class,
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
 Route::post('/test/validation/size-rules', [ValidationController::class, 'sizeRules']);
 Route::post('/test/validation/non-literal-in-rules', [ValidationController::class, 'nonLiteralInRules']);
+Route::post('/test/validation/file-rules', [ValidationController::class, 'fileRules']);
 Route::post('/test/validation/unresolved-rules', [ValidationController::class, 'unresolvedRulesStillRecordValidationResponse']);
 
 Route::post('/test/form-request/extra-parameters', [FormRequestController::class, 'itemsRequestWithExtraParameters']);

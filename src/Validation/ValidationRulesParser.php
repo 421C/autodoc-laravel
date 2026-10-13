@@ -19,8 +19,10 @@ use AutoDoc\DataTypes\UnresolvedPhpDocType;
 use AutoDoc\DataTypes\VoidType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Validation\Rules\ArrayRule;
+use Illuminate\Validation\Rules\Dimensions;
 use Illuminate\Validation\Rules\Email;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
 
@@ -189,7 +191,8 @@ trait ValidationRulesParser
                     ArrayRule::class => new ArrayType,
                     Email::class => new StringType(format: 'email'),
                     Password::class => new StringType(format: 'password'),
-                    default => null,
+                    Dimensions::class => new StringType(format: 'binary'),
+                    default => is_a($rule->className, File::class, true) ? new StringType(format: 'binary') : null,
                 };
 
                 if ($typeOrNull) {
@@ -231,6 +234,7 @@ trait ValidationRulesParser
                     'ipv6'        => new StringType(format: 'ipv6'),
                     'numeric'     => new NumberType,
                     'decimal'     => new FloatType,
+                    'file', 'image', 'mimes', 'mimetypes', 'extensions', 'dimensions' => new StringType(format: 'binary'),
                     'object'      => new ObjectType,
                     'uuid'        => new StringType(format: 'uuid'),
                     'url'         => new StringType(format: 'uri'),
@@ -389,7 +393,9 @@ trait ValidationRulesParser
 
         [$minimum, $maximum] = $this->getSizeBoundsFromRules($rules);
 
-        if ($minimum !== null || $maximum !== null) {
+        $isFile = $type instanceof StringType && $type->format === 'binary';
+
+        if (! $isFile && ($minimum !== null || $maximum !== null)) {
             if ($type instanceof FloatType || $type instanceof NumberType) {
                 $type->minimum = $minimum;
                 $type->maximum = $maximum;
@@ -426,6 +432,14 @@ trait ValidationRulesParser
         }
 
         if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
+            if ($isFile) {
+                $format = config('autodoc.laravel.format_generated_descriptions');
+
+                foreach ($this->getFileRuleDescriptions($rules, $minimum, $maximum) as $description) {
+                    $type->addDescription(is_string($format) ? sprintf($format, $description) : $description);
+                }
+            }
+
             foreach ($rules as $rule) {
                 if (! is_string($rule)) {
                     continue;
@@ -543,6 +557,49 @@ trait ValidationRulesParser
         }
 
         return $type;
+    }
+
+    /**
+     * @param array<string|Rule> $rules
+     * @return list<string>
+     */
+    protected function getFileRuleDescriptions(array $rules, int|float|null $minimumKilobytes, int|float|null $maximumKilobytes): array
+    {
+        $descriptions = [];
+
+        if ($minimumKilobytes !== null && $minimumKilobytes === $maximumKilobytes) {
+            $descriptions[] = "Exactly $minimumKilobytes KB.";
+
+        } else if ($minimumKilobytes !== null && $maximumKilobytes !== null) {
+            $descriptions[] = "Between $minimumKilobytes and $maximumKilobytes KB.";
+
+        } else if ($minimumKilobytes !== null) {
+            $descriptions[] = "Min $minimumKilobytes KB.";
+
+        } else if ($maximumKilobytes !== null) {
+            $descriptions[] = "Max $maximumKilobytes KB.";
+        }
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            [$ruleName, $parameters] = explode(':', $rule, 2) + [1 => ''];
+
+            $label = match ($ruleName) {
+                'mimes' => 'Allowed types',
+                'mimetypes' => 'Allowed MIME types',
+                'extensions' => 'Allowed extensions',
+                default => null,
+            };
+
+            if ($label !== null && $parameters !== '') {
+                $descriptions[] = $label . ': ' . str_replace(',', ', ', $parameters) . '.';
+            }
+        }
+
+        return $descriptions;
     }
 
     /**

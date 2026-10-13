@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
 
@@ -1221,6 +1222,93 @@ status description',
             'untyped_page_size' => [Rule::in(Catalog::pageSizes())],
             'literal_page_size' => ['integer', Rule::in([10, 20])],
             'name_or_all' => [Rule::in([...Catalog::names(), 'all'])],
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'multipart/form-data' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'avatar' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                                'description' => 'Max 2048 KB.',
+                            ],
+                            'document' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'binary',
+                                'description' => 'Max 10240 KB.
+
+Allowed types: pdf, docx.',
+                            ],
+                            'photos' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                    'format' => 'binary',
+                                ],
+                            ],
+                            'banner' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'attachment' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'scan' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'thumbnail' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                                'description' => 'Between 0.5 and 64 KB.
+
+Allowed extensions: jpg, png.',
+                            ],
+                            'upload' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                        ],
+                        'required' => [
+                            'avatar',
+                            'upload',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function fileRules(Request $request): void
+    {
+        $uploadTypes = Catalog::names();
+        $uploadMaxKilobytes = (int) getenv('UPLOAD_MAX_KB');
+
+        $request->validate([
+            'avatar' => ['required', 'image', 'max:2048'],
+            'document' => ['nullable', 'file', 'mimes:pdf,docx', 'max:10240'],
+            'photos.*' => [File::image()->max(1024)],
+            'banner' => [Rule::dimensions()->maxWidth(1000)],
+            'attachment' => [Rule::file()],
+            'scan' => [Rule::imageFile()],
+            'thumbnail' => 'image|between:0.5,64|extensions:jpg,png',
+            'upload' => ['required', 'file', 'mimetypes:' . implode(',', $uploadTypes), 'max:' . $uploadMaxKilobytes],
         ]);
     }
 
