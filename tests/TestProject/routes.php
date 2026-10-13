@@ -5,6 +5,7 @@ use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
+use AutoDoc\Laravel\Tests\TestProject\Http\BinaryResponseController;
 use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\BuilderConditionalsController;
 use AutoDoc\Laravel\Tests\TestProject\Http\EloquentQueryController;
@@ -195,6 +196,18 @@ Route::post('/test/auth/throttled', [AuthController::class, 'throttled'])->middl
 Route::post('/test/auth/authorized-and-throttled', [AuthController::class, 'authorizedAndThrottled'])->middleware(['auth', 'can:viewReports', 'throttle:60,1']);
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
+
+Route::post('/test/binary/download', [BinaryResponseController::class, 'download']);
+Route::post('/test/binary/file', [BinaryResponseController::class, 'file']);
+Route::post('/test/binary/stream-download', [BinaryResponseController::class, 'streamDownload']);
+Route::post('/test/binary/storage-download', [BinaryResponseController::class, 'storageDownload']);
+Route::post('/test/binary/storage-response', [BinaryResponseController::class, 'storageResponse']);
+Route::post('/test/binary/stream-json', [BinaryResponseController::class, 'streamJson']);
+Route::post('/test/binary/download-with-content-type', [BinaryResponseController::class, 'downloadWithContentType']);
+Route::post('/test/binary/file-with-content-type', [BinaryResponseController::class, 'fileWithContentType']);
+Route::post('/test/binary/stream-download-with-content-type', [BinaryResponseController::class, 'streamDownloadWithContentType']);
+Route::post('/test/binary/storage-download-with-content-type', [BinaryResponseController::class, 'storageDownloadWithContentType']);
+Route::post('/test/binary/file-with-non-literal-content-type', [BinaryResponseController::class, 'fileWithNonLiteralContentType']);
 
 Route::post('/test/response/no-content', [ResponseController::class, 'noContent']);
 Route::post('/test/response/no-content-custom-status', [ResponseController::class, 'noContentWithCustomStatus']);
