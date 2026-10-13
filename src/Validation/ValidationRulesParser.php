@@ -253,7 +253,7 @@ trait ValidationRulesParser
                 if ($rule instanceof Rule) {
                     if ($rule->className === In::class) {
                         if ($rule->args !== null && $rule->args->has(0)) {
-                            $arrayType = $rule->args->get(0)->unwrapType($scope->config);
+                            $arrayType = $scope->withScalarTypeValuesShown(fn () => $rule->args->get(0)->unwrapType($scope->config));
 
                             if ($arrayType instanceof ArrayType && $arrayType->itemType) {
                                 if ($arrayType->itemType instanceof UnionType) {

@@ -1198,6 +1198,9 @@ status description',
                                     20,
                                 ],
                             ],
+                            'name_or_all' => [
+                                'type' => 'string',
+                            ],
                         ],
                     ],
                 ],
@@ -1217,6 +1220,7 @@ status description',
             'names.*' => ['string', 'distinct', Rule::in(Catalog::names())],
             'untyped_page_size' => [Rule::in(Catalog::pageSizes())],
             'literal_page_size' => ['integer', Rule::in([10, 20])],
+            'name_or_all' => [Rule::in([...Catalog::names(), 'all'])],
         ]);
     }
 
