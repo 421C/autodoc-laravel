@@ -358,6 +358,7 @@ class ValidationController
                                     'enum' => [
                                         1,
                                         2,
+                                        null,
                                     ],
                                 ],
                                 'n' => [
@@ -907,6 +908,7 @@ status description',
                                         'enum' => [
                                             1,
                                             2,
+                                            null,
                                         ],
                                     ],
                                     'filled' => [
@@ -941,6 +943,7 @@ status description',
                             'enum' => [
                                 1,
                                 2,
+                                null,
                             ],
                         ],
                     ],
