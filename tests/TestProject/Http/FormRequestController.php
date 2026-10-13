@@ -167,4 +167,46 @@ class FormRequestController
         ],
     ])]
     public function extendedItemsRequest(ExtendedItemsRequest $request): void {}
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'password' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                            ],
+                            'password_confirmation' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                                'description' => 'Must match "password".',
+                            ],
+                        ],
+                        'required' => [
+                            'password',
+                            'password_confirmation',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function passwordConfirmation(PasswordRequest $request): void {}
 }

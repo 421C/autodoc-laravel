@@ -5,12 +5,14 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Entities\User;
+use AutoDoc\Laravel\Tests\TestProject\Services\Catalog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\ArrayRule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
 
@@ -358,6 +360,7 @@ class ValidationController
                                     'enum' => [
                                         1,
                                         2,
+                                        null,
                                     ],
                                 ],
                                 'n' => [
@@ -438,6 +441,7 @@ class ValidationController
                                 'token_confirmation' => [
                                     'type' => 'string',
                                     'description' => 'Must match "token".',
+                                    'minLength' => 12,
                                 ],
                                 'what' => [
                                     'type' => 'array',
@@ -509,6 +513,53 @@ class ValidationController
     {
         request()->validate([
             'token' => ['required', 'confirmed', Password::defaults()],
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'password' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                            ],
+                            'password_confirmation' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'password',
+                                'description' => 'Must match "password".',
+                            ],
+                        ],
+                        'required' => [
+                            'password',
+                            'password_confirmation',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function nullablePasswordConfirmation(Request $request): void
+    {
+        $request->validate([
+            'password' => [$request->isMethod('post') ? 'required' : 'nullable', 'string', 'confirmed', Password::min(9)],
         ]);
     }
 
@@ -907,6 +958,7 @@ status description',
                                         'enum' => [
                                             1,
                                             2,
+                                            null,
                                         ],
                                     ],
                                     'filled' => [
@@ -941,6 +993,7 @@ status description',
                             'enum' => [
                                 1,
                                 2,
+                                null,
                             ],
                         ],
                     ],
@@ -1009,6 +1062,253 @@ status description',
              */
             'nested' => 'array',
             'nested.data' => 'required',
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'numeric' => [
+                                'type' => 'number',
+                                'minimum' => 1,
+                                'maximum' => 10,
+                            ],
+                            'decimal' => [
+                                'type' => 'number',
+                                'format' => 'float',
+                                'minimum' => 0,
+                                'maximum' => 100,
+                            ],
+                            'nullable_decimal' => [
+                                'type' => [
+                                    'number',
+                                    'null',
+                                ],
+                                'format' => 'float',
+                                'minimum' => 0,
+                                'maximum' => 9999999,
+                            ],
+                            'integer_between' => [
+                                'type' => 'integer',
+                                'minimum' => 1,
+                                'maximum' => 5,
+                            ],
+                            'numeric_size' => [
+                                'type' => 'number',
+                                'minimum' => 3,
+                                'maximum' => 3,
+                            ],
+                            'string_size' => [
+                                'type' => 'string',
+                                'minLength' => 2,
+                                'maxLength' => 2,
+                            ],
+                            'array_between' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                                'minItems' => 1,
+                                'maxItems' => 3,
+                            ],
+                            'overlapping_bounds' => [
+                                'type' => 'integer',
+                                'minimum' => 2,
+                                'maximum' => 5,
+                            ],
+                            'fractional_bound' => [
+                                'type' => 'number',
+                                'format' => 'float',
+                                'minimum' => 0.5,
+                                'maximum' => 10,
+                            ],
+                            'integer_fractional_bound' => [
+                                'type' => 'integer',
+                                'minimum' => 1,
+                                'maximum' => 9,
+                            ],
+                            'numeric_string' => [
+                                'type' => 'string',
+                                'minimum' => 1,
+                                'maximum' => 10,
+                                'format' => 'numeric',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function sizeRules(Request $request): void
+    {
+        $request->validate([
+            'numeric' => 'numeric|min:1|max:10',
+            'decimal' => 'decimal:0,2|min:0|max:100',
+            'nullable_decimal' => ['nullable', 'decimal:0,3', 'min:0', 'max:9999999'],
+            'integer_between' => 'integer|between:1,5',
+            'numeric_size' => 'numeric|size:3',
+            'string_size' => 'string|size:2',
+            'array_between' => 'array|between:1,3',
+            'overlapping_bounds' => 'integer|min:1|between:2,5|max:8',
+            'fractional_bound' => 'decimal:0,2|min:0.5|max:10',
+            'integer_fractional_bound' => 'integer|min:0.5|max:9.5',
+            'numeric_string' => 'string|numeric|min:1|max:10',
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'page_size' => [
+                                'type' => [
+                                    'integer',
+                                    'null',
+                                ],
+                            ],
+                            'names' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'untyped_page_size' => [
+                                'type' => 'integer',
+                            ],
+                            'literal_page_size' => [
+                                'type' => 'integer',
+                                'enum' => [
+                                    10,
+                                    20,
+                                ],
+                            ],
+                            'name_or_all' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function nonLiteralInRules(Request $request): void
+    {
+        $request->validate([
+            'page_size' => ['nullable', 'integer', Rule::in(Catalog::pageSizes())],
+            'names.*' => ['string', 'distinct', Rule::in(Catalog::names())],
+            'untyped_page_size' => [Rule::in(Catalog::pageSizes())],
+            'literal_page_size' => ['integer', Rule::in([10, 20])],
+            'name_or_all' => [Rule::in([...Catalog::names(), 'all'])],
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'multipart/form-data' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'avatar' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                                'description' => 'Max 2048 KB.',
+                            ],
+                            'document' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'format' => 'binary',
+                                'description' => 'Max 10240 KB.
+
+Allowed types: pdf, docx.',
+                            ],
+                            'photos' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                    'format' => 'binary',
+                                ],
+                            ],
+                            'banner' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'attachment' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'scan' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                            'thumbnail' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                                'description' => 'Between 0.5 and 64 KB.
+
+Allowed extensions: jpg, png.',
+                            ],
+                            'upload' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                            ],
+                        ],
+                        'required' => [
+                            'avatar',
+                            'upload',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function fileRules(Request $request): void
+    {
+        $uploadTypes = Catalog::names();
+        $uploadMaxKilobytes = (int) getenv('UPLOAD_MAX_KB');
+
+        $request->validate([
+            'avatar' => ['required', 'image', 'max:2048'],
+            'document' => ['nullable', 'file', 'mimes:pdf,docx', 'max:10240'],
+            'photos.*' => [File::image()->max(1024)],
+            'banner' => [Rule::dimensions()->maxWidth(1000)],
+            'attachment' => [Rule::file()],
+            'scan' => [Rule::imageFile()],
+            'thumbnail' => 'image|between:0.5,64|extensions:jpg,png',
+            'upload' => ['required', 'file', 'mimetypes:' . implode(',', $uploadTypes), 'max:' . $uploadMaxKilobytes],
         ]);
     }
 

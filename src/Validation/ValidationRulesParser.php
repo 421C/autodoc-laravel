@@ -19,8 +19,10 @@ use AutoDoc\DataTypes\UnresolvedPhpDocType;
 use AutoDoc\DataTypes\VoidType;
 use AutoDoc\Laravel\Helpers\DotNotationParser;
 use Illuminate\Validation\Rules\ArrayRule;
+use Illuminate\Validation\Rules\Dimensions;
 use Illuminate\Validation\Rules\Email;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
 
@@ -54,10 +56,15 @@ trait ValidationRulesParser
                 if ($lastSegmentIndex === null) {
                     continue;
                 }
-                $typeClass = get_class($validationType->type);
 
-                $confirmationType = new $typeClass;
-                $confirmationType->required = $validationType->type->required;
+                $confirmationType = $validationType->type->deepClone();
+                $confirmationType->description = null;
+
+                if ($confirmationType instanceof UnionType) {
+                    foreach ($confirmationType->types as $memberType) {
+                        $memberType->description = null;
+                    }
+                }
 
                 if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
                     $format = config('autodoc.laravel.format_generated_descriptions');
@@ -65,10 +72,6 @@ trait ValidationRulesParser
                     $description = 'Must match "' . $segments[$lastSegmentIndex] . '".';
 
                     $confirmationType->description = is_string($format) ? sprintf($format, $description) : $description;
-                }
-
-                if ($confirmationType instanceof StringType) {
-                    $confirmationType->format = $validationType->type->format ?? null;
                 }
 
                 $segments[$lastSegmentIndex] = $validationType->confirmationKey ?? ($segments[$lastSegmentIndex] . '_confirmation');
@@ -188,7 +191,8 @@ trait ValidationRulesParser
                     ArrayRule::class => new ArrayType,
                     Email::class => new StringType(format: 'email'),
                     Password::class => new StringType(format: 'password'),
-                    default => null,
+                    Dimensions::class => new StringType(format: 'binary'),
+                    default => is_a($rule->className, File::class, true) ? new StringType(format: 'binary') : null,
                 };
 
                 if ($typeOrNull) {
@@ -230,6 +234,7 @@ trait ValidationRulesParser
                     'ipv6'        => new StringType(format: 'ipv6'),
                     'numeric'     => new NumberType,
                     'decimal'     => new FloatType,
+                    'file', 'image', 'mimes', 'mimetypes', 'extensions', 'dimensions' => new StringType(format: 'binary'),
                     'object'      => new ObjectType,
                     'uuid'        => new StringType(format: 'uuid'),
                     'url'         => new StringType(format: 'uri'),
@@ -252,7 +257,7 @@ trait ValidationRulesParser
                 if ($rule instanceof Rule) {
                     if ($rule->className === In::class) {
                         if ($rule->args !== null && $rule->args->has(0)) {
-                            $arrayType = $rule->args->get(0)->unwrapType($scope->config);
+                            $arrayType = $scope->withScalarTypeValuesShown(fn () => $rule->args->get(0)->unwrapType($scope->config));
 
                             if ($arrayType instanceof ArrayType && $arrayType->itemType) {
                                 if ($arrayType->itemType instanceof UnionType) {
@@ -266,6 +271,7 @@ trait ValidationRulesParser
                                 $isIntType = false;
                                 $isFloatType = false;
                                 $isNumberType = false;
+                                $hasOnlyLiteralValues = true;
                                 $enumValues = [];
 
                                 foreach ($allowedValueTypes as $allowedType) {
@@ -284,47 +290,34 @@ trait ValidationRulesParser
                                         $isNumberType = true;
 
                                     } else {
-                                        $enumValues = [];
-                                        break;
+                                        continue 2;
                                     }
 
-                                    if (is_array($allowedType->value)) {
-                                        $enumValues = array_map(fn ($value) => $value, $allowedType->value);
+                                    $possibleValues = $allowedType->getPossibleValues();
 
-                                    } else if ($allowedType->value !== null) {
-                                        $enumValues[] = $allowedType->value;
+                                    if ($possibleValues === null) {
+                                        $hasOnlyLiteralValues = false;
+
+                                    } else {
+                                        array_push($enumValues, ...$possibleValues);
                                     }
                                 }
 
-                                if ($enumValues) {
-                                    if ($type instanceof IntegerType) {
-                                        $type->setEnumValues(array_map(intval(...), $enumValues));
+                                if ($type instanceof IntegerType && $hasOnlyLiteralValues) {
+                                    $type->setEnumValues(array_map(intval(...), $enumValues));
 
-                                    } else if ($isStringType) {
-                                        /** @var array<string> $enumValues */
-                                        $type = new StringType($enumValues);
+                                } else if ($type instanceof UnknownType || $hasOnlyLiteralValues) {
+                                    $type = match (true) {
+                                        $isStringType => new StringType,
+                                        $isNumberType || ($isIntType && $isFloatType) => new NumberType,
+                                        $isIntType => new IntegerType,
+                                        $isFloatType => new FloatType,
+                                        default => new StringType,
+                                    };
 
-                                    } else if ($isNumberType || ($isIntType && $isFloatType)) {
-                                        /** @var array<int|float> $enumValues */
-                                        $type = new NumberType($enumValues);
-
-                                    } else if ($isIntType) {
-                                        /** @var array<int> $enumValues */
-                                        $type = new IntegerType($enumValues);
-
-                                    } else if ($isFloatType) {
-                                        /** @var array<float> $enumValues */
-                                        $type = new FloatType($enumValues);
-
-                                    } else {
-                                        /** @var array<string> $enumValues */
-                                        $type = new StringType($enumValues);
+                                    if ($hasOnlyLiteralValues) {
+                                        $type->setEnumValues($enumValues);
                                     }
-
-                                    $type->isEnum = true;
-
-                                } else {
-                                    $type = new UnknownType;
                                 }
                             }
                         }
@@ -398,41 +391,34 @@ trait ValidationRulesParser
             $type->isString = in_array('string', $rules);
         }
 
-        foreach ($rules as $rule) {
-            if (is_string($rule)) {
-                if (str_starts_with($rule, 'min:')) {
-                    $param = (int) explode(':', $rule, 2)[1];
+        [$minimum, $maximum] = $this->getSizeBoundsFromRules($rules);
 
-                    if ($type instanceof IntegerType) {
-                        $type->minimum = $param;
+        $isFile = $type instanceof StringType && $type->format === 'binary';
 
-                    } else if ($type instanceof ArrayType) {
-                        $type->minItems = $param;
+        if (! $isFile && ($minimum !== null || $maximum !== null)) {
+            if ($type instanceof FloatType || $type instanceof NumberType) {
+                $type->minimum = $minimum;
+                $type->maximum = $maximum;
 
-                    } else {
-                        if (! ($type instanceof StringType)) {
-                            $type = new StringType;
-                        }
+            } else {
+                $minimum = $minimum === null ? null : (int) ceil($minimum);
+                $maximum = $maximum === null ? null : (int) floor($maximum);
 
-                        $type->minLength = $param;
+                if ($type instanceof IntegerType) {
+                    $type->minimum = $minimum;
+                    $type->maximum = $maximum;
+
+                } else if ($type instanceof ArrayType) {
+                    $type->minItems = $minimum;
+                    $type->maxItems = $maximum;
+
+                } else {
+                    if (! ($type instanceof StringType)) {
+                        $type = new StringType;
                     }
 
-                } else if (str_starts_with($rule, 'max:')) {
-                    $param = (int) explode(':', $rule, 2)[1];
-
-                    if ($type instanceof IntegerType) {
-                        $type->maximum = $param;
-
-                    } else if ($type instanceof ArrayType) {
-                        $type->maxItems = $param;
-
-                    } else {
-                        if (! ($type instanceof StringType)) {
-                            $type = new StringType;
-                        }
-
-                        $type->maxLength = $param;
-                    }
+                    $type->minLength = $minimum;
+                    $type->maxLength = $maximum;
                 }
             }
         }
@@ -446,6 +432,14 @@ trait ValidationRulesParser
         }
 
         if (config('autodoc.laravel.generate_descriptions_from_validation_rules')) {
+            if ($isFile) {
+                $format = config('autodoc.laravel.format_generated_descriptions');
+
+                foreach ($this->getFileRuleDescriptions($rules, $minimum, $maximum) as $description) {
+                    $type->addDescription(is_string($format) ? sprintf($format, $description) : $description);
+                }
+            }
+
             foreach ($rules as $rule) {
                 if (! is_string($rule)) {
                     continue;
@@ -563,6 +557,88 @@ trait ValidationRulesParser
         }
 
         return $type;
+    }
+
+    /**
+     * @param array<string|Rule> $rules
+     * @return list<string>
+     */
+    protected function getFileRuleDescriptions(array $rules, int|float|null $minimumKilobytes, int|float|null $maximumKilobytes): array
+    {
+        $descriptions = [];
+
+        if ($minimumKilobytes !== null && $minimumKilobytes === $maximumKilobytes) {
+            $descriptions[] = "Exactly $minimumKilobytes KB.";
+
+        } else if ($minimumKilobytes !== null && $maximumKilobytes !== null) {
+            $descriptions[] = "Between $minimumKilobytes and $maximumKilobytes KB.";
+
+        } else if ($minimumKilobytes !== null) {
+            $descriptions[] = "Min $minimumKilobytes KB.";
+
+        } else if ($maximumKilobytes !== null) {
+            $descriptions[] = "Max $maximumKilobytes KB.";
+        }
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            [$ruleName, $parameters] = explode(':', $rule, 2) + [1 => ''];
+
+            $label = match ($ruleName) {
+                'mimes' => 'Allowed types',
+                'mimetypes' => 'Allowed MIME types',
+                'extensions' => 'Allowed extensions',
+                default => null,
+            };
+
+            if ($label !== null && $parameters !== '') {
+                $descriptions[] = $label . ': ' . str_replace(',', ', ', $parameters) . '.';
+            }
+        }
+
+        return $descriptions;
+    }
+
+    /**
+     * @param array<string|Rule> $rules
+     * @return array{int|float|null, int|float|null}
+     */
+    protected function getSizeBoundsFromRules(array $rules): array
+    {
+        $minimums = [];
+        $maximums = [];
+
+        foreach ($rules as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+
+            [$ruleName, $parameters] = explode(':', $rule, 2) + [1 => ''];
+
+            [$minimum, $maximum] = match ($ruleName) {
+                'min' => [$parameters, null],
+                'max' => [null, $parameters],
+                'size' => [$parameters, $parameters],
+                'between' => explode(',', $parameters, 2) + [1 => null],
+                default => [null, null],
+            };
+
+            if (is_numeric($minimum)) {
+                $minimums[] = $minimum + 0;
+            }
+
+            if (is_numeric($maximum)) {
+                $maximums[] = $maximum + 0;
+            }
+        }
+
+        return [
+            $minimums ? max($minimums) : null,
+            $maximums ? min($maximums) : null,
+        ];
     }
 
     /**
