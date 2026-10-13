@@ -266,6 +266,7 @@ trait ValidationRulesParser
                                 $isIntType = false;
                                 $isFloatType = false;
                                 $isNumberType = false;
+                                $hasOnlyLiteralValues = true;
                                 $enumValues = [];
 
                                 foreach ($allowedValueTypes as $allowedType) {
@@ -284,47 +285,34 @@ trait ValidationRulesParser
                                         $isNumberType = true;
 
                                     } else {
-                                        $enumValues = [];
-                                        break;
+                                        continue 2;
                                     }
 
-                                    if (is_array($allowedType->value)) {
-                                        $enumValues = array_map(fn ($value) => $value, $allowedType->value);
+                                    $possibleValues = $allowedType->getPossibleValues();
 
-                                    } else if ($allowedType->value !== null) {
-                                        $enumValues[] = $allowedType->value;
+                                    if ($possibleValues === null) {
+                                        $hasOnlyLiteralValues = false;
+
+                                    } else {
+                                        array_push($enumValues, ...$possibleValues);
                                     }
                                 }
 
-                                if ($enumValues) {
-                                    if ($type instanceof IntegerType) {
-                                        $type->setEnumValues(array_map(intval(...), $enumValues));
+                                if ($type instanceof IntegerType && $hasOnlyLiteralValues) {
+                                    $type->setEnumValues(array_map(intval(...), $enumValues));
 
-                                    } else if ($isStringType) {
-                                        /** @var array<string> $enumValues */
-                                        $type = new StringType($enumValues);
+                                } else if ($type instanceof UnknownType || $hasOnlyLiteralValues) {
+                                    $type = match (true) {
+                                        $isStringType => new StringType,
+                                        $isNumberType || ($isIntType && $isFloatType) => new NumberType,
+                                        $isIntType => new IntegerType,
+                                        $isFloatType => new FloatType,
+                                        default => new StringType,
+                                    };
 
-                                    } else if ($isNumberType || ($isIntType && $isFloatType)) {
-                                        /** @var array<int|float> $enumValues */
-                                        $type = new NumberType($enumValues);
-
-                                    } else if ($isIntType) {
-                                        /** @var array<int> $enumValues */
-                                        $type = new IntegerType($enumValues);
-
-                                    } else if ($isFloatType) {
-                                        /** @var array<float> $enumValues */
-                                        $type = new FloatType($enumValues);
-
-                                    } else {
-                                        /** @var array<string> $enumValues */
-                                        $type = new StringType($enumValues);
+                                    if ($hasOnlyLiteralValues) {
+                                        $type->setEnumValues($enumValues);
                                     }
-
-                                    $type->isEnum = true;
-
-                                } else {
-                                    $type = new UnknownType;
                                 }
                             }
                         }

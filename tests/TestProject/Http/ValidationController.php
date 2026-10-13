@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Entities\User;
+use AutoDoc\Laravel\Tests\TestProject\Services\Catalog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1115,6 +1116,59 @@ status description',
             'fractional_bound' => 'decimal:0,2|min:0.5|max:10',
             'integer_fractional_bound' => 'integer|min:0.5|max:9.5',
             'numeric_string' => 'string|numeric|min:1|max:10',
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'page_size' => [
+                                'type' => [
+                                    'integer',
+                                    'null',
+                                ],
+                            ],
+                            'names' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'untyped_page_size' => [
+                                'type' => 'integer',
+                            ],
+                            'literal_page_size' => [
+                                'type' => 'integer',
+                                'enum' => [
+                                    10,
+                                    20,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function nonLiteralInRules(Request $request): void
+    {
+        $request->validate([
+            'page_size' => ['nullable', 'integer', Rule::in(Catalog::pageSizes())],
+            'names.*' => ['string', 'distinct', Rule::in(Catalog::names())],
+            'untyped_page_size' => [Rule::in(Catalog::pageSizes())],
+            'literal_page_size' => ['integer', Rule::in([10, 20])],
         ]);
     }
 
