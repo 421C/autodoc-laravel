@@ -104,6 +104,39 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
 
 
     #[Test]
+    public function uploadRequestFileField(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: '
+            /** @autodoc POST /test/form-request/upload request */
+            ',
+            expected: '
+            /** @autodoc POST /test/form-request/upload request */
+            type UploadRequest = {
+                avatar: File
+                title?: string
+            }
+            ',
+        );
+    }
+
+
+    #[Test]
+    public function binaryDownloadResponse(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: '
+            /** @autodoc POST /test/binary/download */
+            ',
+            expected: '
+            /** @autodoc POST /test/binary/download */
+            type DownloadResponse = Blob
+            ',
+        );
+    }
+
+
+    #[Test]
     public function modelWithOmitAndExtraData(): void
     {
         $this->assertTypeScriptGeneratedCorrectly(

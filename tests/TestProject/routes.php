@@ -46,6 +46,7 @@ Route::post('/test/form-request/extra-parameters', [FormRequestController::class
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
 Route::post('/test/form-request/extended', [FormRequestController::class, 'extendedItemsRequest']);
 Route::post('/test/form-request/password-confirmation', [FormRequestController::class, 'passwordConfirmation']);
+Route::post('/test/form-request/upload', [FormRequestController::class, 'upload']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);

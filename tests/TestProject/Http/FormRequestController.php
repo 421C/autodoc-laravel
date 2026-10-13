@@ -209,4 +209,38 @@ class FormRequestController
         ],
     ])]
     public function passwordConfirmation(PasswordRequest $request): void {}
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
+                'multipart/form-data' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'avatar' => [
+                                'type' => 'string',
+                                'format' => 'binary',
+                                'description' => 'Max 2048 KB.',
+                            ],
+                            'title' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                        'required' => [
+                            'avatar',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function upload(UploadRequest $request): void {}
 }
