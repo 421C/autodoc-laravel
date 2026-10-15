@@ -382,6 +382,10 @@ trait ValidationRulesParser
             $type->isStrictInteger = in_array('integer', $rules);
         }
 
+        if ($type instanceof FloatType && in_array('string', $rules) && $this->hasRuleNamed('decimal', $rules)) {
+            $type = new NumberType;
+        }
+
         if ($type instanceof NumberType) {
             if (in_array('integer', $rules)) {
                 $type = new IntegerType;
@@ -421,6 +425,17 @@ trait ValidationRulesParser
                     $type->maxLength = $maximum;
                 }
             }
+        }
+
+        if (($type instanceof FloatType || ($type instanceof NumberType && ! $type->isString))
+            && ($this->hasRuleNamed('numeric', $rules) || $this->hasRuleNamed('decimal', $rules))
+            && ! in_array('numeric:strict', $rules)
+            && ! in_array('integer:strict', $rules)
+        ) {
+            $type = new UnionType([
+                $type,
+                new NumberType(minimum: $type->minimum, maximum: $type->maximum, isString: true),
+            ]);
         }
 
         if (in_array('nullable', $rules)) {
@@ -557,6 +572,14 @@ trait ValidationRulesParser
         }
 
         return $type;
+    }
+
+    /**
+     * @param array<string|Rule> $rules
+     */
+    protected function hasRuleNamed(string $ruleName, array $rules): bool
+    {
+        return array_any($rules, fn (string|Rule $rule) => is_string($rule) && explode(':', $rule, 2)[0] === $ruleName);
     }
 
     /**
