@@ -106,7 +106,9 @@ class RouteLoader extends AbstractRouteLoader
             }
         }
 
-        $abilities = $middleware->abilities();
+        $abilities = (config('autodoc.laravel.abilities_as_security_roles') ?? true)
+            ? $middleware->abilities()
+            : [];
 
         foreach (array_keys($schemeNames) as $schemeName) {
             $route->addSecurityRequirement([$schemeName => $abilities]);

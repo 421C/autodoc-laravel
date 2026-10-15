@@ -80,6 +80,12 @@ return [
          * Warning! Enabling this may result in incomplete model schemas.
          */
         'offline_mode' => false,
+
+        /**
+         * When enabled, abilities from `can:<ability>` middleware are listed as roles in the
+         * operation's security requirements.
+         */
+        'abilities_as_security_roles' => true,
     ],
 
     /**

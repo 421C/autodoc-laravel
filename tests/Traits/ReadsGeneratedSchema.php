@@ -22,6 +22,14 @@ trait ReadsGeneratedSchema
      */
     protected function getResponseSchema(string $uri): array
     {
+        return $this->digArray($this->getOperation($uri, 'get'), ['responses', 200, 'content', 'application/json', 'schema']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getOperation(string $uri, string $method): array
+    {
         $config = (new ConfigLoader)->load();
 
         $workspace = Workspace::getDefault($config);
@@ -34,9 +42,9 @@ trait ReadsGeneratedSchema
         $this->assertNotNull($schema);
 
         /** @var array<string, mixed> */
-        $operation = $schema['paths'][$uri]['get'] ?? [];
+        $operation = $schema['paths'][$uri][$method] ?? [];
 
-        return $this->digArray($operation, ['responses', 200, 'content', 'application/json', 'schema']);
+        return $operation;
     }
 
     /**
