@@ -740,7 +740,15 @@ class ValidationController
                                 'format' => 'integer',
                             ],
                             'numeric' => [
-                                'type' => 'number',
+                                'anyOf' => [
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                    ],
+                                    [
+                                        'type' => 'number',
+                                    ],
+                                ],
                             ],
                             'numeric_integer' => [
                                 'type' => 'integer',
@@ -750,6 +758,26 @@ class ValidationController
                                     'string',
                                     'null',
                                 ],
+                                'format' => 'numeric',
+                            ],
+                            'numeric_strict' => [
+                                'type' => 'number',
+                            ],
+                            'decimal' => [
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                    ],
+                                ],
+                                'description' => 'Price with up to two decimal places.',
+                            ],
+                            'decimal_string' => [
+                                'type' => 'string',
                                 'format' => 'numeric',
                             ],
                         ],
@@ -765,6 +793,17 @@ class ValidationController
                         'schema' => [
                             'type' => 'object',
                             'properties' => [
+                                'numeric' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'string',
+                                            'format' => 'numeric',
+                                        ],
+                                        [
+                                            'type' => 'number',
+                                        ],
+                                    ],
+                                ],
                                 'int_string' => [
                                     'type' => 'string',
                                     'format' => 'integer',
@@ -778,6 +817,7 @@ class ValidationController
                                 ],
                             ],
                             'required' => [
+                                'numeric',
                                 'numeric_string',
                                 'int_string',
                             ],
@@ -799,9 +839,16 @@ class ValidationController
             'int' => 'integer',
             'int_string' => 'integer|string',
             'numeric_integer' => 'numeric|integer',
+            'numeric_strict' => 'numeric:strict',
+            /**
+             * Price with up to two decimal places.
+             */
+            'decimal' => 'decimal:0,2',
+            'decimal_string' => 'string|decimal:2',
         ]);
 
         return response()->json([
+            'numeric' => $validated['numeric'],
             'numeric_string' => $validated['numeric_string'],
             'int_string' => $validated['int_string'],
         ]);
@@ -1075,24 +1122,54 @@ status description',
                         'type' => 'object',
                         'properties' => [
                             'numeric' => [
-                                'type' => 'number',
-                                'minimum' => 1,
-                                'maximum' => 10,
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'minimum' => 1,
+                                        'maximum' => 10,
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                        'minimum' => 1,
+                                        'maximum' => 10,
+                                    ],
+                                ],
                             ],
                             'decimal' => [
-                                'type' => 'number',
-                                'format' => 'float',
-                                'minimum' => 0,
-                                'maximum' => 100,
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                        'minimum' => 0,
+                                        'maximum' => 100,
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                        'minimum' => 0,
+                                        'maximum' => 100,
+                                    ],
+                                ],
                             ],
                             'nullable_decimal' => [
-                                'type' => [
-                                    'number',
-                                    'null',
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                        'minimum' => 0,
+                                        'maximum' => 9999999,
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                        'minimum' => 0,
+                                        'maximum' => 9999999,
+                                    ],
+                                    [
+                                        'type' => 'null',
+                                    ],
                                 ],
-                                'format' => 'float',
-                                'minimum' => 0,
-                                'maximum' => 9999999,
                             ],
                             'integer_between' => [
                                 'type' => 'integer',
@@ -1100,9 +1177,19 @@ status description',
                                 'maximum' => 5,
                             ],
                             'numeric_size' => [
-                                'type' => 'number',
-                                'minimum' => 3,
-                                'maximum' => 3,
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'minimum' => 3,
+                                        'maximum' => 3,
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                        'minimum' => 3,
+                                        'maximum' => 3,
+                                    ],
+                                ],
                             ],
                             'string_size' => [
                                 'type' => 'string',
@@ -1123,10 +1210,20 @@ status description',
                                 'maximum' => 5,
                             ],
                             'fractional_bound' => [
-                                'type' => 'number',
-                                'format' => 'float',
-                                'minimum' => 0.5,
-                                'maximum' => 10,
+                                'anyOf' => [
+                                    [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                        'minimum' => 0.5,
+                                        'maximum' => 10,
+                                    ],
+                                    [
+                                        'type' => 'string',
+                                        'format' => 'numeric',
+                                        'minimum' => 0.5,
+                                        'maximum' => 10,
+                                    ],
+                                ],
                             ],
                             'integer_fractional_bound' => [
                                 'type' => 'integer',

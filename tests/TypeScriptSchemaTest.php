@@ -122,6 +122,37 @@ class TypeScriptSchemaTest extends \Orchestra\Testbench\TestCase
 
 
     #[Test]
+    public function numericRulesAcceptNumbersAndNumericStrings(): void
+    {
+        $this->assertTypeScriptGeneratedCorrectly(
+            input: '
+            /** @autodoc POST /test/validation/numeric request */
+            /** @autodoc POST /test/validation/numeric */
+            ',
+            expected: '
+            /** @autodoc POST /test/validation/numeric request */
+            type NumericRequest = {
+                numeric?: number|string
+                numeric_string?: string|null
+                int?: number
+                int_string?: string
+                numeric_integer?: number
+                numeric_strict?: number
+                decimal?: number|string
+                decimal_string?: string
+            }
+            /** @autodoc POST /test/validation/numeric */
+            type NumericResponse = {
+                numeric: number|string
+                numeric_string: string|null
+                int_string: string
+            }
+            ',
+        );
+    }
+
+
+    #[Test]
     public function binaryDownloadResponse(): void
     {
         $this->assertTypeScriptGeneratedCorrectly(
