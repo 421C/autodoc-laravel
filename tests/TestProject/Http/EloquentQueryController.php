@@ -9976,15 +9976,6 @@ class EloquentQueryController
 
 
     #[ExpectedOperationSchema([
-        'parameters' => [
-            [
-                'in' => 'query',
-                'name' => 'withDiameter',
-                'schema' => [
-                    'type' => 'boolean',
-                ],
-            ],
-        ],
         'responses' => [
             200 => [
                 'description' => '',
@@ -10026,43 +10017,6 @@ class EloquentQueryController
                                         'required' => [
                                             'id',
                                             'name',
-                                        ],
-                                    ],
-                                ],
-                                'branchingScope' => [
-                                    'anyOf' => [
-                                        [
-                                            'type' => 'array',
-                                            'items' => [
-                                                'type' => 'object',
-                                                'properties' => [
-                                                    'name' => [
-                                                        'type' => 'string',
-                                                    ],
-                                                    'diameter' => [
-                                                        'type' => 'number',
-                                                        'format' => 'float',
-                                                    ],
-                                                ],
-                                                'required' => [
-                                                    'name',
-                                                    'diameter',
-                                                ],
-                                            ],
-                                        ],
-                                        [
-                                            'type' => 'array',
-                                            'items' => [
-                                                'type' => 'object',
-                                                'properties' => [
-                                                    'name' => [
-                                                        'type' => 'string',
-                                                    ],
-                                                ],
-                                                'required' => [
-                                                    'name',
-                                                ],
-                                            ],
                                         ],
                                     ],
                                 ],
@@ -10111,7 +10065,6 @@ class EloquentQueryController
                             'required' => [
                                 'voidScope',
                                 'scopeOnBuilderVariable',
-                                'branchingScope',
                                 'nestedScope',
                                 'traitScope',
                             ],
@@ -10121,7 +10074,7 @@ class EloquentQueryController
             ],
         ],
     ])]
-    public function localScopeBodies(Request $request): mixed
+    public function localScopeBodies(): mixed
     {
         $builder = Planet::query();
         $builder->brief();
@@ -10129,7 +10082,6 @@ class EloquentQueryController
         return [
             'voidScope' => Planet::brief()->get(),
             'scopeOnBuilderVariable' => $builder->get(),
-            'branchingScope' => Planet::query()->sized($request->boolean('withDiameter'))->get(),
             'nestedScope' => Planet::briefWithStationCount()->get(),
             'traitScope' => Planet::labeled()->get(),
         ];

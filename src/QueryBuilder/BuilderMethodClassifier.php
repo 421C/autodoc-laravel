@@ -2,7 +2,6 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
-use AutoDoc\Laravel\Helpers\ModelResolver;
 use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -100,10 +99,9 @@ class BuilderMethodClassifier
     }
 
 
-    public static function isLocalScope(string $methodName, string $modelClassName): bool
+    private static function isLocalScope(string $methodName, string $modelClassName): bool
     {
-        return ModelResolver::resolve($modelClassName)?->hasNamedScope($methodName)
-            ?? method_exists($modelClassName, 'scope' . ucfirst($methodName));
+        return LocalScope::method($methodName, $modelClassName) !== null;
     }
 
 

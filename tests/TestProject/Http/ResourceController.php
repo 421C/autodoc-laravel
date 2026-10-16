@@ -5,6 +5,7 @@ namespace AutoDoc\Laravel\Tests\TestProject\Http;
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\User;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserCollection;
+use AutoDoc\Laravel\Tests\TestProject\Entities\UserList;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResource;
 use AutoDoc\Laravel\Tests\TestProject\Entities\UserResourceCollection;
 
@@ -134,6 +135,72 @@ class ResourceController
     public function resourceCollection(): mixed
     {
         return UserResource::collection([new User]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'data' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'created_at' => [
+                                                'format' => 'date-time',
+                                                'type' => 'string',
+                                            ],
+                                            'email' => [
+                                                'type' => 'string',
+                                            ],
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'status' => [
+                                                'description' => '[StateEnum](#/schemas/StateEnum)',
+                                                'enum' => [
+                                                    1,
+                                                    2,
+                                                ],
+                                                'type' => 'integer',
+                                            ],
+                                            'updated_at' => [
+                                                'format' => 'date-time',
+                                                'type' => [
+                                                    'string',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'email',
+                                            'created_at',
+                                            'updated_at',
+                                            'status',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function attributeCollectedResources(): mixed
+    {
+        return new UserList([new User]);
     }
 
 

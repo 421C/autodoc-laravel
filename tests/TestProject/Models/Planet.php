@@ -75,19 +75,6 @@ class Planet extends Model
     }
 
     /**
-     * @return Builder<$this>
-     * @phpstan-ignore missingType.generics
-     */
-    public function scopeSized(Builder $query, bool $withDiameter): Builder
-    {
-        if ($withDiameter) {
-            return $query->select('name', 'diameter');
-        }
-
-        return $query->select('name');
-    }
-
-    /**
      * @param Builder<$this> $query
      * @return Builder<$this>
      */

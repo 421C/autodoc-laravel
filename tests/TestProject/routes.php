@@ -50,6 +50,7 @@ Route::post('/test/form-request/upload', [FormRequestController::class, 'upload'
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);
+Route::post('/test/resource/attribute-collected', [ResourceController::class, 'attributeCollectedResources']);
 Route::post('/test/resource/custom-collection', [ResourceController::class, 'customResourceCollection']);
 Route::post('/test/resource/arrayable-collection', [ResourceController::class, 'arrayableCollection']);
 Route::post('/test/resource/collection-inside-array', [ResourceController::class, 'collectionInsideArray']);

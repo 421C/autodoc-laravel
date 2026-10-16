@@ -10,6 +10,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use ReflectionMethod;
 use WeakMap;
 
 final class ConditionalCallback
@@ -35,7 +36,11 @@ final class ConditionalCallback
     {
         $isCallbackMethod = $method->name === 'tap' || $method->name === 'when' || $method->name === 'unless';
 
-        if (! $isCallbackMethod && ! LocalScope::isCalledBy($method, $chain)) {
+        $scopeMethod = ! $isCallbackMethod && $chain->modelClassName !== null
+            ? LocalScope::method($method->name, $chain->modelClassName)
+            : null;
+
+        if (! $isCallbackMethod && $scopeMethod === null) {
             return null;
         }
 
@@ -47,19 +52,21 @@ final class ConditionalCallback
         self::$cache[$callerNode] = $callbacksByScope;
 
         if (! isset($callbacksByScope[$scope])) {
-            $callbacksByScope[$scope] = $isCallbackMethod
+            $callback = $scopeMethod === null
                 ? self::readCallbacks($method, $callerNode, $chain, $scope)
-                : self::readLocalScope($method, $chain, $scope);
+                : self::readLocalScope($scopeMethod, $chain, $scope);
+
+            $callbacksByScope[$scope] = $callback->withoutRowPreservingCalls($chain->modelClassName);
         }
 
         return $callbacksByScope[$scope];
     }
 
 
-    private static function readLocalScope(QueryChainMethod $method, QueryChain $chain, Scope $scope): self
+    private static function readLocalScope(ReflectionMethod $scopeMethod, QueryChain $chain, Scope $scope): self
     {
         return new self(
-            callbackOutcomes: LocalScope::outcomes($method, $chain, $scope),
+            callbackOutcomes: LocalScope::outcomes($scopeMethod, $chain, $scope),
             defaultOutcomes: [[]],
             callbackRuns: true,
         );
@@ -116,7 +123,7 @@ final class ConditionalCallback
      * Only a call that can change the row makes the two outcomes differ, so the
      * rest is dropped rather than carried into a branch of its own.
      */
-    public function withoutRowPreservingCalls(?string $modelClassName): self
+    private function withoutRowPreservingCalls(?string $modelClassName): self
     {
         return new self(
             callbackOutcomes: self::onlyRowShapeOutcomes($this->callbackOutcomes, $modelClassName),
@@ -222,7 +229,7 @@ final class ConditionalCallback
 
         $callback = self::findCallbackNode($callerNode, $parameterName, $parameterIndex);
 
-        return $callback === null ? [[]] : BuilderCallsInBody::outcomes($callback, $chain, $scope);
+        return $callback === null ? [[]] : BuilderParameterReader::outcomesIn($callback, $chain, $scope);
     }
 
 

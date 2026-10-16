@@ -80,7 +80,7 @@ class EloquentBuilderMethodCall extends MethodCallExtension
             : null;
 
         if ($conditional) {
-            return $state->applying($conditional->withoutRowPreservingCalls($state->modelClassName()));
+            return $state->applying($conditional);
         }
 
         $belongsInChain = $state->nextMethodIsConditional()

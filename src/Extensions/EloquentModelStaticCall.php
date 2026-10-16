@@ -61,7 +61,7 @@ class EloquentModelStaticCall extends StaticCallExtension
     }
 
 
-    private function getBuilderType(StaticCallContext $call): ?BuilderType
+    private function getBuilderType(StaticCallContext $call): ?Type
     {
         $className = $call->className;
 
@@ -73,13 +73,11 @@ class EloquentModelStaticCall extends StaticCallExtension
             return null;
         }
 
-        return new BuilderType(
-            chain: new QueryChain(
-                modelClassName: $className,
-                methods: [new QueryChainMethod($call->methodName, $call->argTypes)],
-            ),
-            builderClassName: Builder::class,
-        );
+        $method = new QueryChainMethod($call->methodName, $call->argTypes);
+        $state = BuilderState::fromChain(new QueryChain(modelClassName: $className, methods: [$method]));
+        $conditional = ConditionalCallback::read($method, $call->node, $state->chain(), $call->scope);
+
+        return ($conditional ? $state->applying($conditional) : $state)->toType($call->scope->config);
     }
 
 
