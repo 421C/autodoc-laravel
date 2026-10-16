@@ -206,7 +206,6 @@ Route::post('/test/binary/file', [BinaryResponseController::class, 'file']);
 Route::post('/test/binary/stream-download', [BinaryResponseController::class, 'streamDownload']);
 Route::post('/test/binary/storage-download', [BinaryResponseController::class, 'storageDownload']);
 Route::post('/test/binary/storage-response', [BinaryResponseController::class, 'storageResponse']);
-Route::post('/test/binary/stream-json', [BinaryResponseController::class, 'streamJson']);
 Route::post('/test/binary/download-with-content-type', [BinaryResponseController::class, 'downloadWithContentType']);
 Route::post('/test/binary/file-with-content-type', [BinaryResponseController::class, 'fileWithContentType']);
 Route::post('/test/binary/stream-download-with-content-type', [BinaryResponseController::class, 'streamDownloadWithContentType']);
@@ -215,6 +214,11 @@ Route::post('/test/binary/file-with-non-literal-content-type', [BinaryResponseCo
 
 Route::post('/test/response/no-content', [ResponseController::class, 'noContent']);
 Route::post('/test/response/no-content-custom-status', [ResponseController::class, 'noContentWithCustomStatus']);
+Route::post('/test/response/stream-json', [ResponseController::class, 'streamJson']);
+Route::post('/test/response/stream-json-named-status', [ResponseController::class, 'streamJsonWithNamedStatus']);
+Route::post('/test/response/stream-json-cursor', [ResponseController::class, 'streamJsonCursor']);
+Route::post('/test/response/stream-json-injected-factory', [ResponseController::class, 'streamJsonFromInjectedFactory']);
+Route::post('/test/response/json-injected-factory', [ResponseController::class, 'jsonFromInjectedFactory']);
 
 Route::patch('/test/orders/{order}', [OrderController::class, 'update']);
 
