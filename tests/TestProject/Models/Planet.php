@@ -2,6 +2,7 @@
 
 namespace AutoDoc\Laravel\Tests\TestProject\Models;
 
+use AutoDoc\Laravel\Tests\TestProject\Models\Concerns\HasLabelScope;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class Planet extends Model
 {
+    use HasLabelScope;
+
     /**
      * @return array<string, string>
      */
@@ -60,6 +63,37 @@ class Planet extends Model
     protected function unvisited(Builder $query): void
     {
         $query->where('visited', false);
+    }
+
+    /**
+     * @param Builder<$this> $query
+     */
+    #[Scope]
+    protected function brief(Builder $query): void
+    {
+        $query->select('id', 'name');
+    }
+
+    /**
+     * @return Builder<$this>
+     * @phpstan-ignore missingType.generics
+     */
+    public function scopeSized(Builder $query, bool $withDiameter): Builder
+    {
+        if ($withDiameter) {
+            return $query->select('name', 'diameter');
+        }
+
+        return $query->select('name');
+    }
+
+    /**
+     * @param Builder<$this> $query
+     * @return Builder<$this>
+     */
+    public function scopeBriefWithStationCount(Builder $query): Builder
+    {
+        return $query->brief()->withCount('spaceStations');
     }
 
     /**

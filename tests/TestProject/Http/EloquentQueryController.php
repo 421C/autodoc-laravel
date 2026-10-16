@@ -9973,5 +9973,166 @@ class EloquentQueryController
             'builderCall' => $builderCall->get(),
         ];
     }
+
+
+    #[ExpectedOperationSchema([
+        'parameters' => [
+            [
+                'in' => 'query',
+                'name' => 'withDiameter',
+                'schema' => [
+                    'type' => 'boolean',
+                ],
+            ],
+        ],
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'voidScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'scopeOnBuilderVariable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'branchingScope' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'diameter' => [
+                                                        'type' => 'number',
+                                                        'format' => 'float',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                    'diameter',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'nestedScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'space_stations_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'space_stations_count',
+                                        ],
+                                    ],
+                                ],
+                                'traitScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'voidScope',
+                                'scopeOnBuilderVariable',
+                                'branchingScope',
+                                'nestedScope',
+                                'traitScope',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function localScopeBodies(Request $request): mixed
+    {
+        $builder = Planet::query();
+        $builder->brief();
+
+        return [
+            'voidScope' => Planet::brief()->get(),
+            'scopeOnBuilderVariable' => $builder->get(),
+            'branchingScope' => Planet::query()->sized($request->boolean('withDiameter'))->get(),
+            'nestedScope' => Planet::briefWithStationCount()->get(),
+            'traitScope' => Planet::labeled()->get(),
+        ];
+    }
 }
 

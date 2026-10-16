@@ -100,7 +100,7 @@ class BuilderMethodClassifier
     }
 
 
-    private static function isLocalScope(string $methodName, string $modelClassName): bool
+    public static function isLocalScope(string $methodName, string $modelClassName): bool
     {
         return ModelResolver::resolve($modelClassName)?->hasNamedScope($methodName)
             ?? method_exists($modelClassName, 'scope' . ucfirst($methodName));

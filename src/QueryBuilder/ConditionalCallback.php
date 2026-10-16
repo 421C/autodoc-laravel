@@ -33,7 +33,9 @@ final class ConditionalCallback
 
     public static function read(QueryChainMethod $method, Node\Expr $callerNode, QueryChain $chain, Scope $scope): ?self
     {
-        if ($method->name !== 'tap' && $method->name !== 'when' && $method->name !== 'unless') {
+        $isCallbackMethod = $method->name === 'tap' || $method->name === 'when' || $method->name === 'unless';
+
+        if (! $isCallbackMethod && ! LocalScope::isCalledBy($method, $chain)) {
             return null;
         }
 
@@ -45,10 +47,22 @@ final class ConditionalCallback
         self::$cache[$callerNode] = $callbacksByScope;
 
         if (! isset($callbacksByScope[$scope])) {
-            $callbacksByScope[$scope] = self::readCallbacks($method, $callerNode, $chain, $scope);
+            $callbacksByScope[$scope] = $isCallbackMethod
+                ? self::readCallbacks($method, $callerNode, $chain, $scope)
+                : self::readLocalScope($method, $chain, $scope);
         }
 
         return $callbacksByScope[$scope];
+    }
+
+
+    private static function readLocalScope(QueryChainMethod $method, QueryChain $chain, Scope $scope): self
+    {
+        return new self(
+            callbackOutcomes: LocalScope::outcomes($method, $chain, $scope),
+            defaultOutcomes: [[]],
+            callbackRuns: true,
+        );
     }
 
 
@@ -196,54 +210,19 @@ final class ConditionalCallback
         }
 
         $returnedBuilder = $callbackType->getReturnType(
-            args: ArgumentList::fromTypes([self::createProbeBuilderType($chain)], $scope),
+            args: ArgumentList::fromTypes([BuilderType::forChain($chain->withoutMethods())], $scope),
             callerNode: $callerNode,
         );
 
         $chains = BuilderType::chainsIn($returnedBuilder);
 
-        if ($chains === []) {
-            return [self::methodsInCallbackBody($callerNode, $parameterName, $parameterIndex, $scope)];
+        if ($chains !== []) {
+            return array_map(fn (QueryChain $returnedChain) => $returnedChain->methods, $chains);
         }
 
-        return array_map(fn (QueryChain $returnedChain) => $returnedChain->methods, $chains);
-    }
-
-
-    private static function createProbeBuilderType(QueryChain $chain): BuilderType
-    {
-        return BuilderType::forChain(new QueryChain(
-            modelClassName: $chain->modelClassName,
-            methods: [],
-            isRawDatabaseQuery: $chain->isRawDatabaseQuery,
-        ));
-    }
-
-
-    /**
-     * @return list<QueryChainMethod>
-     */
-    private static function methodsInCallbackBody(Node\Expr $callerNode, string $parameterName, int $parameterIndex, Scope $scope): array
-    {
         $callback = self::findCallbackNode($callerNode, $parameterName, $parameterIndex);
 
-        if ($callback === null) {
-            return [];
-        }
-
-        $builderParameter = $callback->getParams()[0]->var ?? null;
-
-        if (! ($builderParameter instanceof Node\Expr\Variable) || ! is_string($builderParameter->name)) {
-            return [];
-        }
-
-        $methods = [];
-
-        foreach (self::callbackBodyExpressions($callback) as $expression) {
-            self::collectCallsOnVariable($expression, $builderParameter->name, $methods, $scope);
-        }
-
-        return $methods;
+        return $callback === null ? [[]] : BuilderCallsInBody::outcomes($callback, $chain, $scope);
     }
 
 
@@ -271,51 +250,5 @@ final class ConditionalCallback
         }
 
         return null;
-    }
-
-
-    /**
-     * @return list<Node\Expr>
-     */
-    private static function callbackBodyExpressions(Node\Expr\Closure|Node\Expr\ArrowFunction $callback): array
-    {
-        if ($callback instanceof Node\Expr\ArrowFunction) {
-            return [$callback->expr];
-        }
-
-        $expressions = [];
-
-        foreach ($callback->stmts as $statement) {
-            if ($statement instanceof Node\Stmt\Expression) {
-                $expressions[] = $statement->expr;
-
-            } else if ($statement instanceof Node\Stmt\Return_ && $statement->expr !== null) {
-                $expressions[] = $statement->expr;
-            }
-        }
-
-        return $expressions;
-    }
-
-
-    /**
-     * @param list<QueryChainMethod> $methods
-     */
-    private static function collectCallsOnVariable(Node\Expr $expr, string $variableName, array &$methods, Scope $scope): bool
-    {
-        if ($expr instanceof Node\Expr\Variable) {
-            return $expr->name === $variableName;
-        }
-
-        if (! ($expr instanceof MethodCall) || ! self::collectCallsOnVariable($expr->var, $variableName, $methods, $scope)) {
-            return false;
-        }
-
-        $methods[] = new QueryChainMethod(
-            name: (string) $scope->getRawValueFromNode($expr->name),
-            args: ArgumentList::fromArgNodes($expr->args, $scope),
-        );
-
-        return true;
     }
 }

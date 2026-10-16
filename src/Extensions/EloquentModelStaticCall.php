@@ -7,11 +7,11 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
-use AutoDoc\Laravel\QueryBuilder\BuilderType;
+use AutoDoc\Laravel\QueryBuilder\BuilderState;
+use AutoDoc\Laravel\QueryBuilder\ConditionalCallback;
 use AutoDoc\Laravel\QueryBuilder\QueryChain;
 use AutoDoc\Laravel\QueryBuilder\QueryChainMethod;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
