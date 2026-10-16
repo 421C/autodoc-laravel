@@ -6,6 +6,7 @@ use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\OrderStatus;
 use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
+use Illuminate\Container\Attributes\RouteParameter;
 use Illuminate\Http\Request;
 
 /**
@@ -148,4 +149,26 @@ class RouteParametersController
         ],
     ])]
     public function snakeCaseParameters(Rocket $targetRocket, OrderStatus $orderStatus, int $rocketCount): void {}
+
+
+    /**
+     * Route parameter attribute
+     *
+     * @param int $rocketId Identifier read through the attribute.
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route parameter attribute',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'id',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => 'Identifier read through the attribute.',
+                ],
+            ],
+        ],
+    ])]
+    public function routeParameterAttribute(#[RouteParameter('id')] int $rocketId): void {}
 }

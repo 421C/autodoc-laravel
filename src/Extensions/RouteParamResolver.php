@@ -14,6 +14,7 @@ use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\OpenApi\Operation;
 use AutoDoc\OpenApi\Parameter;
 use AutoDoc\Route;
+use Illuminate\Container\Attributes\RouteParameter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use ReflectionFunction;
@@ -142,6 +143,13 @@ class RouteParamResolver extends OperationExtension
     protected function findReflectionParam(array $parameters, string $name): ?ReflectionParameter
     {
         return array_find($parameters, fn (ReflectionParameter $param) => $param->getName() === $name)
-            ?? array_find($parameters, fn (ReflectionParameter $param) => Str::snake($param->getName()) === $name);
+            ?? array_find($parameters, fn (ReflectionParameter $param) => Str::snake($param->getName()) === $name)
+            ?? array_find($parameters, fn (ReflectionParameter $param) => $this->routeParameterAttributeName($param) === $name);
+    }
+
+
+    private function routeParameterAttributeName(ReflectionParameter $param): ?string
+    {
+        return ($param->getAttributes(RouteParameter::class)[0] ?? null)?->newInstance()->parameter;
     }
 }
