@@ -2,6 +2,7 @@
 
 namespace AutoDoc\Laravel\QueryBuilder;
 
+use AutoDoc\Laravel\Helpers\ModelResolver;
 use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -91,11 +92,18 @@ class BuilderMethodClassifier
             return false;
         }
 
-        if (method_exists($modelClassName, 'scope' . ucfirst($methodName))) {
+        if (self::isLocalScope($methodName, $modelClassName)) {
             return true;
         }
 
         return ! method_exists($modelClassName, $methodName);
+    }
+
+
+    private static function isLocalScope(string $methodName, string $modelClassName): bool
+    {
+        return ModelResolver::resolve($modelClassName)?->hasNamedScope($methodName)
+            ?? method_exists($modelClassName, 'scope' . ucfirst($methodName));
     }
 
 
@@ -194,7 +202,7 @@ class BuilderMethodClassifier
         }
 
         return method_exists($modelClassName, $methodName)
-            || method_exists($modelClassName, 'scope' . ucfirst($methodName));
+            || self::isLocalScope($methodName, $modelClassName);
     }
 
 

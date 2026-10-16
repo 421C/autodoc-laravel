@@ -9902,5 +9902,76 @@ class EloquentQueryController
             'appendedAttribute' => Planet::select('id')->with('appendablePlanets:id')->firstOrFail(),
         ];
     }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'staticCall' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                'builderCall' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'staticCall',
+                                'builderCall',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function attributeLocalScopes(): mixed
+    {
+        $staticCall = Planet::unvisited();
+        $staticCall->select('name', 'visited');
+
+        $builderCall = Planet::query()->unvisited();
+        $builderCall->select('name', 'visited');
+
+        return [
+            'staticCall' => $staticCall->get(),
+            'builderCall' => $builderCall->get(),
+        ];
+    }
 }
 

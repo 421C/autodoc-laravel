@@ -2,6 +2,7 @@
 
 namespace AutoDoc\Laravel\Tests\TestProject\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -50,6 +51,15 @@ class Planet extends Model
     public function scopeOrderedByJoinDate(Builder $query): Builder
     {
         return $query->orderBy('created_at');
+    }
+
+    /**
+     * @param Builder<$this> $query
+     */
+    #[Scope]
+    protected function unvisited(Builder $query): void
+    {
+        $query->where('visited', false);
     }
 
     /**

@@ -355,6 +355,7 @@ Route::get('/test/eloquent/select-defaults-and-join-methods', [EloquentQueryCont
 Route::get('/test/eloquent/written-model-attributes', [EloquentQueryController::class, 'writtenModelAttributes']);
 Route::post('/test/eloquent/raw-select-expressions', [EloquentQueryController::class, 'rawSelectExpressions']);
 Route::post('/test/eloquent/eager-load-column-expressions', [EloquentQueryController::class, 'eagerLoadColumnExpressions']);
+Route::get('/test/eloquent/attribute-local-scopes', [EloquentQueryController::class, 'attributeLocalScopes']);
 Route::post('/test/raw/select-raw', [RawQueryController::class, 'rawSelectOnTableQuery']);
 Route::get('/test/eloquent/builder-callbacks', [EloquentQueryController::class, 'builderCallbacks']);
 
