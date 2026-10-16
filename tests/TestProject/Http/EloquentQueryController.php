@@ -9902,5 +9902,189 @@ class EloquentQueryController
             'appendedAttribute' => Planet::select('id')->with('appendablePlanets:id')->firstOrFail(),
         ];
     }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'staticCall' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                                'builderCall' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'staticCall',
+                                'builderCall',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function attributeLocalScopes(): mixed
+    {
+        $staticCall = Planet::unvisited();
+        $staticCall->select('name', 'visited');
+
+        $builderCall = Planet::query()->unvisited();
+        $builderCall->select('name', 'visited');
+
+        return [
+            'staticCall' => $staticCall->get(),
+            'builderCall' => $builderCall->get(),
+        ];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'voidScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'scopeOnBuilderVariable' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'nestedScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'space_stations_count' => [
+                                                'type' => 'integer',
+                                                'minimum' => 0,
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'name',
+                                            'space_stations_count',
+                                        ],
+                                    ],
+                                ],
+                                'traitScope' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                            'visited' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                            'visited',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'voidScope',
+                                'scopeOnBuilderVariable',
+                                'nestedScope',
+                                'traitScope',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function localScopeBodies(): mixed
+    {
+        $builder = Planet::query();
+        $builder->brief();
+
+        return [
+            'voidScope' => Planet::brief()->get(),
+            'scopeOnBuilderVariable' => $builder->get(),
+            'nestedScope' => Planet::briefWithStationCount()->get(),
+            'traitScope' => Planet::labeled()->get(),
+        ];
+    }
 }
 

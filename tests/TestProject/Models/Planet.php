@@ -2,6 +2,8 @@
 
 namespace AutoDoc\Laravel\Tests\TestProject\Models;
 
+use AutoDoc\Laravel\Tests\TestProject\Models\Concerns\HasLabelScope;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,6 +13,8 @@ use Illuminate\Support\Str;
 
 class Planet extends Model
 {
+    use HasLabelScope;
+
     /**
      * @return array<string, string>
      */
@@ -50,6 +54,33 @@ class Planet extends Model
     public function scopeOrderedByJoinDate(Builder $query): Builder
     {
         return $query->orderBy('created_at');
+    }
+
+    /**
+     * @param Builder<$this> $query
+     */
+    #[Scope]
+    protected function unvisited(Builder $query): void
+    {
+        $query->where('visited', false);
+    }
+
+    /**
+     * @param Builder<$this> $query
+     */
+    #[Scope]
+    protected function brief(Builder $query): void
+    {
+        $query->select('id', 'name');
+    }
+
+    /**
+     * @param Builder<$this> $query
+     * @return Builder<$this>
+     */
+    public function scopeBriefWithStationCount(Builder $query): Builder
+    {
+        return $query->brief()->withCount('spaceStations');
     }
 
     /**

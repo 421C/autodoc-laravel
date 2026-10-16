@@ -91,11 +91,17 @@ class BuilderMethodClassifier
             return false;
         }
 
-        if (method_exists($modelClassName, 'scope' . ucfirst($methodName))) {
+        if (self::isLocalScope($methodName, $modelClassName)) {
             return true;
         }
 
         return ! method_exists($modelClassName, $methodName);
+    }
+
+
+    private static function isLocalScope(string $methodName, string $modelClassName): bool
+    {
+        return LocalScope::method($methodName, $modelClassName) !== null;
     }
 
 
@@ -194,7 +200,7 @@ class BuilderMethodClassifier
         }
 
         return method_exists($modelClassName, $methodName)
-            || method_exists($modelClassName, 'scope' . ucfirst($methodName));
+            || self::isLocalScope($methodName, $modelClassName);
     }
 
 

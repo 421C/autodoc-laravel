@@ -6,6 +6,7 @@ use AutoDoc\Analyzer\PhpClass;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\ObjectType;
 use Exception;
+use Illuminate\Http\Resources\Attributes\Collects;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -18,8 +19,12 @@ trait ResourceCollector
     protected function getCollectionType(PhpClass $phpClass): ArrayType
     {
         $collectionClassInstance = $phpClass->getReflection()->newInstanceWithoutConstructor();
+        $collectsAttribute = $phpClass->getReflection()->getAttributes(Collects::class)[0] ?? null;
 
-        if (isset($collectionClassInstance->collects)) {
+        if ($collectsAttribute) {
+            $resourceClassName = $collectsAttribute->newInstance()->class;
+
+        } else if (isset($collectionClassInstance->collects)) {
             $resourceClassName = $collectionClassInstance->collects;
 
         } else if (str_ends_with($collectionClassInstance::class, 'Collection')

@@ -50,6 +50,7 @@ Route::post('/test/form-request/upload', [FormRequestController::class, 'upload'
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
 Route::post('/test/resource/collection', [ResourceController::class, 'resourceCollection']);
+Route::post('/test/resource/attribute-collected', [ResourceController::class, 'attributeCollectedResources']);
 Route::post('/test/resource/custom-collection', [ResourceController::class, 'customResourceCollection']);
 Route::post('/test/resource/arrayable-collection', [ResourceController::class, 'arrayableCollection']);
 Route::post('/test/resource/collection-inside-array', [ResourceController::class, 'collectionInsideArray']);
@@ -355,6 +356,8 @@ Route::get('/test/eloquent/select-defaults-and-join-methods', [EloquentQueryCont
 Route::get('/test/eloquent/written-model-attributes', [EloquentQueryController::class, 'writtenModelAttributes']);
 Route::post('/test/eloquent/raw-select-expressions', [EloquentQueryController::class, 'rawSelectExpressions']);
 Route::post('/test/eloquent/eager-load-column-expressions', [EloquentQueryController::class, 'eagerLoadColumnExpressions']);
+Route::get('/test/eloquent/attribute-local-scopes', [EloquentQueryController::class, 'attributeLocalScopes']);
+Route::get('/test/eloquent/local-scope-bodies', [EloquentQueryController::class, 'localScopeBodies']);
 Route::post('/test/raw/select-raw', [RawQueryController::class, 'rawSelectOnTableQuery']);
 Route::get('/test/eloquent/builder-callbacks', [EloquentQueryController::class, 'builderCallbacks']);
 

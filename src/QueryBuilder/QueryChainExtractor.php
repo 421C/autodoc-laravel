@@ -240,7 +240,7 @@ final class QueryChainExtractor
         $conditional = ConditionalCallback::read($method, $callerNode, $state->chain(), $this->scope);
 
         return $conditional
-            ? $state->applying($conditional->withoutRowPreservingCalls($state->modelClassName()))
+            ? $state->applying($conditional)
             : $state;
     }
 

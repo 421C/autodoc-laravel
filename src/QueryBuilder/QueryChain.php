@@ -38,6 +38,16 @@ final class QueryChain
     }
 
 
+    public function withoutMethods(): self
+    {
+        return new self(
+            modelClassName: $this->modelClassName,
+            methods: [],
+            isRawDatabaseQuery: $this->isRawDatabaseQuery,
+        );
+    }
+
+
     public function withShortCircuitToNull(): self
     {
         return new self(

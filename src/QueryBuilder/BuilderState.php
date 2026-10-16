@@ -43,7 +43,7 @@ final class BuilderState
 
 
     /**
-     * @return list<QueryChain>
+     * @return non-empty-list<QueryChain>
      */
     public function chains(): array
     {

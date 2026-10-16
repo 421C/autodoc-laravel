@@ -7,11 +7,11 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
 use AutoDoc\Laravel\QueryBuilder\BuilderMethodClassifier;
-use AutoDoc\Laravel\QueryBuilder\BuilderType;
+use AutoDoc\Laravel\QueryBuilder\BuilderState;
+use AutoDoc\Laravel\QueryBuilder\ConditionalCallback;
 use AutoDoc\Laravel\QueryBuilder\QueryChain;
 use AutoDoc\Laravel\QueryBuilder\QueryChainMethod;
 use AutoDoc\Laravel\QueryBuilder\QueryNavigator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -61,7 +61,7 @@ class EloquentModelStaticCall extends StaticCallExtension
     }
 
 
-    private function getBuilderType(StaticCallContext $call): ?BuilderType
+    private function getBuilderType(StaticCallContext $call): ?Type
     {
         $className = $call->className;
 
@@ -73,13 +73,11 @@ class EloquentModelStaticCall extends StaticCallExtension
             return null;
         }
 
-        return new BuilderType(
-            chain: new QueryChain(
-                modelClassName: $className,
-                methods: [new QueryChainMethod($call->methodName, $call->argTypes)],
-            ),
-            builderClassName: Builder::class,
-        );
+        $method = new QueryChainMethod($call->methodName, $call->argTypes);
+        $state = BuilderState::fromChain(new QueryChain(modelClassName: $className, methods: [$method]));
+        $conditional = ConditionalCallback::read($method, $call->node, $state->chain(), $call->scope);
+
+        return ($conditional ? $state->applying($conditional) : $state)->toType($call->scope->config);
     }
 
 
