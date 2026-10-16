@@ -8,45 +8,60 @@ use AutoDoc\DataTypes\Type;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\MethodCallContext;
 use AutoDoc\Extensions\MethodCallExtension;
-use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedJsonResponse;
 
 /**
- * Handles `response()->json(...)`.
+ * Handles `response()->json(...)` and `response()->streamJson(...)`.
  */
 class ResponseJson extends MethodCallExtension
 {
+    /**
+     * Method name => response class.
+     */
+    private const array METHODS = [
+        'json' => JsonResponse::class,
+        'streamJson' => StreamedJsonResponse::class,
+    ];
+
     public function getReturnType(MethodCallContext $call): ?Type
     {
-        $node = $call->node;
-
-        if ($call->methodName === 'json'
-            && $node->var instanceof FuncCall
-            && $node->var->name instanceof Node\Name
-            && $node->var->name->name === 'response'
-        ) {
-            $payloadType = $call->argTypes->has(0) ? $call->argTypes->get(0) : null;
-
-            if ($payloadType === null || $payloadType instanceof UnknownType) {
-                $payloadType = new ObjectType;
-            }
-
-            $responseType = new ObjectType(
-                className: \Illuminate\Http\JsonResponse::class,
-                typeToDisplay: $payloadType,
-            );
-
-            if ($call->argTypes->has(1)) {
-                $statusCodeType = $call->argTypes->get(1);
-
-                if ($statusCodeType instanceof IntegerType && is_int($statusCodeType->value)) {
-                    $responseType->httpStatusCode = $statusCodeType->value;
-                }
-            }
-
-            return $responseType;
+        if (! isset(self::METHODS[$call->methodName])) {
+            return null;
         }
 
-        return null;
+        $receiverType = $call->getVarType()->unwrapType($call->scope->config);
+
+        if (! ($receiverType instanceof ObjectType)
+            || $receiverType->className === null
+            || ! is_a($receiverType->className, ResponseFactory::class, true)
+        ) {
+            return null;
+        }
+
+        $payloadArgIndex = $call->argTypes->indexForParameter('data', 0);
+        $payloadType = $payloadArgIndex !== null ? $call->argTypes->get($payloadArgIndex) : null;
+
+        if ($payloadType === null || $payloadType instanceof UnknownType) {
+            $payloadType = new ObjectType;
+        }
+
+        $responseType = new ObjectType(
+            className: self::METHODS[$call->methodName],
+            typeToDisplay: $payloadType,
+        );
+
+        $statusArgIndex = $call->argTypes->indexForParameter('status', 1);
+
+        if ($statusArgIndex !== null) {
+            $statusCodeType = $call->argTypes->get($statusArgIndex);
+
+            if ($statusCodeType instanceof IntegerType && is_int($statusCodeType->value)) {
+                $responseType->httpStatusCode = $statusCodeType->value;
+            }
+        }
+
+        return $responseType;
     }
 }

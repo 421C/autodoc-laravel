@@ -220,24 +220,4 @@ class BinaryResponseController
     {
         return response()->file(storage_path('images/photo.jpg'), ['Content-Type' => (string) getenv('IMAGE_MIME')]);
     }
-
-
-    #[ExpectedOperationSchema([
-        'responses' => [
-            200 => [
-                'description' => '',
-                'content' => [
-                    'application/json' => [
-                        'schema' => [
-                            'type' => 'string',
-                        ],
-                    ],
-                ],
-            ],
-        ],
-    ])]
-    public function streamJson(): mixed
-    {
-        return response()->streamJson(['status' => 'ok']);
-    }
 }
