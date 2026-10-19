@@ -14,7 +14,9 @@ use AutoDoc\Laravel\Helpers\ModelResolver;
 use AutoDoc\OpenApi\Operation;
 use AutoDoc\OpenApi\Parameter;
 use AutoDoc\Route;
+use Illuminate\Container\Attributes\RouteParameter;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -60,16 +62,18 @@ class RouteParamResolver extends OperationExtension
         $pathParameters = $route->meta['pathParameters'] ?? [];
 
         foreach ($pathParameters as $param) {
+            $reflectionParam = $this->findReflectionParam($reflectionParams, $param['name']);
+            $phpDocParamName = $reflectionParam?->getName() ?? $param['name'];
             $type = new UnknownType;
 
-            if (isset($phpDocParams[$param['name']])) {
-                $type = $phpDocParams[$param['name']]->resolve();
+            if (isset($phpDocParams[$phpDocParamName])) {
+                $type = $phpDocParams[$phpDocParamName]->resolve();
             }
 
             $phpDocParamDescription = $type->description;
             $type->description = null;
 
-            $reflectionType = $this->findReflectionParam($reflectionParams, $param['name'])?->getType();
+            $reflectionType = $reflectionParam?->getType();
             $isModel = false;
 
             if ($reflectionType instanceof ReflectionNamedType) {
@@ -138,12 +142,14 @@ class RouteParamResolver extends OperationExtension
      */
     protected function findReflectionParam(array $parameters, string $name): ?ReflectionParameter
     {
-        foreach ($parameters as $param) {
-            if ($param->getName() === $name) {
-                return $param;
-            }
-        }
+        return array_find($parameters, fn (ReflectionParameter $param) => $param->getName() === $name)
+            ?? array_find($parameters, fn (ReflectionParameter $param) => Str::snake($param->getName()) === $name)
+            ?? array_find($parameters, fn (ReflectionParameter $param) => $this->routeParameterAttributeName($param) === $name);
+    }
 
-        return null;
+
+    private function routeParameterAttributeName(ReflectionParameter $param): ?string
+    {
+        return ($param->getAttributes(RouteParameter::class)[0] ?? null)?->newInstance()->parameter;
     }
 }

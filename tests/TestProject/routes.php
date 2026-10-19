@@ -58,6 +58,8 @@ Route::post('/test/resource/collection-inside-array', [ResourceController::class
 Route::post('/test/route-params/model-binding/{rocket}', [RouteParametersController::class, 'modelBinding']);
 Route::post('/test/route-params/enum-binding/{state}', [RouteParametersController::class, 'enumBinding']);
 Route::post('/test/route-params/scalar/{rocketId}', [RouteParametersController::class, 'scalarPathParameter']);
+Route::post('/test/route-params/snake-case/{target_rocket}/{order_status}/{rocket_count}', [RouteParametersController::class, 'snakeCaseParameters']);
+Route::post('/test/route-params/attribute/{id}', [RouteParametersController::class, 'routeParameterAttribute']);
 
 Route::post('/test/pagination/basic', [PaginationController::class, 'basicPagination']);
 Route::post('/test/pagination/custom-page-name', [PaginationController::class, 'paginationWithCustomPageName']);

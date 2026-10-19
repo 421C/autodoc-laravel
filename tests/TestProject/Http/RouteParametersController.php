@@ -3,8 +3,10 @@
 namespace AutoDoc\Laravel\Tests\TestProject\Http;
 
 use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
+use AutoDoc\Laravel\Tests\TestProject\Entities\OrderStatus;
 use AutoDoc\Laravel\Tests\TestProject\Entities\StateEnum;
 use AutoDoc\Laravel\Tests\TestProject\Models\Rocket;
+use Illuminate\Container\Attributes\RouteParameter;
 use Illuminate\Http\Request;
 
 /**
@@ -102,4 +104,71 @@ class RouteParametersController
         ],
     ])]
     public function scalarPathParameter(Request $request, int $rocketId): void {}
+
+
+    /**
+     * Snake-case route parameters
+     *
+     * @param int $rocketCount Number of rockets.
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Snake-case route parameters',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'target_rocket',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                ],
+            ],
+            [
+                'in' => 'path',
+                'name' => 'order_status',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => '[OrderStatus](#/schemas/OrderStatus)',
+                    'enum' => [
+                        1,
+                        2,
+                        3,
+                        4,
+                    ],
+                ],
+            ],
+            [
+                'in' => 'path',
+                'name' => 'rocket_count',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => 'Number of rockets.',
+                ],
+            ],
+        ],
+    ])]
+    public function snakeCaseParameters(Rocket $targetRocket, OrderStatus $orderStatus, int $rocketCount): void {}
+
+
+    /**
+     * Route parameter attribute
+     *
+     * @param int $rocketId Identifier read through the attribute.
+     */
+    #[ExpectedOperationSchema([
+        'summary' => 'Route parameter attribute',
+        'parameters' => [
+            [
+                'in' => 'path',
+                'name' => 'id',
+                'required' => true,
+                'schema' => [
+                    'type' => 'integer',
+                    'description' => 'Identifier read through the attribute.',
+                ],
+            ],
+        ],
+    ])]
+    public function routeParameterAttribute(#[RouteParameter('id')] int $rocketId): void {}
 }
