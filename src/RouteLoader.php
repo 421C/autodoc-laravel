@@ -7,8 +7,10 @@ use AutoDoc\Laravel\Helpers\RecordsErrorResponses;
 use AutoDoc\Laravel\Helpers\RouteMiddleware;
 use AutoDoc\Route;
 use Closure;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Routing\Route as LaravelRoute;
 use Illuminate\Routing\RouteAction;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route as LaravelRouteFacade;
 use Throwable;
 
@@ -16,6 +18,9 @@ use Throwable;
 class RouteLoader extends AbstractRouteLoader
 {
     use RecordsErrorResponses;
+
+    private ?Router $httpMiddlewareRouter = null;
+
 
     public function getRoutes(): iterable
     {
@@ -140,14 +145,32 @@ class RouteLoader extends AbstractRouteLoader
      */
     protected function gatherRouteMiddleware(LaravelRoute $route): array
     {
+        $router = $this->httpMiddlewareRouter();
+
         try {
-            $middleware = LaravelRouteFacade::gatherRouteMiddleware($route);
+            $middleware = $router->gatherRouteMiddleware($route);
 
         } catch (Throwable) {
             $middleware = $route->gatherMiddleware();
         }
 
         return array_values(array_unique(array_filter($middleware, 'is_string')));
+    }
+
+
+    private function httpMiddlewareRouter(): Router
+    {
+        if (! app()->runningInConsole()) {
+            return app(Router::class);
+        }
+
+        if ($this->httpMiddlewareRouter === null) {
+            $this->httpMiddlewareRouter = clone app(Router::class);
+
+            app()->make(HttpKernel::class, ['router' => $this->httpMiddlewareRouter]);
+        }
+
+        return $this->httpMiddlewareRouter;
     }
 
 
