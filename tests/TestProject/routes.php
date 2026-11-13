@@ -201,6 +201,7 @@ Route::post('/test/auth/sanctum-abilities', [AuthController::class, 'sanctumAbil
 Route::post('/test/auth/unmapped-guard', [AuthController::class, 'unmappedGuard'])->middleware('auth:database');
 Route::post('/test/auth/token-and-basic-auth', [AuthController::class, 'tokenAndBasicAuth'])->middleware(['auth:sanctum', 'auth.basic']);
 Route::post('/test/auth/authorized-and-throttled', [AuthController::class, 'authorizedAndThrottled'])->middleware(['auth', 'can:viewReports', 'throttle:60,1']);
+Route::post('/test/auth/authenticated-through-group', [AuthController::class, 'authenticatedThroughGroup'])->middleware('sanctum-api')->withoutMiddleware('throttle:60,1');
 
 Route::post('/test/view/response', [ViewResponseController::class, 'viewResponse']);
 

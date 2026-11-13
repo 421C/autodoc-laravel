@@ -796,4 +796,19 @@ class AuthController
         ],
     ])]
     public function authorizedAndThrottled(): void {}
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            401 => [
+                'description' => '',
+            ],
+        ],
+        'security' => [
+            [
+                'sanctum' => [],
+            ],
+        ],
+    ])]
+    public function authenticatedThroughGroup(): void {}
 }

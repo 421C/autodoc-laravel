@@ -4,11 +4,32 @@ namespace AutoDoc\Laravel\Tests\TestProject;
 
 use AutoDoc\Laravel\Tests\TestProject\Models\AdminUser;
 use AutoDoc\Laravel\Tests\TestProject\Models\User;
+use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 
 
 class TestRouteProvider extends ServiceProvider
 {
+    /**
+     * @return void
+     */
+    public function register()
+    {
+        $this->app->afterResolving(Kernel::class, function (Kernel $kernel): void {
+            $kernel->setMiddlewareAliases([
+                ...$kernel->getMiddlewareAliases(),
+                'auth.token' => Authenticate::class,
+            ]);
+
+            $kernel->setMiddlewareGroups([
+                ...$kernel->getMiddlewareGroups(),
+                'sanctum-api' => ['auth.token:sanctum', 'throttle:60,1'],
+            ]);
+        });
+    }
+
+
     /**
      * @return void
      */
