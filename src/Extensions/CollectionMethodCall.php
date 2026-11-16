@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\Extensions;
 
 use AutoDoc\Analyzer\ArgumentList;
+use AutoDoc\Analyzer\IntKeyOrder;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
@@ -100,36 +101,53 @@ class CollectionMethodCall extends MethodCallExtension
             return null;
         }
 
+        $config = $call->scope->config;
+        $collectionType = clone $varType;
+
         if ($methodName === 'toArray') {
-            $varType->className = null;
+            $collectionType->className = null;
 
-            return $varType;
-        }
-
-        if ($methodName === 'values') {
-            $varType->keyType = null;
-
-            return $varType;
+            return $collectionType;
         }
 
         return match ($methodName) {
-            'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($call, $varType),
-            'sole', 'firstOrFail' => $varType->itemType ?? new UnknownType,
-            'map' => $this->handleMapMethod($call, $varType),
-            'mapWithKeys' => $this->handleMapWithKeysMethod($call, $varType),
-            'pluck' => $this->handlePluckMethod($call, $varType),
-            'keys' => new ArrayType(className: Collection::class, itemType: $varType->keyType ?? new IntegerType),
+            'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($call, $collectionType),
+            'sole', 'firstOrFail' => $collectionType->itemType ?? new UnknownType,
+            'map' => $this->handleMapMethod($call, $collectionType),
+            'mapWithKeys' => $this->handleMapWithKeysMethod($call, $collectionType),
+            'pluck' => $this->handlePluckMethod($call, $collectionType),
+            'keyBy' => $this->handleKeyByMethod($call, $collectionType),
+            'keys' => new ArrayType(className: Collection::class, itemType: $collectionType->convertShapeToTypePair($config)->keyType ?? new IntegerType),
             'sum' => new NumberType,
             'count' => new IntegerType(minimum: 0),
             'avg', 'average', 'min', 'max', 'median' => new UnionType([new NumberType, new NullType]),
             'isEmpty', 'isNotEmpty', 'contains', 'containsStrict', 'doesntContain', 'every', 'some' => new BoolType,
             'implode', 'join' => new StringType,
-            'each' => $this->handleEachMethod($call, $varType),
-            'filter', 'reject', 'flatten', 'groupBy', 'sortBy', 'sortByDesc', 'take', 'skip', 'keyBy',
-            'unique', 'reverse', 'slice', 'sortDesc',
-            'where', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull', 'whereBetween', 'whereNotBetween',
-            'sortKeys', 'sortKeysDesc', 'shuffle', 'nth', 'tap' => $varType,
+            'each' => $this->handleEachMethod($call, $collectionType),
+            'values', 'flatten', 'shuffle' => $collectionType->toList($config),
+            'nth' => $collectionType->markItemsOptional()->toList($config),
+            'filter', 'reject', 'unique', 'skip', 'slice',
+            'where', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull', 'whereBetween', 'whereNotBetween' => $collectionType->markItemsOptional(),
+            'take' => $this->mayTakeFromEnd($call) ? $collectionType->markItemsOptional() : $collectionType,
+            'sortBy', 'sortByDesc', 'sortDesc', 'reverse', 'sortKeysDesc' => $collectionType->reorderItems($config),
+            'groupBy', 'sortKeys', 'tap' => $collectionType,
         };
+    }
+
+
+    private function mayTakeFromEnd(MethodCallContext $call): bool
+    {
+        $limit = $call->argTypes->has(0) ? $call->argTypes->get(0)->unwrapType($call->scope->config) : null;
+
+        if (! $limit instanceof IntegerType) {
+            return true;
+        }
+
+        $values = $limit->getPossibleValues();
+
+        return $values === null
+            ? $limit->minimum === null || $limit->minimum < 0
+            : array_any($values, fn (int $value) => $value < 0);
     }
 
 
@@ -263,7 +281,7 @@ class CollectionMethodCall extends MethodCallExtension
         $callbackType = $call->argTypes->get(0);
 
         if ($callbackType instanceof CallableType) {
-            $collectionType->shape = [];
+            $collectionType->convertShapeToTypePair($call->scope->config);
             $collectionType->itemType = $callbackType->getReturnType(
                 ArgumentList::fromTypes([
                     $collectionType->itemType ?? new UnknownType,
@@ -297,9 +315,11 @@ class CollectionMethodCall extends MethodCallExtension
             );
 
             if ($returnType instanceof UnionType) {
+                $returnType = clone $returnType;
+
                 foreach ($returnType->types as $variantIndex => $returnTypeVariant) {
-                    if ($returnType->types[$variantIndex] instanceof ArrayType) {
-                        $returnType->types[$variantIndex]->className = Collection::class;
+                    if ($returnTypeVariant instanceof ArrayType) {
+                        $returnType->types[$variantIndex] = $this->asCollection($returnTypeVariant);
                     }
                 }
 
@@ -307,14 +327,22 @@ class CollectionMethodCall extends MethodCallExtension
             }
 
             if ($returnType instanceof ArrayType) {
-                $returnType->className = Collection::class;
-
-                return $returnType;
+                return $this->asCollection($returnType);
             }
         }
 
         return new ArrayType(className: Collection::class);
     }
+
+
+    private function asCollection(ArrayType $arrayType): ArrayType
+    {
+        $collectionType = clone $arrayType;
+        $collectionType->className = Collection::class;
+
+        return $collectionType;
+    }
+
 
     private function handlePluckMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
     {
@@ -327,12 +355,9 @@ class CollectionMethodCall extends MethodCallExtension
         }
 
         $scope = $call->scope;
-        $keyType = null;
-
-        if ($call->argTypes->has(1)) {
-            $keyArgType = $call->argTypes->get(1);
-            $keyType = $this->getCollectionItemPropertyType($collectionType, $keyArgType, $scope);
-        }
+        $keyArgType = $call->argTypes->has(1) ? $call->argTypes->get(1)->unwrapType($scope->config) : new NullType;
+        $isKeyed = ! $keyArgType instanceof NullType;
+        $keyType = $isKeyed ? $this->getCollectionItemPropertyType($collectionType, $keyArgType, $scope) : null;
 
         $columnArgType = $call->argTypes->get(0);
         $resultItemType = $this->getCollectionItemPropertyType($collectionType, $columnArgType, $scope);
@@ -345,6 +370,25 @@ class CollectionMethodCall extends MethodCallExtension
             className: Collection::class,
             itemType: $resultItemType->unwrapType($scope->config),
             keyType: $keyType?->unwrapType($scope->config),
+            intKeyOrder: $isKeyed ? IntKeyOrder::NonSequential : IntKeyOrder::Sequential,
+        );
+    }
+
+
+    private function handleKeyByMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
+    {
+        $scope = $call->scope;
+        $collectionType->convertShapeToTypePair($scope->config);
+
+        $keyType = $collectionType->itemType !== null && $call->argTypes->has(0)
+            ? $this->getCollectionItemPropertyType($collectionType, $call->argTypes->get(0), $scope)
+            : null;
+
+        return new ArrayType(
+            itemType: $collectionType->itemType,
+            keyType: $keyType?->unwrapType($scope->config),
+            className: $collectionType->className,
+            intKeyOrder: IntKeyOrder::NonSequential,
         );
     }
 

@@ -4,6 +4,7 @@ use AutoDoc\Laravel\Tests\Attributes\ExpectedOperationSchema;
 use AutoDoc\Laravel\Tests\TestProject\Entities\RocketCategory;
 use AutoDoc\Laravel\Tests\TestProject\Http\AbortController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AppHelperController;
+use AutoDoc\Laravel\Tests\TestProject\Http\ArrHelperController;
 use AutoDoc\Laravel\Tests\TestProject\Http\AuthController;
 use AutoDoc\Laravel\Tests\TestProject\Http\BinaryResponseController;
 use AutoDoc\Laravel\Tests\TestProject\Http\CacheAndHelperController;
@@ -374,3 +375,10 @@ Route::get('/test/conditionals/condition-behind-assignment', [BuilderConditional
 Route::get('/test/conditionals/condition-on-variable', [BuilderConditionalsController::class, 'conditionOnBuilderVariable']);
 Route::get('/test/conditionals/conditional-raw-select', [BuilderConditionalsController::class, 'conditionalRawSelectAndEagerLoads']);
 Route::get('/test/conditionals/condition-without-callback', [BuilderConditionalsController::class, 'conditionsWithoutCallback']);
+
+Route::post('/test/arr/filters', [ArrHelperController::class, 'filters']);
+Route::post('/test/arr/where-not-null-spreads', [ArrHelperController::class, 'whereNotNullSpreads']);
+Route::post('/test/arr/key-subsets', [ArrHelperController::class, 'keySubsets']);
+Route::post('/test/arr/path-reads', [ArrHelperController::class, 'pathReads']);
+Route::post('/test/arr/single-entries', [ArrHelperController::class, 'singleEntries']);
+Route::post('/test/arr/mapping', [ArrHelperController::class, 'mapping']);
