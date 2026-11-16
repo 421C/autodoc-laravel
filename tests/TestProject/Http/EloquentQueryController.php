@@ -347,14 +347,31 @@ class EloquentQueryController
                 'content' => [
                     'application/json' => [
                         'schema' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'array',
-                                'items' => [
-                                    'format' => 'date-time',
-                                    'type' => [
-                                        'string',
-                                        'null',
+                            'anyOf' => [
+                                [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'format' => 'date-time',
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'array',
+                                        'items' => [
+                                            'format' => 'date-time',
+                                            'type' => [
+                                                'string',
+                                                'null',
+                                            ],
+                                        ],
                                     ],
                                 ],
                             ],
@@ -1421,35 +1438,72 @@ class EloquentQueryController
                 'content' => [
                     'application/json' => [
                         'schema' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'entry' => [
+                            'anyOf' => [
+                                [
+                                    'type' => 'array',
+                                    'items' => [
                                         'type' => 'object',
                                         'properties' => [
-                                            'date' => [
-                                                'type' => [
-                                                    'string',
-                                                    'null',
+                                            'entry' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'date' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
                                                 ],
-                                                'format' => 'date-time',
-                                            ],
-                                            'name' => [
-                                                'type' => [
-                                                    'string',
-                                                    'null',
+                                                'required' => [
+                                                    'name',
+                                                    'date',
                                                 ],
                                             ],
                                         ],
                                         'required' => [
-                                            'name',
-                                            'date',
+                                            'entry',
                                         ],
                                     ],
                                 ],
-                                'required' => [
-                                    'entry',
+                                [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'entry' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'date' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                        'format' => 'date-time',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => [
+                                                            'string',
+                                                            'null',
+                                                        ],
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'name',
+                                                    'date',
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'entry',
+                                        ],
+                                    ],
                                 ],
                             ],
                         ],
@@ -1837,8 +1891,8 @@ class EloquentQueryController
                 'content' => [
                     'application/json' => [
                         'schema' => [
-                            'type' => 'array',
-                            'items' => [
+                            'type' => 'object',
+                            'additionalProperties' => [
                                 'type' => 'object',
                                 'properties' => [
                                     'created_at' => [
@@ -4683,6 +4737,28 @@ class EloquentQueryController
                                         'type' => 'integer',
                                     ],
                                 ],
+                                'filteredValues' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'enum' => [
+                                            10,
+                                            20,
+                                            30,
+                                        ],
+                                    ],
+                                ],
+                                'taken' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'enum' => [
+                                            10,
+                                            20,
+                                            30,
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'min',
@@ -4692,6 +4768,8 @@ class EloquentQueryController
                                 'doesntContain',
                                 'join',
                                 'keys',
+                                'filteredValues',
+                                'taken',
                             ],
                         ],
                     ],
@@ -4711,6 +4789,8 @@ class EloquentQueryController
             'doesntContain' => $prices->doesntContain(5),
             'join' => $prices->join(', '),
             'keys' => $prices->keys(),
+            'filteredValues' => $prices->filter(fn ($price) => $price > 10)->values(),
+            'taken' => $prices->take(2),
         ]);
     }
 
@@ -6475,6 +6555,13 @@ class EloquentQueryController
                                         'format' => 'float',
                                     ],
                                 ],
+                                'idKeyedPluck' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'number',
+                                        'format' => 'float',
+                                    ],
+                                ],
                                 'qualifiedColumn' => [
                                     'type' => 'array',
                                     'items' => [
@@ -6547,6 +6634,7 @@ class EloquentQueryController
                                 'foreignTable',
                                 'jsonPath',
                                 'keyedPluck',
+                                'idKeyedPluck',
                                 'columnsOnFirst',
                                 'columnsOnFind',
                                 'selectWinsOverFinisher',
@@ -6567,6 +6655,7 @@ class EloquentQueryController
             'foreignTable' => Planet::query()->select('rockets.name')->get(),
             'jsonPath' => Planet::query()->select('name', 'payload->engine->model')->get(),
             'keyedPluck' => Planet::query()->pluck('diameter', 'name'),
+            'idKeyedPluck' => Planet::query()->pluck('diameter', 'id'),
             'columnsOnFirst' => Planet::query()->first(['id', 'name']),
             'columnsOnFind' => Planet::query()->find(1, ['diameter']),
             'selectWinsOverFinisher' => Planet::query()->select('id')->first(['name', 'diameter']),

@@ -41,7 +41,7 @@ trait DotNotationParser
             return;
         }
 
-        if ($segments[0] === '*') {
+        if ($segments[0] === '*' || ctype_digit($segments[0])) {
             $nullable = false;
 
             if (! isset($structure[$segment])) {

@@ -20,6 +20,7 @@ class CollectCall extends FuncCallExtension
                 $collectedType = $call->argTypes->get(0);
 
                 if ($collectedType instanceof ArrayType) {
+                    $collectedType = clone $collectedType;
                     $collectedType->className = Collection::class;
 
                     return $collectedType->convertShapeToTypePair($call->scope->config);

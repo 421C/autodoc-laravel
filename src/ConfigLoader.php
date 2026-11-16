@@ -40,6 +40,8 @@ class ConfigLoader
                 \AutoDoc\Laravel\Extensions\ValidationRuleStaticCall::class,
                 \AutoDoc\Laravel\Extensions\EloquentModel::class,
                 \AutoDoc\Laravel\Extensions\CollectCall::class,
+                \AutoDoc\Laravel\Extensions\ArrStaticCall::class,
+                \AutoDoc\Laravel\Extensions\DataGetCall::class,
                 \AutoDoc\Laravel\Extensions\CustomFormRequest::class,
                 \AutoDoc\Laravel\Extensions\ResourceCollectionJson::class,
                 \AutoDoc\Laravel\Extensions\ResourceJson::class,

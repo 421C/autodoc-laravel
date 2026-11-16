@@ -3,6 +3,7 @@
 namespace AutoDoc\Laravel\QueryBuilder;
 
 use AutoDoc\Analyzer\ArgumentList;
+use AutoDoc\Analyzer\IntKeyOrder;
 use AutoDoc\Analyzer\Scope;
 use AutoDoc\DataTypes\ArrayType;
 use AutoDoc\DataTypes\BoolType;
@@ -78,10 +79,13 @@ final class QueryResultType
         }
 
         if (in_array($methodName, ['get', 'all', 'pluck'], true)) {
+            $keyType = $methodName === 'pluck' ? $this->rowShape->getPluckedKeyType() : null;
+
             return new ArrayType(
                 itemType: $rowType,
-                keyType: $methodName === 'pluck' ? $this->rowShape->getPluckedKeyType() : null,
+                keyType: $keyType,
                 className: Collection::class,
+                intKeyOrder: $keyType === null ? IntKeyOrder::Sequential : IntKeyOrder::NonSequential,
             );
         }
 

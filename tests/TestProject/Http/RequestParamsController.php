@@ -374,6 +374,17 @@ class RequestParamsController
                                     ],
                                 ],
                             ],
+                            'contacts' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'email' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                ],
+                            ],
                             'items' => [
                                 'type' => 'array',
                                 'items' => [
@@ -413,6 +424,7 @@ class RequestParamsController
         request()->integer('user.age');
         request()->boolean('items.*.active');
         request()->array(['address.city', 'address.zip']);
+        request()->string('contacts.0.email');
     }
 
 
