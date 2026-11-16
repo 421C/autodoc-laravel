@@ -2,7 +2,6 @@
 
 namespace AutoDoc\Laravel\Extensions;
 
-use AutoDoc\Analyzer\ArgumentList;
 use AutoDoc\Analyzer\IntKeyOrder;
 use AutoDoc\Config;
 use AutoDoc\DataTypes\ArrayType;
@@ -10,13 +9,12 @@ use AutoDoc\DataTypes\CallableType;
 use AutoDoc\DataTypes\IntegerType;
 use AutoDoc\DataTypes\NeverType;
 use AutoDoc\DataTypes\NullType;
-use AutoDoc\DataTypes\ObjectType;
 use AutoDoc\DataTypes\StringType;
 use AutoDoc\DataTypes\Type;
-use AutoDoc\DataTypes\UnionType;
 use AutoDoc\DataTypes\UnknownType;
 use AutoDoc\Extensions\StaticCallContext;
 use AutoDoc\Extensions\StaticCallExtension;
+use AutoDoc\Laravel\Helpers\ReadsDataPath;
 use Closure;
 use Illuminate\Support\Arr;
 use PhpParser\Node\Arg;
@@ -24,8 +22,7 @@ use PhpParser\Node\Expr\Array_;
 
 class ArrStaticCall extends StaticCallExtension
 {
-    private const UNSUPPORTED_DATA_GET_SEGMENTS = ['*', '{first}', '{last}', '\*', '\{first}', '\{last}'];
-
+    use ReadsDataPath;
 
     public function getReturnType(StaticCallContext $call): ?Type
     {
@@ -403,24 +400,7 @@ class ArrStaticCall extends StaticCallExtension
             return $this->invoke($call, $retriever, $item);
         }
 
-        $config = $call->scope->config;
-        $paths = $retriever ? $this->literalValues($retriever, $config) : null;
-
-        if ($paths === null) {
-            return new UnknownType;
-        }
-
-        $results = [];
-
-        foreach ($paths as $path) {
-            $segments = explode('.', (string) $path);
-
-            $results[] = array_intersect($segments, self::UNSUPPORTED_DATA_GET_SEGMENTS)
-                ? new UnknownType
-                : $this->readPath($item[0], $segments, new NullType, $config);
-        }
-
-        return $this->union($results, $config);
+        return $this->readDataPath($item[0], $retriever, new NullType, $call->scope->config);
     }
 
 
@@ -460,58 +440,6 @@ class ArrStaticCall extends StaticCallExtension
         }
 
         return $this->union($results, $config);
-    }
-
-
-    /**
-     * @param list<int|string> $segments
-     */
-    private function readPath(Type $target, array $segments, Type $default, Config $config): Type
-    {
-        $segment = array_shift($segments);
-
-        if ($segment === null) {
-            return clone $target;
-        }
-
-        $results = [];
-
-        foreach ($this->variants($target, $config) as $variant) {
-            [$value, $mayBeMissing] = $this->readSegment($variant, $segment);
-
-            if ($value) {
-                $results[] = $this->readPath($value, $segments, $default, $config);
-            }
-
-            if ($mayBeMissing) {
-                $results[] = $default;
-            }
-        }
-
-        return $this->union($results, $config);
-    }
-
-
-    /**
-     * @return array{?Type, bool}
-     */
-    private function readSegment(Type $target, int|string $segment): array
-    {
-        if ($target instanceof ArrayType) {
-            if (! $target->shape) {
-                return [$target->itemType ?? new UnknownType, true];
-            }
-
-            $value = $target->shape[$segment] ?? null;
-
-            return [$value, $value === null || ! $value->required];
-        }
-
-        if ($target instanceof ObjectType || $target instanceof UnknownType) {
-            return [new UnknownType, false];
-        }
-
-        return [null, true];
     }
 
 
@@ -676,38 +604,6 @@ class ArrStaticCall extends StaticCallExtension
     }
 
 
-    private function defaultValue(StaticCallContext $call, int $position): Type
-    {
-        $default = $this->argument($call, 'default', $position);
-
-        if ($default instanceof CallableType) {
-            return $this->invoke($call, $default, []);
-        }
-
-        return $default ?? new NullType;
-    }
-
-
-    /**
-     * @param list<Type> $args
-     */
-    private function invoke(StaticCallContext $call, CallableType $callback, array $args): Type
-    {
-        return $callback->getReturnType(
-            args: ArgumentList::fromTypes($args, $call->scope),
-            callerNode: $call->node,
-        );
-    }
-
-
-    private function argument(StaticCallContext $call, string $name, int $position): ?Type
-    {
-        $index = $call->argTypes->indexForParameter($name, $position);
-
-        return $index === null ? null : $call->argTypes->get($index)->unwrapType($call->scope->config);
-    }
-
-
     /**
      * @return ?array<int|string, bool>
      */
@@ -768,55 +664,8 @@ class ArrStaticCall extends StaticCallExtension
     }
 
 
-    /**
-     * @return ?list<int|string>
-     */
-    private function literalValues(Type $type, Config $config): ?array
-    {
-        $values = [];
-
-        foreach ($this->variants($type, $config) as $variant) {
-            $possibleValues = $variant instanceof StringType || $variant instanceof IntegerType
-                ? $variant->getPossibleValues()
-                : null;
-
-            if (! $possibleValues) {
-                return null;
-            }
-
-            array_push($values, ...$possibleValues);
-        }
-
-        return $values;
-    }
-
-
     private function literalKeyType(int|string $key): Type
     {
         return is_int($key) ? new IntegerType($key) : new StringType($key);
-    }
-
-
-    /**
-     * @return list<Type>
-     */
-    private function variants(?Type $type, Config $config): array
-    {
-        $type = $type?->unwrapType($config);
-
-        if ($type instanceof UnionType) {
-            return array_values(array_map(fn (Type $variant) => $variant->unwrapType($config), $type->types));
-        }
-
-        return $type ? [$type] : [];
-    }
-
-
-    /**
-     * @param list<Type> $types
-     */
-    private function union(array $types, Config $config): Type
-    {
-        return new UnionType($types)->unwrapType($config);
     }
 }

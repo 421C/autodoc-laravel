@@ -573,6 +573,10 @@ class ArrHelperController
                                         ],
                                     ],
                                 ],
+                                'dataGet' => [
+                                    'type' => 'integer',
+                                    'const' => 1610,
+                                ],
                             ],
                             'required' => [
                                 'get',
@@ -580,6 +584,7 @@ class ArrHelperController
                                 'pluck',
                                 'pluckKeyed',
                                 'keyBy',
+                                'dataGet',
                             ],
                         ],
                     ],
@@ -598,6 +603,7 @@ class ArrHelperController
             'pluck' => Arr::pluck($rows, 'name'),
             'pluckKeyed' => Arr::pluck($rows, 'name', 'id'),
             'keyBy' => Arr::keyBy($rows, 'id'),
+            'dataGet' => data_get($planet, 'meta.discovered'),
         ];
     }
 
