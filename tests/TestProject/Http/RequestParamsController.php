@@ -148,12 +148,15 @@ class RequestParamsController
                     'application/json' => [
                         'schema' => [
                             'type' => 'object',
-                            'additionalProperties' => [
-                                'type' => [
-                                    'string',
-                                    'boolean',
+                            'properties' => [
+                                'required' => [
+                                    'type' => 'boolean',
                                 ],
                             ],
+                            'required' => [
+                                'required',
+                            ],
+                            'additionalProperties' => true,
                         ],
                     ],
                 ],

@@ -184,14 +184,14 @@ class Relation
      */
     private function parseGenericReturnTag(): ?array
     {
-        $phpDocReturnType = $this->modelPhpClass->getMethod($this->name)->getTypeFromPhpDocReturnTag();
+        $returnTypeNode = $this->modelPhpClass->getMethod($this->name)->getTypeFromPhpDocReturnTag()?->typeNode;
 
-        if (! $phpDocReturnType || ! ($phpDocReturnType->typeNode instanceof GenericTypeNode)) {
+        if (! ($returnTypeNode instanceof GenericTypeNode) || ! ($returnTypeNode->type instanceof IdentifierTypeNode)) {
             return null;
         }
 
-        $relationTypeClassName = $this->modelPhpClass->scope->getResolvedClassName($phpDocReturnType->typeNode->type->name);
-        $firstGenericType = $phpDocReturnType->typeNode->genericTypes[0] ?? null;
+        $relationTypeClassName = $this->modelPhpClass->scope->getResolvedClassName($returnTypeNode->type->name);
+        $firstGenericType = $returnTypeNode->genericTypes[0] ?? null;
 
         if (! ($firstGenericType instanceof IdentifierTypeNode) || ! self::kindOf($relationTypeClassName)) {
             return [$relationTypeClassName, null];

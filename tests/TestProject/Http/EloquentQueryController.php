@@ -1984,7 +1984,7 @@ class EloquentQueryController
         return response()->json(
             Planet::query()
                 ->with([
-                    'spaceStations:name,description' => fn ($query) => $query->where('id', '>', 1),
+                    'spaceStations:name,description',
                     'spaceStations.rockets',
                 ])
                 ->get()
@@ -7196,7 +7196,7 @@ class EloquentQueryController
         $planet = Planet::findOrFail(1);
 
         $planet->loadMissing([
-            'spaceStations:id,name' => fn ($query) => $query->where('id', '>', 1),
+            'spaceStations:id,name',
             'spaceStations.rockets',
         ]);
 
@@ -8697,6 +8697,7 @@ class EloquentQueryController
         return [
             'replacedDefault' => EagerPlanet::query()->withOnly('spaceStations')->get(),
             'removedDefault' => EagerPlanet::query()->without('rockets')->get(),
+            // @phpstan-ignore larastan.relationExistence (withWhereHas() parses the selected columns also when given a callback)
             'constrainedExistence' => Planet::query()
                 ->withWhereHas('spaceStations:id,name', fn ($query) => $query->where('size', 'big'))
                 ->get(),
