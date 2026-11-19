@@ -311,7 +311,18 @@ class RequestParamsController
                                 'tags' => [
                                     'type' => 'array',
                                     'items' => [
-                                        'type' => 'string',
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'object',
+                                                'additionalProperties' => [
+                                                    'type' => 'string',
+                                                    'description' => 'TValue',
+                                                ],
+                                            ],
+                                            [
+                                                'type' => 'string',
+                                            ],
+                                        ],
                                     ],
                                 ],
                                 'states' => [

@@ -1110,6 +1110,22 @@ class ArrHelperController
                                         ],
                                     ],
                                 ],
+                                'mapWithKeysByIntId' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'additionalProperties' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'map',
@@ -1119,6 +1135,7 @@ class ArrHelperController
                                 'mapList',
                                 'mapOpen',
                                 'mapWithKeysOpen',
+                                'mapWithKeysByIntId',
                             ],
                         ],
                     ],
@@ -1136,6 +1153,7 @@ class ArrHelperController
             'mapList' => Arr::map($this->moonCounts, fn (int $moons) => (string) $moons),
             'mapOpen' => Arr::map(['total' => 2, ...$this->planetsByName], fn (mixed $value, string $key) => $key),
             'mapWithKeysOpen' => Arr::mapWithKeys($this->rows(), fn (array $row) => [...$this->planetsByName, 'total' => $row['id']]),
+            'mapWithKeysByIntId' => Arr::mapWithKeys($this->rowsWithIntIds(), fn (array $row) => [$row['id'] => $row['name']]),
         ];
     }
 
@@ -1155,5 +1173,14 @@ class ArrHelperController
     private function rows(): array
     {
         return [['id' => 1, 'name' => 'Mars'], ['id' => 2, 'name' => 'Venus']];
+    }
+
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function rowsWithIntIds(): array
+    {
+        return [['id' => 4, 'name' => 'Mars'], ['id' => 7, 'name' => 'Venus']];
     }
 }

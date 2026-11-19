@@ -1319,6 +1319,22 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'mapWithKeysByIntId' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'additionalProperties' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'first',
@@ -1326,6 +1342,7 @@ class EloquentQueryController
                                 'pluckId',
                                 'mapId',
                                 'mapWithKeys',
+                                'mapWithKeysByIntId',
                             ],
                         ],
                     ],
@@ -1352,7 +1369,17 @@ class EloquentQueryController
             'pluckId' => collect($array)->pluck('id'),
             'mapId' => collect($array)->map(fn ($item) => $item['id']),
             'mapWithKeys' => collect($array)->mapWithKeys(fn ($item) => [$item['name'] => $item['id']]),
+            'mapWithKeysByIntId' => collect($this->rowsWithIntIds())->mapWithKeys(fn ($item) => [$item['id'] => $item['name']]),
         ];
+    }
+
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function rowsWithIntIds(): array
+    {
+        return [['id' => 4, 'name' => 'jānis'], ['id' => 7, 'name' => 'bānis']];
     }
 
 
@@ -5828,6 +5855,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelEachCallbackSameClassReassignmentIgnored(): mixed
@@ -6274,49 +6304,6 @@ class EloquentQueryController
                                 ],
                                 'eitherBranch' => [
                                     'anyOf' => [
-                                        [
-                                            'type' => 'array',
-                                            'items' => [
-                                                'type' => 'object',
-                                                'properties' => [
-                                                    'created_at' => [
-                                                        'type' => [
-                                                            'string',
-                                                            'null',
-                                                        ],
-                                                        'format' => 'date-time',
-                                                    ],
-                                                    'diameter' => [
-                                                        'type' => 'number',
-                                                        'format' => 'float',
-                                                    ],
-                                                    'id' => [
-                                                        'type' => 'integer',
-                                                    ],
-                                                    'name' => [
-                                                        'type' => 'string',
-                                                    ],
-                                                    'updated_at' => [
-                                                        'type' => [
-                                                            'string',
-                                                            'null',
-                                                        ],
-                                                        'format' => 'date-time',
-                                                    ],
-                                                    'visited' => [
-                                                        'type' => 'boolean',
-                                                    ],
-                                                ],
-                                                'required' => [
-                                                    'id',
-                                                    'name',
-                                                    'diameter',
-                                                    'visited',
-                                                    'created_at',
-                                                    'updated_at',
-                                                ],
-                                            ],
-                                        ],
                                         [
                                             'type' => 'array',
                                             'items' => [
