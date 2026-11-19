@@ -64,7 +64,7 @@ trait ReadsDataPath
         $results = [];
 
         foreach ($this->variants($target, $config) as $variant) {
-            [$value, $mayBeMissing] = $this->readSegment($variant, $segment);
+            [$value, $mayBeMissing] = $this->readSegment($variant, $segment, $config);
 
             if ($value) {
                 $results[] = $this->readPath($value, $segments, $default, $config);
@@ -82,16 +82,20 @@ trait ReadsDataPath
     /**
      * @return array{?Type, bool}
      */
-    protected function readSegment(Type $target, int|string $segment): array
+    protected function readSegment(Type $target, int|string $segment, Config $config): array
     {
         if ($target instanceof ArrayType) {
-            if (! $target->shape) {
-                return [$target->itemType ?? new UnknownType, true];
+            if ($target->shape === [] && ! $target->hasEntriesOutsideShape()) {
+                return [new UnknownType, true];
             }
 
-            $value = $target->shape[$segment] ?? null;
+            $key = $this->asArrayKey($segment);
+            $knownValue = $target->shape[$key] ?? null;
 
-            return [$value, $value === null || ! $value->required];
+            return [
+                $knownValue ?? $target->getTypeOfEntryOutsideShapeAt($key, $config),
+                $knownValue === null || ! $knownValue->required,
+            ];
         }
 
         if ($target instanceof ObjectType || $target instanceof UnknownType) {
@@ -99,6 +103,12 @@ trait ReadsDataPath
         }
 
         return [null, true];
+    }
+
+
+    private function asArrayKey(int|string $segment): int|string
+    {
+        return array_key_first([$segment => null]);
     }
 
 

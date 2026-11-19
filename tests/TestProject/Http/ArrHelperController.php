@@ -23,6 +23,8 @@ class ArrHelperController
         private array $planetsByName,
         /** @var non-empty-list<int> */
         private array $moonCounts,
+        /** @var list{int, ...<int|null>} */
+        private array $rankedIds,
     ) {}
 
 
@@ -112,6 +114,60 @@ class ArrHelperController
                                         ],
                                     ],
                                 ],
+                                'whereNotNullOpenList' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                0 => [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                '0',
+                                            ],
+                                            'additionalProperties' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'whereOpenList' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                0 => [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                            'additionalProperties' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'whereOpenNever' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                            'const' => 'Mars',
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'whereNotNull',
@@ -119,6 +175,9 @@ class ArrHelperController
                                 'whereNotNullMixed',
                                 'whereNotNullMixedList',
                                 'where',
+                                'whereNotNullOpenList',
+                                'whereOpenList',
+                                'whereOpenNever',
                             ],
                         ],
                     ],
@@ -136,6 +195,9 @@ class ArrHelperController
             'whereNotNullMixed' => Arr::whereNotNull(['theme' => 'dark', 'nickname' => $this->nickname]),
             'whereNotNullMixedList' => Arr::whereNotNull($this->values),
             'where' => Arr::where(['moons' => 2, 'name' => 'Mars'], fn ($value) => is_int($value)),
+            'whereNotNullOpenList' => Arr::whereNotNull($this->rankedIds),
+            'whereOpenList' => Arr::where($this->rankedIds, fn ($value) => is_int($value)),
+            'whereOpenNever' => Arr::where(['name' => 'Mars', ...$this->planetsByName], fn ($value) => is_string($value)),
         ];
     }
 
@@ -463,6 +525,122 @@ class ArrHelperController
                                         'meta',
                                     ],
                                 ],
+                                'onlyOpen' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                            'const' => 'Mars',
+                                        ],
+                                        'Venus' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'id' => [
+                                                    'type' => 'integer',
+                                                ],
+                                                'name' => [
+                                                    'type' => 'string',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'id',
+                                                'name',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'name',
+                                    ],
+                                ],
+                                'exceptOpenList' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => [
+                                                    'integer',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                0 => [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                '0',
+                                            ],
+                                            'additionalProperties' => [
+                                                'type' => [
+                                                    'integer',
+                                                    'null',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'exceptPathInOpenMap' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'total' => [
+                                            'type' => 'integer',
+                                            'const' => 2,
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'total',
+                                    ],
+                                    'additionalProperties' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'name' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'name',
+                                        ],
+                                    ],
+                                ],
+                                'onlyOpenKeyList' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'name' => [
+                                            'type' => 'string',
+                                            'const' => 'Mars',
+                                        ],
+                                        'moons' => [
+                                            'type' => 'integer',
+                                            'const' => 2,
+                                        ],
+                                        'meta' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'discovered' => [
+                                                    'type' => 'integer',
+                                                    'const' => 1610,
+                                                ],
+                                                'notes' => [
+                                                    'type' => 'string',
+                                                    'const' => 'red',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'discovered',
+                                                'notes',
+                                            ],
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'meta',
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'only',
@@ -473,6 +651,10 @@ class ArrHelperController
                                 'onlyListed',
                                 'exceptListed',
                                 'exceptOneOf',
+                                'onlyOpen',
+                                'exceptOpenList',
+                                'exceptPathInOpenMap',
+                                'onlyOpenKeyList',
                             ],
                         ],
                     ],
@@ -493,6 +675,10 @@ class ArrHelperController
             'onlyListed' => Arr::only($planet, $this->fields),
             'exceptListed' => Arr::except($planet, $this->fields),
             'exceptOneOf' => Arr::except($planet, $this->compact ? 'name' : 'moons'),
+            'onlyOpen' => Arr::only([...$this->planetsByName, 'name' => 'Mars'], ['name', 'Venus']),
+            'exceptOpenList' => Arr::except($this->rankedIds, [1]),
+            'exceptPathInOpenMap' => Arr::except([...$this->planetsByName, 'total' => 2], 'Venus.id'),
+            'onlyOpenKeyList' => Arr::only($planet, ['first' => 'meta', ...$this->fields]),
         ];
     }
 
@@ -577,6 +763,18 @@ class ArrHelperController
                                     'type' => 'integer',
                                     'const' => 1610,
                                 ],
+                                'dataGetOpen' => [
+                                    'type' => [
+                                        'string',
+                                        'null',
+                                    ],
+                                ],
+                                'dataGetOpenListIndex' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'get',
@@ -585,6 +783,8 @@ class ArrHelperController
                                 'pluckKeyed',
                                 'keyBy',
                                 'dataGet',
+                                'dataGetOpen',
+                                'dataGetOpenListIndex',
                             ],
                         ],
                     ],
@@ -604,6 +804,8 @@ class ArrHelperController
             'pluckKeyed' => Arr::pluck($rows, 'name', 'id'),
             'keyBy' => Arr::keyBy($rows, 'id'),
             'dataGet' => data_get($planet, 'meta.discovered'),
+            'dataGetOpen' => data_get([...$this->planetsByName, 'total' => 2], 'Venus.name'),
+            'dataGetOpenListIndex' => data_get($this->rankedIds, '1'),
         ];
     }
 
@@ -652,12 +854,62 @@ class ArrHelperController
                                     'minItems' => 1,
                                     'maxItems' => 1,
                                 ],
+                                'firstOfOpen' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'integer',
+                                            'const' => 2,
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'id' => [
+                                                    'type' => 'integer',
+                                                ],
+                                                'name' => [
+                                                    'type' => 'string',
+                                                ],
+                                            ],
+                                            'required' => [
+                                                'id',
+                                                'name',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'lastOfOpenMatching' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'name' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'name',
+                                    ],
+                                ],
+                                'firstOfOpenList' => [
+                                    'type' => [
+                                        'integer',
+                                        'null',
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'first',
                                 'last',
                                 'firstMatching',
                                 'wrap',
+                                'firstOfOpen',
+                                'lastOfOpenMatching',
+                                'firstOfOpenList',
                             ],
                         ],
                     ],
@@ -672,6 +924,9 @@ class ArrHelperController
             'last' => Arr::last($this->ids, default: 0),
             'firstMatching' => Arr::first(['name' => 'Mars', 'moons' => 2], fn ($value) => is_int($value)),
             'wrap' => Arr::wrap('Mars'),
+            'firstOfOpen' => Arr::first([...$this->planetsByName, 'total' => 2]),
+            'lastOfOpenMatching' => Arr::last([...$this->planetsByName, 'total' => 2], fn ($value) => is_array($value)),
+            'firstOfOpenList' => Arr::first($this->rankedIds),
         ];
     }
 
@@ -811,6 +1066,66 @@ class ArrHelperController
                                     ],
                                     'minItems' => 1,
                                 ],
+                                'mapOpen' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'total' => [
+                                            'type' => 'string',
+                                            'const' => 'total',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'total',
+                                    ],
+                                    'additionalProperties' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'mapWithKeysOpen' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'integer',
+                                                'enum' => [
+                                                    1,
+                                                    2,
+                                                ],
+                                            ],
+                                            [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'id' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                ],
+                                                'required' => [
+                                                    'id',
+                                                    'name',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'mapWithKeysByIntId' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'additionalProperties' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'map',
@@ -818,6 +1133,9 @@ class ArrHelperController
                                 'sortRecursive',
                                 'sortRecursiveNestedList',
                                 'mapList',
+                                'mapOpen',
+                                'mapWithKeysOpen',
+                                'mapWithKeysByIntId',
                             ],
                         ],
                     ],
@@ -833,6 +1151,9 @@ class ArrHelperController
             'sortRecursive' => Arr::sortRecursive($this->planet()),
             'sortRecursiveNestedList' => Arr::sortRecursive(['tags' => ['red', 'dusty']]),
             'mapList' => Arr::map($this->moonCounts, fn (int $moons) => (string) $moons),
+            'mapOpen' => Arr::map(['total' => 2, ...$this->planetsByName], fn (mixed $value, string $key) => $key),
+            'mapWithKeysOpen' => Arr::mapWithKeys($this->rows(), fn (array $row) => [...$this->planetsByName, 'total' => $row['id']]),
+            'mapWithKeysByIntId' => Arr::mapWithKeys($this->rowsWithIntIds(), fn (array $row) => [$row['id'] => $row['name']]),
         ];
     }
 
@@ -852,5 +1173,14 @@ class ArrHelperController
     private function rows(): array
     {
         return [['id' => 1, 'name' => 'Mars'], ['id' => 2, 'name' => 'Venus']];
+    }
+
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function rowsWithIntIds(): array
+    {
+        return [['id' => 4, 'name' => 'Mars'], ['id' => 7, 'name' => 'Venus']];
     }
 }

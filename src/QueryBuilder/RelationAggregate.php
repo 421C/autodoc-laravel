@@ -271,8 +271,8 @@ final class RelationAggregate
             }
         }
 
-        if (! $type->shape && $type->itemType) {
-            $values = self::stringValuesIn($type->itemType, $scope);
+        if ($type->itemType) {
+            $values = [...$values, ...self::stringValuesIn($type->itemType, $scope)];
         }
 
         return $values;

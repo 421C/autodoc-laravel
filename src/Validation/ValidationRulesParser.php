@@ -93,7 +93,73 @@ trait ValidationRulesParser
         /** @var ObjectType|ArrayType */
         $result = $this->checkRequiredContainerTypes($resultType);
 
+        $this->applyWildcardRulesToListedKeys($result);
+
         return $result;
+    }
+
+
+    private function applyWildcardRulesToListedKeys(Type $type): void
+    {
+        if ($type instanceof UnionType) {
+            $nestedTypes = $type->types;
+
+        } else if ($type instanceof ObjectType) {
+            $nestedTypes = array_values($type->properties);
+
+        } else if ($type instanceof ArrayType) {
+            if ($type->itemType instanceof ArrayType) {
+                foreach ($type->shape as $listedType) {
+                    $this->mergeWildcardRules($listedType, $type->itemType);
+                }
+            }
+
+            $nestedTypes = array_values($type->shape);
+
+            if ($type->itemType !== null) {
+                $nestedTypes[] = $type->itemType;
+            }
+
+        } else {
+            return;
+        }
+
+        foreach ($nestedTypes as $nestedType) {
+            $this->applyWildcardRulesToListedKeys($nestedType);
+        }
+    }
+
+
+    private function mergeWildcardRules(Type $listedType, ArrayType $wildcardType): void
+    {
+        $listedVariants = $listedType instanceof UnionType ? $listedType->types : [$listedType];
+
+        foreach ($listedVariants as $listedArray) {
+            if (! $listedArray instanceof ArrayType) {
+                continue;
+            }
+
+            foreach ($wildcardType->shape as $key => $wildcardEntryType) {
+                if (! isset($listedArray->shape[$key])) {
+                    $listedArray->shape[$key] = $wildcardEntryType->deepClone();
+
+                } else if ($wildcardEntryType instanceof ArrayType) {
+                    $this->mergeWildcardRules($listedArray->shape[$key], $wildcardEntryType);
+                }
+            }
+
+            if ($wildcardType->itemType === null) {
+                continue;
+            }
+
+            if ($listedArray->itemType === null) {
+                $listedArray->itemType = $wildcardType->itemType->deepClone();
+                $listedArray->keyType = $wildcardType->keyType?->deepClone();
+
+            } else if ($wildcardType->itemType instanceof ArrayType) {
+                $this->mergeWildcardRules($listedArray->itemType, $wildcardType->itemType);
+            }
+        }
     }
 
 
@@ -122,14 +188,15 @@ trait ValidationRulesParser
                     $paramType = $this->getTypeFromRules(explode('|', $value->value), $scope);
                 }
 
-            } else if ($value instanceof ArrayType && $value->itemType) {
-                $resolvedItemType = $value->itemType->unwrapType($scope->config);
+            } else if ($value instanceof ArrayType) {
+                $entryType = $value->getTypeOfEveryEntry($scope->config);
+                $resolvedItemType = $entryType->unwrapType($scope->config);
 
                 if ($resolvedItemType instanceof UnionType) {
                     $typesInArray = $resolvedItemType->types;
 
                 } else {
-                    $typesInArray = [$value->itemType];
+                    $typesInArray = [$entryType];
                 }
 
                 $rules = [];
@@ -170,8 +237,7 @@ trait ValidationRulesParser
                 }
             }
 
-            $paramType->addDescription($value->description);
-            $paramType->examples = $paramType->examples ?: $value->examples;
+            $paramType->inheritDocumentationFrom($value);
         }
 
         return $paramType;
@@ -259,12 +325,14 @@ trait ValidationRulesParser
                         if ($rule->args !== null && $rule->args->has(0)) {
                             $arrayType = $scope->withScalarTypeValuesShown(fn () => $rule->args->get(0)->unwrapType($scope->config));
 
-                            if ($arrayType instanceof ArrayType && $arrayType->itemType) {
-                                if ($arrayType->itemType instanceof UnionType) {
-                                    $allowedValueTypes = $arrayType->itemType->types;
+                            if ($arrayType instanceof ArrayType) {
+                                $entryType = $arrayType->getTypeOfEveryEntry($scope->config);
+
+                                if ($entryType instanceof UnionType) {
+                                    $allowedValueTypes = $entryType->types;
 
                                 } else {
-                                    $allowedValueTypes = [$arrayType->itemType];
+                                    $allowedValueTypes = [$entryType];
                                 }
 
                                 $isStringType = false;

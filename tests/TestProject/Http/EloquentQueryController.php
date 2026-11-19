@@ -28,6 +28,16 @@ use stdClass;
  */
 class EloquentQueryController
 {
+    public function __construct(
+        /** @var array<string, int> */
+        private array $moonCountsByName,
+        /** @var list<'rockets'> */
+        private array $relationNames,
+        /** @var list<array{id: int, name?: string}> */
+        private array $rowsWithOptionalName,
+    ) {}
+
+
     /**
      * Query builder with select
      */
@@ -1309,6 +1319,22 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'mapWithKeysByIntId' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                        [
+                                            'type' => 'object',
+                                            'additionalProperties' => [
+                                                'type' => 'string',
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'first',
@@ -1316,6 +1342,7 @@ class EloquentQueryController
                                 'pluckId',
                                 'mapId',
                                 'mapWithKeys',
+                                'mapWithKeysByIntId',
                             ],
                         ],
                     ],
@@ -1342,6 +1369,160 @@ class EloquentQueryController
             'pluckId' => collect($array)->pluck('id'),
             'mapId' => collect($array)->map(fn ($item) => $item['id']),
             'mapWithKeys' => collect($array)->mapWithKeys(fn ($item) => [$item['name'] => $item['id']]),
+            'mapWithKeysByIntId' => collect($this->rowsWithIntIds())->mapWithKeys(fn ($item) => [$item['id'] => $item['name']]),
+        ];
+    }
+
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function rowsWithIntIds(): array
+    {
+        return [['id' => 4, 'name' => 'jānis'], ['id' => 7, 'name' => 'bānis']];
+    }
+
+
+    #[ExpectedOperationSchema([
+        'responses' => [
+            200 => [
+                'description' => '',
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'firstOfClosed' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'integer',
+                                            'const' => 1,
+                                        ],
+                                        [
+                                            'type' => 'boolean',
+                                        ],
+                                        [
+                                            'type' => 'null',
+                                        ],
+                                    ],
+                                ],
+                                'soleOfOpen' => [
+                                    'anyOf' => [
+                                        [
+                                            'type' => 'string',
+                                            'const' => 'Moons',
+                                        ],
+                                        [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                ],
+                                'mapWithKeysOfOpen' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'string',
+                                                'const' => 'Moons',
+                                            ],
+                                            [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'pluckOfClosed' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'integer',
+                                        'const' => 1,
+                                    ],
+                                ],
+                                'pluckOfOpenRows' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => [
+                                            'integer',
+                                            'null',
+                                        ],
+                                    ],
+                                ],
+                                'pluckOfOptionalKey' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => [
+                                            'string',
+                                            'null',
+                                        ],
+                                    ],
+                                ],
+                                'eachResultOfClosed' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'checked' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'checked',
+                                        ],
+                                    ],
+                                ],
+                                'eachReceiverOfClosed' => [
+                                    'type' => 'object',
+                                    'additionalProperties' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'checked' => [
+                                                'type' => 'boolean',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'checked',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'required' => [
+                                'firstOfClosed',
+                                'soleOfOpen',
+                                'mapWithKeysOfOpen',
+                                'pluckOfClosed',
+                                'pluckOfOpenRows',
+                                'pluckOfOptionalKey',
+                                'eachResultOfClosed',
+                                'eachReceiverOfClosed',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ])]
+    public function collectionMethodsOnShapes(): mixed
+    {
+        $closed = collect([1])->mapWithKeys(fn () => ['id' => 1, 'active' => true]);
+        $open = collect([1])->mapWithKeys(fn () => ['label' => 'Moons', ...$this->moonCountsByName]);
+        $closedRows = collect([1])->mapWithKeys(fn () => ['first' => ['id' => 1]]);
+        $openRows = collect([['label' => 'Moons', ...$this->moonCountsByName]]);
+        $objects = collect([1])->mapWithKeys(fn () => ['planet' => new stdClass]);
+        $checkObject = function ($object) {
+            $object->checked = true;
+        };
+
+        $objects->each($checkObject);
+
+        return [
+            'firstOfClosed' => $closed->first(),
+            'soleOfOpen' => $open->sole(),
+            'mapWithKeysOfOpen' => $open->mapWithKeys(fn ($value, $key) => [$key => $value]),
+            'pluckOfClosed' => $closedRows->pluck('id'),
+            'pluckOfOpenRows' => $openRows->pluck('io'),
+            'pluckOfOptionalKey' => collect($this->rowsWithOptionalName)->pluck('name'),
+            'eachResultOfClosed' => collect([1])->mapWithKeys(fn () => ['planet' => new stdClass])->each($checkObject),
+            'eachReceiverOfClosed' => $objects,
         ];
     }
 
@@ -1984,7 +2165,7 @@ class EloquentQueryController
         return response()->json(
             Planet::query()
                 ->with([
-                    'spaceStations:name,description' => fn ($query) => $query->where('id', '>', 1),
+                    'spaceStations:name,description',
                     'spaceStations.rockets',
                 ])
                 ->get()
@@ -5674,6 +5855,9 @@ class EloquentQueryController
                     ],
                 ],
             ],
+            404 => [
+                'description' => '',
+            ],
         ],
     ])]
     public function modelEachCallbackSameClassReassignmentIgnored(): mixed
@@ -6120,49 +6304,6 @@ class EloquentQueryController
                                 ],
                                 'eitherBranch' => [
                                     'anyOf' => [
-                                        [
-                                            'type' => 'array',
-                                            'items' => [
-                                                'type' => 'object',
-                                                'properties' => [
-                                                    'created_at' => [
-                                                        'type' => [
-                                                            'string',
-                                                            'null',
-                                                        ],
-                                                        'format' => 'date-time',
-                                                    ],
-                                                    'diameter' => [
-                                                        'type' => 'number',
-                                                        'format' => 'float',
-                                                    ],
-                                                    'id' => [
-                                                        'type' => 'integer',
-                                                    ],
-                                                    'name' => [
-                                                        'type' => 'string',
-                                                    ],
-                                                    'updated_at' => [
-                                                        'type' => [
-                                                            'string',
-                                                            'null',
-                                                        ],
-                                                        'format' => 'date-time',
-                                                    ],
-                                                    'visited' => [
-                                                        'type' => 'boolean',
-                                                    ],
-                                                ],
-                                                'required' => [
-                                                    'id',
-                                                    'name',
-                                                    'diameter',
-                                                    'visited',
-                                                    'created_at',
-                                                    'updated_at',
-                                                ],
-                                            ],
-                                        ],
                                         [
                                             'type' => 'array',
                                             'items' => [
@@ -6832,6 +6973,30 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'openRelationList' => [
+                                    'type' => [
+                                        'object',
+                                        'null',
+                                    ],
+                                    'properties' => [
+                                        'beacons_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'rockets_count' => [
+                                            'type' => 'integer',
+                                            'minimum' => 0,
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                        'beacons_count',
+                                        'rockets_count',
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'implicitAllColumns',
@@ -6841,6 +7006,7 @@ class EloquentQueryController
                                 'existsAggregate',
                                 'constrainedRelation',
                                 'pluckedAggregate',
+                                'openRelationList',
                             ],
                         ],
                     ],
@@ -6860,6 +7026,10 @@ class EloquentQueryController
                 'rockets' => fn (Builder $query) => $query->where('name', 'Falcon'),
             ])->first(),
             'pluckedAggregate' => Planet::query()->withCount('rockets')->pluck('rockets_count'),
+            'openRelationList' => Planet::query()->select('id')->withCount([
+                'beacons' => fn (Builder $query) => $query->latest(),
+                ...$this->relationNames,
+            ])->first(),
         ];
     }
 
@@ -7196,7 +7366,7 @@ class EloquentQueryController
         $planet = Planet::findOrFail(1);
 
         $planet->loadMissing([
-            'spaceStations:id,name' => fn ($query) => $query->where('id', '>', 1),
+            'spaceStations:id,name',
             'spaceStations.rockets',
         ]);
 
@@ -8679,12 +8849,93 @@ class EloquentQueryController
                                         ],
                                     ],
                                 ],
+                                'openRelationList' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                            'beacons' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'label' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'planet_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'beaconable_type' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                        'beaconable_id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'created_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                        'updated_at' => [
+                                                            'type' => [
+                                                                'string',
+                                                                'null',
+                                                            ],
+                                                            'format' => 'date-time',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'label',
+                                                        'planet_id',
+                                                        'beaconable_type',
+                                                        'beaconable_id',
+                                                        'created_at',
+                                                        'updated_at',
+                                                    ],
+                                                ],
+                                            ],
+                                            'rockets' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'object',
+                                                    'properties' => [
+                                                        'id' => [
+                                                            'type' => 'integer',
+                                                        ],
+                                                        'name' => [
+                                                            'type' => 'string',
+                                                        ],
+                                                    ],
+                                                    'required' => [
+                                                        'id',
+                                                        'name',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                            'beacons',
+                                            'rockets',
+                                        ],
+                                    ],
+                                ],
                             ],
                             'required' => [
                                 'replacedDefault',
                                 'removedDefault',
                                 'constrainedExistence',
                                 'explicitCountOperator',
+                                'openRelationList',
                             ],
                         ],
                     ],
@@ -8697,10 +8948,15 @@ class EloquentQueryController
         return [
             'replacedDefault' => EagerPlanet::query()->withOnly('spaceStations')->get(),
             'removedDefault' => EagerPlanet::query()->without('rockets')->get(),
+            // @phpstan-ignore larastan.relationExistence (withWhereHas() parses the selected columns also when given a callback)
             'constrainedExistence' => Planet::query()
                 ->withWhereHas('spaceStations:id,name', fn ($query) => $query->where('size', 'big'))
                 ->get(),
             'explicitCountOperator' => Planet::query()->withWhereHas('beacons', null, '>=', 2)->get(),
+            'openRelationList' => Planet::query()->select('id')->with([
+                'beacons' => fn ($query) => $query->latest(),
+                ...$this->relationNames,
+            ])->get(),
         ];
     }
 

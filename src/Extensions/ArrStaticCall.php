@@ -71,17 +71,6 @@ class ArrStaticCall extends StaticCallExtension
 
     private function whereNotNull(ArrayType $array, Config $config): ArrayType
     {
-        if (! $array->shape) {
-            if ($array->itemType === null || ! $this->mayBeNull($array->itemType, $config)) {
-                return $array;
-            }
-
-            $itemType = $array->itemType->unwrapType($config)->removeNull($config);
-            $array->itemType = $itemType instanceof NeverType ? null : $itemType;
-
-            return $array->markItemsOptional();
-        }
-
         foreach ($array->shape as $key => $value) {
             $variants = $this->variants($value, $config);
             $nonNullVariants = array_values(array_filter($variants, fn (Type $variant) => ! $variant instanceof NullType));
@@ -101,6 +90,10 @@ class ArrStaticCall extends StaticCallExtension
             }
         }
 
+        if ($array->itemType !== null && $this->mayBeNull($array->itemType, $config)) {
+            $this->filterEntriesOutsideShape($array, $array->itemType->unwrapType($config)->removeNull($config));
+        }
+
         return $array;
     }
 
@@ -108,15 +101,6 @@ class ArrStaticCall extends StaticCallExtension
     private function where(StaticCallContext $call, ArrayType $array): ArrayType
     {
         $callback = $this->argument($call, 'callback', 1);
-
-        if (! $array->shape) {
-            if ($array->itemType && $callback instanceof CallableType) {
-                $itemType = $this->narrowEntry($call, $callback, $array->itemType, null);
-                $array->itemType = $itemType instanceof NeverType ? null : $itemType;
-            }
-
-            return $array->markItemsOptional();
-        }
 
         foreach ($array->shape as $key => $value) {
             $kept = $callback instanceof CallableType ? $this->narrowEntry($call, $callback, $value, $key) : $value;
@@ -130,7 +114,29 @@ class ArrStaticCall extends StaticCallExtension
             }
         }
 
+        if ($array->shape === [] || $array->hasEntriesOutsideShape()) {
+            $kept = $array->itemType !== null && $callback instanceof CallableType
+                ? $this->narrowEntry($call, $callback, $array->itemType, null)
+                : $array->itemType;
+
+            $this->filterEntriesOutsideShape($array, $kept);
+        }
+
         return $array;
+    }
+
+
+    private function filterEntriesOutsideShape(ArrayType $array, ?Type $keptType): void
+    {
+        if ($keptType instanceof NeverType) {
+            $array->itemType = null;
+            $array->keyType = null;
+
+        } else {
+            $array->itemType = $keptType;
+        }
+
+        $array->markEntriesOutsideShapeOptional();
     }
 
 
@@ -142,21 +148,30 @@ class ArrStaticCall extends StaticCallExtension
             return $array->markItemsOptional();
         }
 
-        if ($array->shape) {
-            foreach (array_keys($array->shape) as $key) {
-                if (! ($keys[$key] ?? false)) {
-                    $array->removeItemFromArray($key, isCertain: ! isset($keys[$key]));
-                }
+        foreach (array_keys($array->shape) as $key) {
+            if (! ($keys[$key] ?? false)) {
+                $array->removeItemFromArray($key, isCertain: ! isset($keys[$key]));
             }
+        }
 
+        if (! $array->hasEntriesOutsideShape()) {
             return $array;
         }
 
-        if ($array->itemType === null) {
-            return $array;
+        $array->markEntriesOutsideShapeOptional();
+
+        foreach (array_keys($keys) as $key) {
+            $entryType = isset($array->shape[$key]) ? null : $array->getTypeOfEntryOutsideShapeAt($key, $call->scope->config);
+
+            if ($entryType !== null) {
+                $array->shape[$key] = (clone $entryType)->setRequired(false);
+            }
         }
 
-        return new ArrayType(shape: array_fill_keys(array_keys($keys), $array->itemType))->markItemsOptional();
+        $array->itemType = null;
+        $array->keyType = null;
+
+        return $array;
     }
 
 
@@ -174,9 +189,7 @@ class ArrStaticCall extends StaticCallExtension
         foreach ($keys as $key => $isAlwaysListed) {
             $isShapeKey = array_key_exists($key, $array->shape);
 
-            if ($isShapeKey || $array->shape === []) {
-                $array->removeItemFromArray($key, isCertain: $isAlwaysListed);
-            }
+            $array->removeItemFromArray($key, isCertain: $isAlwaysListed);
 
             if (! $isShapeKey && is_string($key) && str_contains($key, '.')) {
                 $array = $this->forgetPath($array, explode('.', $key), $isAlwaysListed, $config);
@@ -198,22 +211,20 @@ class ArrStaticCall extends StaticCallExtension
             return $array->removeItemFromArray($segment, $isCertain);
         }
 
-        if ($array->shape === []) {
-            if ($array->itemType !== null) {
-                $array->itemType = $this->mapArrayVariants(
-                    value: $array->itemType,
-                    transform: fn (ArrayType $nested) => $this->forgetPath($nested, $segments, isCertain: false, config: $config),
-                    config: $config,
-                );
-            }
-
-            return $array;
-        }
-
         if (isset($array->shape[$segment])) {
             $array->shape[$segment] = $this->mapArrayVariants(
                 value: $array->shape[$segment],
                 transform: fn (ArrayType $nested) => $this->forgetPath($nested, $segments, $isCertain, $config),
+                config: $config,
+            );
+
+            return $array;
+        }
+
+        if ($array->itemType !== null) {
+            $array->itemType = $this->mapArrayVariants(
+                value: $array->itemType,
+                transform: fn (ArrayType $nested) => $this->forgetPath($nested, $segments, isCertain: false, config: $config),
                 config: $config,
             );
         }
@@ -264,16 +275,14 @@ class ArrStaticCall extends StaticCallExtension
             return new ArrayType;
         }
 
-        if (! $array->shape) {
-            $array->itemType = $this->invoke($call, $callback, [$array->itemType ?? new UnknownType, $array->keyType ?? new IntegerType]);
-
-            return $array;
-        }
-
         foreach ($array->shape as $key => $value) {
             $mappedValue = $this->invoke($call, $callback, [$value->unwrapType($call->scope->config), $this->literalKeyType($key)]);
 
             $array->shape[$key] = (clone $mappedValue)->setRequired($value->required);
+        }
+
+        if ($array->shape === [] || $array->hasEntriesOutsideShape()) {
+            $array->itemType = $this->invoke($call, $callback, [$array->itemType ?? new UnknownType, $array->keyType ?? new IntegerType]);
         }
 
         return $array;
@@ -301,7 +310,7 @@ class ArrStaticCall extends StaticCallExtension
             return new ArrayType;
         }
 
-        if (array_all($returnedArrays, fn (ArrayType $returned) => $returned->shape !== [])) {
+        if (array_all($returnedArrays, fn (ArrayType $returned) => $returned->shape !== [] && ! $returned->hasEntriesOutsideShape())) {
             return $this->mergeShapes($returnedArrays, $mayBeEmpty, $config);
         }
 
@@ -427,7 +436,7 @@ class ArrStaticCall extends StaticCallExtension
             $segments = explode('.', (string) $literalKey);
 
             foreach ($this->variants($array, $config) as $variant) {
-                [$value, $mayBeMissing] = $this->readSegment($variant, $literalKey);
+                [$value, $mayBeMissing] = $this->readSegment($variant, $literalKey, $config);
 
                 if ($value) {
                     $results[] = clone $value;
@@ -471,21 +480,12 @@ class ArrStaticCall extends StaticCallExtension
     {
         $config = $call->scope->config;
 
-        if (! $array->shape) {
-            if ($array->itemType === null) {
-                return [$default];
-            }
-
-            $itemType = $callback ? $this->narrowEntry($call, $callback, $array->itemType, null) : $array->itemType;
-
-            if ($itemType instanceof NeverType) {
-                return [$default];
-            }
-
-            return $callback === null && ($array->minItems ?? 0) >= 1 ? [$itemType] : [$itemType, $default];
+        if ($array->shape === [] && $array->itemType === null) {
+            return [$default];
         }
 
         $candidates = [];
+        $hasCertainEntry = $callback === null && ($array->minItems ?? 0) >= 1;
         $entries = $fromEnd ? array_reverse($array->shape, preserve_keys: true) : $array->shape;
 
         foreach ($entries as $key => $value) {
@@ -498,11 +498,24 @@ class ArrStaticCall extends StaticCallExtension
             $candidates[] = clone $candidate;
 
             if ($callback === null && $value->required) {
-                return $candidates;
+                $hasCertainEntry = true;
+
+                break;
             }
         }
 
-        $candidates[] = $default;
+        if ($array->hasEntriesOutsideShape()) {
+            $entryOutsideShape = $array->itemType ?? new UnknownType;
+            $candidate = $callback ? $this->narrowEntry($call, $callback, $entryOutsideShape, null) : $entryOutsideShape;
+
+            if (! $candidate instanceof NeverType) {
+                $candidates[] = $candidate;
+            }
+        }
+
+        if (! $hasCertainEntry) {
+            $candidates[] = $default;
+        }
 
         return $candidates;
     }
@@ -640,12 +653,6 @@ class ArrStaticCall extends StaticCallExtension
             return $values === null ? null : array_fill_keys($values, count($values) === 1);
         }
 
-        if (! $keys->shape) {
-            $values = $keys->itemType ? $this->literalValues($keys->itemType, $config) : null;
-
-            return $values === null ? null : array_fill_keys($values, false);
-        }
-
         $listedKeys = [];
 
         foreach ($keys->shape as $member) {
@@ -657,6 +664,18 @@ class ArrStaticCall extends StaticCallExtension
 
             foreach ($values as $value) {
                 $listedKeys[$value] = ($listedKeys[$value] ?? false) || ($member->required && count($values) === 1);
+            }
+        }
+
+        if ($keys->shape === [] || $keys->hasEntriesOutsideShape()) {
+            $values = $keys->itemType ? $this->literalValues($keys->itemType, $config) : null;
+
+            if ($values === null) {
+                return null;
+            }
+
+            foreach ($values as $value) {
+                $listedKeys[$value] ??= false;
             }
         }
 

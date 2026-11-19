@@ -40,6 +40,8 @@ Route::post('/test/validation/enum-nested-filled', [ValidationController::class,
 Route::post('/test/validation/nested-data-with-top-level-description', [ValidationController::class, 'nestedDataWithTopLevelDescription']);
 Route::post('/test/validation/size-rules', [ValidationController::class, 'sizeRules']);
 Route::post('/test/validation/non-literal-in-rules', [ValidationController::class, 'nonLiteralInRules']);
+Route::post('/test/validation/keyed-rule-arrays', [ValidationController::class, 'keyedRuleArrays']);
+Route::post('/test/validation/wildcard-rules-on-listed-keys', [ValidationController::class, 'wildcardRulesOnListedKeys']);
 Route::post('/test/validation/file-rules', [ValidationController::class, 'fileRules']);
 Route::post('/test/validation/unresolved-rules', [ValidationController::class, 'unresolvedRulesStillRecordValidationResponse']);
 
@@ -47,6 +49,7 @@ Route::post('/test/form-request/extra-parameters', [FormRequestController::class
 Route::post('/test/form-request/base', [FormRequestController::class, 'itemsRequest']);
 Route::post('/test/form-request/extended', [FormRequestController::class, 'extendedItemsRequest']);
 Route::post('/test/form-request/password-confirmation', [FormRequestController::class, 'passwordConfirmation']);
+Route::post('/test/form-request/profile', [FormRequestController::class, 'profileRequestUsedInBody']);
 Route::post('/test/form-request/upload', [FormRequestController::class, 'upload']);
 
 Route::post('/test/resource/single', [ResourceController::class, 'singleResource']);
@@ -98,6 +101,7 @@ Route::post('/test/eloquent/first-static', [EloquentQueryController::class, 'fir
 Route::post('/test/eloquent/callback-fallback-finishers', [EloquentQueryController::class, 'finishersWithCallbackFallback']);
 Route::post('/test/eloquent/find-many-lazy-finishers', [EloquentQueryController::class, 'findManyAndLazyFinishers']);
 Route::post('/test/eloquent/collection-literal', [EloquentQueryController::class, 'collectionMethodsOnLiteralArray']);
+Route::post('/test/eloquent/collection-shapes', [EloquentQueryController::class, 'collectionMethodsOnShapes']);
 Route::post('/test/eloquent/count-pluck', [EloquentQueryController::class, 'countAndPluck']);
 Route::post('/test/eloquent/select-first', [EloquentQueryController::class, 'selectWithFirst']);
 Route::post('/test/eloquent/filter-map', [EloquentQueryController::class, 'filterAndMapCollection']);

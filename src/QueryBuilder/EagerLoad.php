@@ -190,10 +190,12 @@ final class EagerLoad
     {
         $shape = $arrayType->shape;
 
-        if (! $shape && $arrayType->itemType) {
-            $shape = $arrayType->itemType instanceof UnionType
+        if ($arrayType->itemType) {
+            $entriesOutsideShape = $arrayType->itemType instanceof UnionType
                 ? $arrayType->itemType->types
                 : [$arrayType->itemType];
+
+            array_push($shape, ...$entriesOutsideShape);
         }
 
         foreach ($shape as $key => $valueType) {
@@ -276,19 +278,10 @@ final class EagerLoad
 
         $relatedModelPhpClass = $modelPhpClass->scope->getPhpClassInDeeperScope($relatedModelClassName);
 
-        if ($relationArgumentType->shape) {
-            foreach ($relationArgumentType->shape as $subRelationKey => $valueType) {
-                $subRelation = $this->makeRelationObject((string) $subRelationKey, $valueType, $relatedModelPhpClass);
+        foreach ($relationArgumentType->shape as $subRelationKey => $valueType) {
+            $subRelation = $this->makeRelationObject((string) $subRelationKey, $valueType, $relatedModelPhpClass);
 
-                $relation->relations[$subRelation->exportedName] = $subRelation;
-            }
-
-        } else if ($relationArgumentType->itemType instanceof StringType) {
-            foreach ($relationArgumentType->itemType->getPossibleValues() ?? [] as $subRelationKey) {
-                $subRelation = $this->makeRelationObject($subRelationKey, new UnknownType, $relatedModelPhpClass);
-
-                $relation->relations[$subRelation->exportedName] = $subRelation;
-            }
+            $relation->relations[$subRelation->exportedName] = $subRelation;
         }
 
         return $relation;

@@ -148,12 +148,15 @@ class RequestParamsController
                     'application/json' => [
                         'schema' => [
                             'type' => 'object',
-                            'additionalProperties' => [
-                                'type' => [
-                                    'string',
-                                    'boolean',
+                            'properties' => [
+                                'required' => [
+                                    'type' => 'boolean',
                                 ],
                             ],
+                            'required' => [
+                                'required',
+                            ],
+                            'additionalProperties' => true,
                         ],
                     ],
                 ],
@@ -308,7 +311,18 @@ class RequestParamsController
                                 'tags' => [
                                     'type' => 'array',
                                     'items' => [
-                                        'type' => 'string',
+                                        'anyOf' => [
+                                            [
+                                                'type' => 'object',
+                                                'additionalProperties' => [
+                                                    'type' => 'string',
+                                                    'description' => 'TValue',
+                                                ],
+                                            ],
+                                            [
+                                                'type' => 'string',
+                                            ],
+                                        ],
                                     ],
                                 ],
                                 'states' => [
