@@ -215,6 +215,58 @@ class FormRequestController
         'requestBody' => [
             'description' => '',
             'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'nickname' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'description' => 'Shown instead of the name.',
+                                'examples' => [
+                                    'Ed',
+                                ],
+                                'deprecated' => true,
+                                'x-deprecated-description' => 'Use display_name.',
+                            ],
+                            'display_name' => [
+                                'type' => [
+                                    'string',
+                                    'null',
+                                ],
+                                'description' => 'Public name.',
+                                'examples' => [
+                                    'Edward',
+                                ],
+                                'deprecated' => true,
+                            ],
+                        ],
+                        'required' => [
+                            'display_name',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function profileRequestUsedInBody(ProfileRequest $request): void
+    {
+        $request->wantsJson();
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
                 'multipart/form-data' => [
                     'schema' => [
                         'type' => 'object',

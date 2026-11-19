@@ -1374,6 +1374,190 @@ status description',
         'requestBody' => [
             'description' => '',
             'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'untyped' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'first' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'id',
+                                        ],
+                                    ],
+                                ],
+                                'required' => [
+                                    'first',
+                                ],
+                                'additionalProperties' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'id',
+                                    ],
+                                ],
+                            ],
+                            'nested' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'first' => [
+                                        'type' => 'object',
+                                        'properties' => [
+                                            'label' => [
+                                                'type' => 'string',
+                                            ],
+                                            'id' => [
+                                                'type' => 'string',
+                                            ],
+                                            'meta' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'color' => [
+                                                        'type' => 'string',
+                                                    ],
+                                                    'size' => [
+                                                        'type' => 'integer',
+                                                    ],
+                                                ],
+                                            ],
+                                            'tags' => [
+                                                'type' => 'array',
+                                                'items' => [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                            'rank' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'required' => [
+                                            'rank',
+                                        ],
+                                    ],
+                                ],
+                                'additionalProperties' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                        'meta' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'size' => [
+                                                    'type' => 'integer',
+                                                ],
+                                            ],
+                                        ],
+                                        'tags' => [
+                                            'type' => 'array',
+                                            'items' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                        'rank' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                    'required' => [
+                                        'rank',
+                                    ],
+                                ],
+                            ],
+                            'nullable' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'first' => [
+                                        'type' => [
+                                            'object',
+                                            'null',
+                                        ],
+                                        'properties' => [
+                                            'id' => [
+                                                'type' => 'integer',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                                'additionalProperties' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'scalar' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'first' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'additionalProperties' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'id' => [
+                                            'type' => 'integer',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'untyped',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function wildcardRulesOnListedKeys(Request $request): void
+    {
+        $request->validate([
+            'untyped.*.id' => 'required|integer',
+            'untyped.first' => 'required|array',
+
+            'nested.first.label' => 'string',
+            'nested.first.id' => 'string',
+            'nested.first.meta.color' => 'string',
+            'nested.first.tags' => 'array',
+            'nested.*.id' => 'integer',
+            'nested.*.meta.size' => 'integer',
+            'nested.*.tags.*' => 'integer',
+            'nested.*.rank' => 'required|integer',
+
+            'nullable.first' => 'nullable|array',
+            'nullable.*.id' => 'integer',
+
+            'scalar.first' => 'string',
+            'scalar.*.id' => 'integer',
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
                 'multipart/form-data' => [
                     'schema' => [
                         'type' => 'object',
