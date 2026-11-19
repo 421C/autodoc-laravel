@@ -1327,6 +1327,53 @@ status description',
         'requestBody' => [
             'description' => '',
             'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'closed' => [
+                                'type' => 'integer',
+                            ],
+                            'open' => [
+                                'type' => 'integer',
+                            ],
+                            'status' => [
+                                'type' => 'string',
+                                'enum' => [
+                                    'draft',
+                                    'published',
+                                ],
+                            ],
+                        ],
+                        'required' => [
+                            'closed',
+                            'open',
+                        ],
+                    ],
+                ],
+            ],
+            'required' => false,
+        ],
+        'responses' => [
+            422 => [
+                'description' => '',
+            ],
+        ],
+    ])]
+    public function keyedRuleArrays(Request $request): void
+    {
+        $request->validate([
+            'closed' => ['presence' => 'required', 'type' => 'integer'],
+            'open' => ['presence' => 'required', 'type' => 'integer', ...Catalog::names()],
+            'status' => [Rule::in(['first' => 'draft', 'second' => 'published'])],
+        ]);
+    }
+
+
+    #[ExpectedOperationSchema([
+        'requestBody' => [
+            'description' => '',
+            'content' => [
                 'multipart/form-data' => [
                     'schema' => [
                         'type' => 'object',

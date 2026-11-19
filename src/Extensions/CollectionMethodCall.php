@@ -45,16 +45,13 @@ class CollectionMethodCall extends MethodCallExtension
             return;
         }
 
-        $mutatedItemType = $this->getEachMutatedItemType($call, $collectionType);
+        $mutatedCollectionType = $this->getCollectionTypeAfterEach($call, $collectionType);
 
-        if (! $mutatedItemType) {
+        if (! $mutatedCollectionType) {
             return;
         }
 
-        $newCollectionType = clone $collectionType;
-        $newCollectionType->itemType = $mutatedItemType;
-
-        $call->setVarType($var->name, $newCollectionType);
+        $call->setVarType($var->name, $mutatedCollectionType);
     }
 
 
@@ -112,7 +109,7 @@ class CollectionMethodCall extends MethodCallExtension
 
         return match ($methodName) {
             'first', 'last', 'get' => $this->handleSingleEntryWithDefaultValue($call, $collectionType),
-            'sole', 'firstOrFail' => $collectionType->itemType ?? new UnknownType,
+            'sole', 'firstOrFail' => $collectionType->getTypeOfEveryEntry($config),
             'map' => $this->handleMapMethod($call, $collectionType),
             'mapWithKeys' => $this->handleMapWithKeysMethod($call, $collectionType),
             'pluck' => $this->handlePluckMethod($call, $collectionType),
@@ -123,7 +120,7 @@ class CollectionMethodCall extends MethodCallExtension
             'avg', 'average', 'min', 'max', 'median' => new UnionType([new NumberType, new NullType]),
             'isEmpty', 'isNotEmpty', 'contains', 'containsStrict', 'doesntContain', 'every', 'some' => new BoolType,
             'implode', 'join' => new StringType,
-            'each' => $this->handleEachMethod($call, $collectionType),
+            'each' => $this->getCollectionTypeAfterEach($call, $collectionType) ?? $collectionType,
             'values', 'flatten', 'shuffle' => $collectionType->toList($config),
             'nth' => $collectionType->markItemsOptional()->toList($config),
             'filter', 'reject', 'unique', 'skip', 'slice',
@@ -165,18 +162,18 @@ class CollectionMethodCall extends MethodCallExtension
     }
 
 
-    private function handleEachMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
+    private function getCollectionTypeAfterEach(MethodCallContext $call, ArrayType $collectionType): ?ArrayType
     {
-        $mutatedItemType = $this->getEachMutatedItemType($call, $collectionType);
+        $foldedCollectionType = (clone $collectionType)->convertShapeToTypePair($call->scope->config);
+        $mutatedItemType = $this->getEachMutatedItemType($call, $foldedCollectionType);
 
         if (! $mutatedItemType) {
-            return $collectionType;
+            return null;
         }
 
-        $newCollectionType = clone $collectionType;
-        $newCollectionType->itemType = $mutatedItemType;
+        $foldedCollectionType->itemType = $mutatedItemType;
 
-        return $newCollectionType;
+        return $foldedCollectionType;
     }
 
 
@@ -258,7 +255,7 @@ class CollectionMethodCall extends MethodCallExtension
 
     private function handleSingleEntryWithDefaultValue(MethodCallContext $call, ArrayType $collectionType): Type
     {
-        $itemType = $collectionType->itemType;
+        $itemType = $collectionType->convertShapeToTypePair($call->scope->config)->itemType;
 
         if (! $itemType) {
             return new UnknownType;
@@ -306,6 +303,7 @@ class CollectionMethodCall extends MethodCallExtension
         $callbackType = $call->argTypes->get(0);
 
         if ($callbackType instanceof CallableType) {
+            $collectionType->convertShapeToTypePair($call->scope->config);
             $returnType = $callbackType->getReturnType(
                 ArgumentList::fromTypes([
                     $collectionType->itemType ?? new UnknownType,
@@ -346,6 +344,8 @@ class CollectionMethodCall extends MethodCallExtension
 
     private function handlePluckMethod(MethodCallContext $call, ArrayType $collectionType): ArrayType
     {
+        $collectionType->convertShapeToTypePair($call->scope->config);
+
         if (! $collectionType->itemType) {
             return new ArrayType(className: Collection::class);
         }
@@ -360,7 +360,7 @@ class CollectionMethodCall extends MethodCallExtension
         $keyType = $isKeyed ? $this->getCollectionItemPropertyType($collectionType, $keyArgType, $scope) : null;
 
         $columnArgType = $call->argTypes->get(0);
-        $resultItemType = $this->getCollectionItemPropertyType($collectionType, $columnArgType, $scope);
+        $resultItemType = $this->getCollectionItemPropertyType($collectionType, $columnArgType, $scope, nullWhenMissing: true);
 
         if (! $resultItemType) {
             return new ArrayType(className: Collection::class);
@@ -393,7 +393,7 @@ class CollectionMethodCall extends MethodCallExtension
     }
 
 
-    private function getCollectionItemPropertyType(ArrayType $collectionType, Type $columnNameType, Scope $scope): ?Type
+    private function getCollectionItemPropertyType(ArrayType $collectionType, Type $columnNameType, Scope $scope, bool $nullWhenMissing = false): ?Type
     {
         $columnVariants = [];
 
@@ -419,19 +419,20 @@ class CollectionMethodCall extends MethodCallExtension
         foreach ($columnVariants as $columnName) {
             $columnType = new UnionType;
 
-            $itemTypeVariants = $collectionType->itemType instanceof UnionType
-                ? $collectionType->itemType->types
-                : [$collectionType->itemType];
+            $itemType = $collectionType->itemType?->unwrapType($scope->config);
+            $itemTypeVariants = $itemType instanceof UnionType ? $itemType->types : [$itemType];
 
             $valueTypeVariants = [];
 
             foreach ($itemTypeVariants as $itemTypeVariant) {
                 if ($itemTypeVariant instanceof ArrayType) {
-                    if ($itemTypeVariant->shape) {
-                        $valueTypeVariants[] = $itemTypeVariant->shape[$columnName] ?? new UnknownType;
+                    $knownValueType = $itemTypeVariant->shape[$columnName] ?? null;
+                    $valueType = $knownValueType ?? $itemTypeVariant->getTypeOfEntryOutsideShapeAt($columnName, $scope->config);
 
-                    } else {
-                        $valueTypeVariants[] = $itemTypeVariant->itemType ?? new UnknownType;
+                    $valueTypeVariants[] = $valueType ?? new UnknownType;
+
+                    if ($nullWhenMissing && $valueType !== null && ($knownValueType === null || ! $knownValueType->required)) {
+                        $valueTypeVariants[] = new NullType;
                     }
 
                 } else if ($itemTypeVariant instanceof ObjectType) {

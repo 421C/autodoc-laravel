@@ -103,9 +103,11 @@ class EloquentEagerLoad extends MethodCallExtension
             return null;
         }
 
-        $itemType = $receiverType->itemType === null
+        $loadedCollectionType = (clone $receiverType)->convertShapeToTypePair($call->scope->config);
+
+        $itemType = $loadedCollectionType->itemType === null
             ? null
-            : $this->resolveModelObjectType($receiverType->itemType);
+            : $this->resolveModelObjectType($loadedCollectionType->itemType);
 
         if ($itemType === null) {
             return null;
@@ -120,7 +122,6 @@ class EloquentEagerLoad extends MethodCallExtension
         $loadedItemType = clone $itemType;
         $loadedItemType->properties = array_merge($loadedItemType->properties, $relations);
 
-        $loadedCollectionType = clone $receiverType;
         $loadedCollectionType->itemType = $loadedItemType;
 
         return $loadedCollectionType;

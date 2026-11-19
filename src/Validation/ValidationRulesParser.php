@@ -122,14 +122,15 @@ trait ValidationRulesParser
                     $paramType = $this->getTypeFromRules(explode('|', $value->value), $scope);
                 }
 
-            } else if ($value instanceof ArrayType && $value->itemType) {
-                $resolvedItemType = $value->itemType->unwrapType($scope->config);
+            } else if ($value instanceof ArrayType) {
+                $entryType = $value->getTypeOfEveryEntry($scope->config);
+                $resolvedItemType = $entryType->unwrapType($scope->config);
 
                 if ($resolvedItemType instanceof UnionType) {
                     $typesInArray = $resolvedItemType->types;
 
                 } else {
-                    $typesInArray = [$value->itemType];
+                    $typesInArray = [$entryType];
                 }
 
                 $rules = [];
@@ -259,12 +260,14 @@ trait ValidationRulesParser
                         if ($rule->args !== null && $rule->args->has(0)) {
                             $arrayType = $scope->withScalarTypeValuesShown(fn () => $rule->args->get(0)->unwrapType($scope->config));
 
-                            if ($arrayType instanceof ArrayType && $arrayType->itemType) {
-                                if ($arrayType->itemType instanceof UnionType) {
-                                    $allowedValueTypes = $arrayType->itemType->types;
+                            if ($arrayType instanceof ArrayType) {
+                                $entryType = $arrayType->getTypeOfEveryEntry($scope->config);
+
+                                if ($entryType instanceof UnionType) {
+                                    $allowedValueTypes = $entryType->types;
 
                                 } else {
-                                    $allowedValueTypes = [$arrayType->itemType];
+                                    $allowedValueTypes = [$entryType];
                                 }
 
                                 $isStringType = false;

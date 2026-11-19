@@ -190,10 +190,12 @@ final class EagerLoad
     {
         $shape = $arrayType->shape;
 
-        if (! $shape && $arrayType->itemType) {
-            $shape = $arrayType->itemType instanceof UnionType
+        if ($arrayType->itemType) {
+            $entriesOutsideShape = $arrayType->itemType instanceof UnionType
                 ? $arrayType->itemType->types
                 : [$arrayType->itemType];
+
+            array_push($shape, ...$entriesOutsideShape);
         }
 
         foreach ($shape as $key => $valueType) {
